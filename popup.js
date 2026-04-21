@@ -1375,6 +1375,58 @@ Please review this state and help me.
         });
     });
 
+    document.getElementById('copy-page-storage').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || tab.url?.startsWith('chrome://')) return;
+        const res = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => JSON.stringify(window.localStorage, null, 2)
+        });
+        copyToClipboard(res[0].result);
+    });
+
+    document.getElementById('copy-page-cookies').addEventListener('click', () => {
+        copyToClipboard(document.cookie);
+    });
+
+    async function renderPageStorage() {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || tab.url?.startsWith('chrome://')) return;
+        
+        const res = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => ({ storage: Object.assign({}, window.localStorage), cookies: document.cookie })
+        });
+        const { storage, cookies } = res[0].result;
+        
+        const storageGrid = document.getElementById('page-storage-grid');
+        storageGrid.innerHTML = '';
+        Object.keys(storage).forEach(k => {
+            const item = document.createElement('div');
+            item.className = 'storage-item';
+            item.innerHTML = `<span class="storage-key">${k}</span><span class="storage-val">${storage[k].slice(0, 50)}...</span>`;
+            storageGrid.appendChild(item);
+        });
+
+        const cookieGrid = document.getElementById('page-cookies-grid');
+        cookieGrid.innerHTML = '';
+        cookies.split(';').forEach(c => {
+            if (!c.trim()) return;
+            const [k, v] = c.split('=');
+            const item = document.createElement('div');
+            item.className = 'storage-item';
+            item.innerHTML = `<span class="storage-key">${k.trim()}</span><span class="storage-val">${(v||'').slice(0, 50)}...</span>`;
+            cookieGrid.appendChild(item);
+        });
+    }
+
+    // Call renderPageStorage when storage tab is clicked
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.tab === 'storage') renderPageStorage();
+        });
+    });
+
     // ── Build Extensions List ─────────────────────────────────────────────
     function renderExtensions() {
         const list = document.getElementById('ext-list');

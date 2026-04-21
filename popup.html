@@ -187,10 +187,22 @@
 
     <div class="tab-panel" id="tab-storage">
         <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
-            <span>Vault Storage Keys</span>
-            <button id="copy-storage" style="background:none; border:none; cursor:pointer;" title="Copy Storage">📋</button>
+            <span>Vault Storage (Extension)</span>
+            <button id="copy-storage" style="background:none; border:none; cursor:pointer;" title="Copy Vault JSON">📋</button>
         </div>
         <div id="storage-grid" class="storage-grid"></div>
+
+        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+            <span>Page LocalStorage</span>
+            <button id="copy-page-storage" style="background:none; border:none; cursor:pointer;" title="Copy Page Storage JSON">📋</button>
+        </div>
+        <div id="page-storage-grid" class="storage-grid"></div>
+
+        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+            <span>Page Cookies</span>
+            <button id="copy-page-cookies" style="background:none; border:none; cursor:pointer;" title="Copy Cookies JSON">📋</button>
+        </div>
+        <div id="page-cookies-grid" class="storage-grid"></div>
     </div>
 
     <div class="tab-panel" id="tab-toolkit">
