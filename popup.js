@@ -1,27 +1,40 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+document.addEventListener('DOMContentLoaded', () => {
+    let tab = null;
+    chrome.tabs.query({ active: true, currentWindow: true }, ([t]) => { tab = t; });
 
     // ── Tab switching ────────────────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            const target = btn.dataset.tab;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-            if (btn.dataset.tab === 'storage') renderStorage();
-            if (btn.dataset.tab === 'errors') renderErrors();
-            if (btn.dataset.tab === 'sentinel') renderSentinelErrors();
+            const panel = document.getElementById(`tab-${target}`);
+            if (panel) panel.classList.add('active');
+            
+            if (target === 'storage') renderStorage();
+            if (target === 'errors') renderErrors();
+            if (target === 'sentinel') renderSentinelErrors();
         });
     });
+
+    async function getActiveTab() {
+        if (tab) return tab;
+        const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
+        tab = t;
+        return t;
+    }
 
     // Auto-switch to errors tab if there are any errors
     async function checkAutoSwitch() {
         const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
-        if (domErrors.length + storageErrors.length > 0) {
+        if ((domErrors?.length || 0) + (storageErrors?.length || 0) > 0) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelector('[data-tab="errors"]').classList.add('active');
-            document.getElementById('tab-errors').classList.add('active');
+            const errTab = document.querySelector('[data-tab="errors"]');
+            const errPanel = document.getElementById('tab-errors');
+            if (errTab) errTab.classList.add('active');
+            if (errPanel) errPanel.classList.add('active');
             renderErrors();
         }
     }
@@ -42,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function getDomErrors() {
+        const tab = await getActiveTab();
         if (!tab || tab.url?.startsWith('chrome://')) return [];
         try {
             const results = await chrome.scripting.executeScript({
@@ -227,7 +241,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── Clear handlers ────────────────────────────────────────────────────
-    document.getElementById('clear-dom-errors').addEventListener('click', async () => {
+    document.getElementById('clear-dom-errors').addEventListener('click', async () => { const tab = await getActiveTab();
+        const tab = await getActiveTab();
         if (tab && !tab.url?.startsWith('chrome://')) {
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -247,7 +262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Sentinel controls ──────────────────────────────────────────────────
     const clearSentinelBtn = document.getElementById('clear-sentinel-errors');
     if (clearSentinelBtn) {
-        clearSentinelBtn.addEventListener('click', async () => {
+        clearSentinelBtn.addEventListener('click', async () => { const tab = await getActiveTab();
             if (tab && !tab.url?.startsWith('chrome://')) {
                 await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
@@ -289,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Toolkit controls ───────────────────────────────────────────────────
     const btnCleanDom = document.getElementById('btn-copy-dom');
     if (btnCleanDom) {
-        btnCleanDom.addEventListener('click', async () => {
+        btnCleanDom.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const originalText = btnCleanDom.textContent;
             btnCleanDom.textContent = 'Copying...';
@@ -335,7 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnInjectNetwork = document.getElementById('btn-inject-network');
     if (btnInjectNetwork) {
-        btnInjectNetwork.addEventListener('click', async () => {
+        btnInjectNetwork.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                  target: { tabId: tab.id, allFrames: true },
@@ -396,7 +411,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnInjectConsole = document.getElementById('btn-inject-console');
     if (btnInjectConsole) {
-        btnInjectConsole.addEventListener('click', async () => {
+        btnInjectConsole.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id, allFrames: true },
@@ -422,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnVibeSnapshot = document.getElementById('btn-vibe-snapshot');
     if (btnVibeSnapshot) {
-        btnVibeSnapshot.addEventListener('click', async () => {
+        btnVibeSnapshot.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const originalText = btnVibeSnapshot.textContent;
             btnVibeSnapshot.textContent = 'Snapping...';
@@ -486,7 +501,7 @@ ${cleanDom}
 
     const btnToggleOutline = document.getElementById('btn-toggle-outline');
     if (btnToggleOutline) {
-        btnToggleOutline.addEventListener('click', async () => {
+        btnToggleOutline.addEventListener('click', async () => { const tab = await getActiveTab();
              if (!tab || tab.url?.startsWith('chrome://')) return;
              await chrome.scripting.executeScript({
                  target: { tabId: tab.id },
@@ -514,7 +529,7 @@ ${cleanDom}
 
     const btnHuntJson = document.getElementById('btn-hunt-json');
     if (btnHuntJson) {
-        btnHuntJson.addEventListener('click', async () => {
+        btnHuntJson.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const res = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -552,7 +567,7 @@ ${cleanDom}
 
     const btnFreeze = document.getElementById('btn-freeze-page');
     if (btnFreeze) {
-        btnFreeze.addEventListener('click', async () => {
+        btnFreeze.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -569,7 +584,7 @@ ${cleanDom}
 
     const btnExtractTheme = document.getElementById('btn-extract-theme');
     if (btnExtractTheme) {
-        btnExtractTheme.addEventListener('click', async () => {
+        btnExtractTheme.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const res = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -612,7 +627,7 @@ ${cleanDom}
 
     const btnPickSelector = document.getElementById('btn-pick-selector');
     if (btnPickSelector) {
-        btnPickSelector.addEventListener('click', async () => {
+        btnPickSelector.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -689,7 +704,7 @@ ${cleanDom}
 
     const btnAutoScroll = document.getElementById('btn-auto-scroll');
     if (btnAutoScroll) {
-        btnAutoScroll.addEventListener('click', async () => {
+        btnAutoScroll.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -703,7 +718,7 @@ ${cleanDom}
 
     const btnToggleVibe = document.getElementById('btn-toggle-vibe');
     if (btnToggleVibe) {
-        btnToggleVibe.addEventListener('click', async () => {
+        btnToggleVibe.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -738,7 +753,7 @@ ${cleanDom}
 
     const btnStartAnnotator = document.getElementById('btn-start-annotator');
     if (btnStartAnnotator) {
-        btnStartAnnotator.addEventListener('click', async () => {
+        btnStartAnnotator.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -866,7 +881,7 @@ Please use this mapping to help build the feature.
 
     const btnInjectNetwork = document.getElementById('btn-inject-network');
     if (btnInjectNetwork) {
-        btnInjectNetwork.addEventListener('click', async () => {
+        btnInjectNetwork.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                  target: { tabId: tab.id, allFrames: true },
@@ -930,9 +945,192 @@ Please use this mapping to help build the feature.
         });
     }
 
+    const btnStartMagnifier = document.getElementById('btn-start-magnifier');
+    if (btnStartMagnifier) {
+        btnStartMagnifier.addEventListener('click', async () => { const tab = await getActiveTab();
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    if (window.__MAGNIFIER_ACTIVE) return;
+                    window.__MAGNIFIER_ACTIVE = true;
+
+                    const tip = document.createElement('div');
+                    tip.style = 'position:fixed; background:rgba(15,23,42,0.9); color:#818cf8; border:1px solid #6366f1; padding:4px 8px; border-radius:6px; font-size:10px; font-family:monospace; z-index:9999999; pointer-events:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.5); display:none;';
+                    document.body.appendChild(tip);
+
+                    const onMove = (e) => {
+                        const el = e.target;
+                        if (el === tip) return;
+                        const selector = (el.id ? `#${el.id}` : '') + (el.className ? `.${Array.from(el.classList).join('.')}` : '');
+                        tip.textContent = `${el.tagName.toLowerCase()} ${selector}`.slice(0, 80);
+                        tip.style.left = `${e.clientX + 15}px`;
+                        tip.style.top = `${e.clientY + 15}px`;
+                        tip.style.display = 'block';
+                    };
+
+                    const onClick = () => {
+                        document.removeEventListener('mousemove', onMove);
+                        document.removeEventListener('click', onClick, true);
+                        tip.remove();
+                        window.__MAGNIFIER_ACTIVE = false;
+                    };
+
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('click', onClick, true);
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnWipeDomain = document.getElementById('btn-wipe-domain');
+    if (btnWipeDomain) {
+        btnWipeDomain.addEventListener('click', async () => { const tab = await getActiveTab();
+            if (!tab || !confirm('Wipe all local storage and cookies for this site?')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    window.localStorage.clear();
+                    window.sessionStorage.clear();
+                    document.cookie.split(";").forEach(c => {
+                       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                    });
+                    location.reload();
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnToggleEdit = document.getElementById('btn-toggle-edit');
+    if (btnToggleEdit) {
+        btnToggleEdit.addEventListener('click', async () => { const tab = await getActiveTab();
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const active = document.body.contentEditable === 'true';
+                    document.body.contentEditable = active ? 'false' : 'true';
+                    alert(active ? "Visual Edit: DISABLED" : "Visual Edit: ENABLED. You can now click and edit any text on the page!");
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnToggleLatency = document.getElementById('btn-toggle-latency');
+    if (btnToggleLatency) {
+        btnToggleLatency.addEventListener('click', async () => { const tab = await getActiveTab();
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id, allFrames: true },
+                world: 'MAIN',
+                func: () => {
+                    if (window.__LATENCY_ACTIVE) {
+                        window.__LATENCY_ACTIVE = false;
+                        alert("Network Latency: DISABLED. Connection speed restored.");
+                        return;
+                    }
+                    window.__LATENCY_ACTIVE = true;
+                    if (window.__LATENCY_HOOKED) {
+                        alert("Network Latency: ENABLED (2s delay).");
+                        return;
+                    }
+                    window.__LATENCY_HOOKED = true;
+
+                    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+                    const origFetch = window.fetch;
+                    window.fetch = async function(...args) {
+                        if (window.__LATENCY_ACTIVE) await sleep(2000);
+                        return origFetch.apply(this, args);
+                    };
+
+                    const XHR = XMLHttpRequest.prototype;
+                    const origSend = XHR.send;
+                    XHR.send = function() {
+                        if (window.__LATENCY_ACTIVE) {
+                            setTimeout(() => origSend.apply(this, arguments), 2000);
+                        } else {
+                            origSend.apply(this, arguments);
+                        }
+                    };
+                    alert("Network Latency: ENABLED (2s delay). Connected Fetch/XHR hooks.");
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnNukeOverlays = document.getElementById('btn-nuke-overlays');
+    if (btnNukeOverlays) {
+        btnNukeOverlays.addEventListener('click', async () => { const tab = await getActiveTab();
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const findAndNuke = () => {
+                        let nuked = 0;
+                        const all = document.querySelectorAll('*');
+                        all.forEach(el => {
+                            const style = window.getComputedStyle(el);
+                            const z = parseInt(style.zIndex) || 0;
+                            const isFixed = style.position === 'fixed' || style.position === 'absolute';
+                            const isModalMatch = /modal|popup|overlay|dialog|dimmer/i.test(el.className + el.id);
+                            
+                            if ((isFixed && z > 100) || isModalMatch) {
+                                if (el !== document.body && el !== document.documentElement) {
+                                    el.remove();
+                                    nuked++;
+                                }
+                            }
+                        });
+                        // Remove overflow:hidden from body if it's trapped
+                        document.body.style.overflow = 'auto';
+                        document.documentElement.style.overflow = 'auto';
+                        return nuked;
+                    };
+                    const count = findAndNuke();
+                    alert(`Nuked ${count} potential overlays/modals! Scroll restored.`);
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnGodSearch = document.getElementById('btn-god-search');
+    const godSearchInput = document.getElementById('god-search-input');
+    if (btnGodSearch && godSearchInput) {
+        btnGodSearch.addEventListener('click', async () => { const tab = await getActiveTab();
+            const query = godSearchInput.value.trim().toLowerCase();
+            if (!query || !tab || tab.url?.startsWith('chrome://')) return;
+            
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (q) => {
+                    const hits = [];
+                    // 1. Search DOM
+                    if (document.body.innerText.toLowerCase().includes(q)) hits.push('Found in Page Text');
+                    // 2. Search Storage
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k.toLowerCase().includes(q) || localStorage.getItem(k).toLowerCase().includes(q)) hits.push(`Storage: ${k}`);
+                    }
+                    // 3. Search Cookies
+                    if (document.cookie.toLowerCase().includes(q)) hits.push('Found in Cookies');
+                    return hits;
+                },
+                args: [query]
+            });
+            const matches = results?.[0]?.result || [];
+            alert(matches.length > 0 ? `GOD SEARCH RESULTS:\n- ${matches.join('\n- ')}` : "No matches found in DOM, Storage, or Cookies.");
+        });
+    }
+
     const btnReloadDomain = document.getElementById('btn-reload-domain');
     if (btnReloadDomain) {
-        btnReloadDomain.addEventListener('click', async () => {
+        btnReloadDomain.addEventListener('click', async () => { const tab = await getActiveTab();
             if (!tab) return;
             const domain = new URL(tab.url).hostname;
             const tabs = await chrome.tabs.query({});
@@ -943,7 +1141,9 @@ Please use this mapping to help build the feature.
     }
 
     // ── GIGASNAP (Copy All) ──────────────────────────────────────────────
-    document.getElementById('btn-gigasnap').addEventListener('click', async () => {
+    document.getElementById('btn-gigasnap').addEventListener('click', async () => { const tab = await getActiveTab();
+        const tab = await getActiveTab();
+        if (!tab) return;
         const btn = document.getElementById('btn-gigasnap');
         btn.textContent = 'SNAPPING EVERYTHING...';
         try {
@@ -985,6 +1185,7 @@ Please use this mapping to help build the feature.
                         clean_dom: cleanDomForTokens(document.documentElement),
                         stack: detectStack(),
                         network_history: window.__DEV_VAULT_NET_LOG || "[] (Hook not injected yet)",
+                        hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
                         system: {
                             userAgent: navigator.userAgent,
                             viewport: `${window.innerWidth}x${window.innerHeight}`,
@@ -1005,6 +1206,7 @@ Please use this mapping to help build the feature.
                 metadata: { timestamp: new Date().toISOString(), url: pageData.url, title: pageData.title },
                 stack: pageData.stack,
                 network_activity: pageData.network_history,
+                hidden_fields: pageData.hidden_fields,
                 errors: { dom: domErrors, vault_logs: storageErrors },
                 storage: { 
                     page: { local: pageData.localStorage, session: pageData.sessionStorage }, 
@@ -1039,7 +1241,7 @@ Please review this state and help me.
         setTimeout(() => btn.textContent = '⚡ GIGASNAP', 2000);
     });
 
-    document.getElementById('copy-errors').addEventListener('click', async () => {
+    document.getElementById('copy-errors').addEventListener('click', async () => { const tab = await getActiveTab();
         const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
         copyToClipboard(JSON.stringify({ dom: domErrors, storage: storageErrors }, null, 2));
     });
@@ -1050,9 +1252,55 @@ Please review this state and help me.
         });
     });
 
+    // ── Build Extensions List ─────────────────────────────────────────────
+    function renderExtensions() {
+        const list = document.getElementById('ext-list');
+        if (!list) return;
+        chrome.management.getAll((extensions) => {
+            const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'Antigravity Dev Vault');
+            if (devExts.length === 0) {
+                list.innerHTML = `<div class="empty-state"><span>📭</span>No unpacked extensions found.</div>`;
+                return;
+            }
+            list.innerHTML = '';
+            devExts.forEach(ext => {
+                const card = document.createElement('div');
+                card.className = 'ext-card';
+                const isEnabled = ext.enabled;
+                card.innerHTML = `
+                    <div class="ext-header">
+                        <div style="min-width:0">
+                            <div class="ext-name">${ext.name}</div>
+                            <div class="ext-sub">ID: ${ext.id}</div>
+                        </div>
+                        <div class="${isEnabled ? 'status-badge' : 'status-badge disabled'}">${isEnabled ? 'ACTIVE' : 'DISABLED'}</div>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="reload-${ext.id}">Reload</button>
+                        <button class="btn btn-secondary" id="toggle-${ext.id}">${isEnabled ? 'Disable' : 'Enable'}</button>
+                    </div>
+                `;
+                list.appendChild(card);
+                document.getElementById(`reload-${ext.id}`).onclick = () => {
+                    chrome.runtime.sendMessage({ action: 'RELOAD_EXT_AND_TAB', id: ext.id });
+                    window.close();
+                };
+                document.getElementById(`toggle-${ext.id}`).onclick = () => {
+                    chrome.management.setEnabled(ext.id, !isEnabled, () => location.reload());
+                };
+            });
+        });
+    }
+
     // ── Boot ──────────────────────────────────────────────────────────────
+    renderExtensions();
     renderErrors();
     renderSentinelErrors();
     checkAutoSwitch();
-    setInterval(() => { renderErrors(); renderSentinelErrors(); }, 6000);
+    setInterval(() => { 
+        renderErrors(); 
+        renderSentinelErrors(); 
+        if (document.querySelector('[data-tab="extensions"]').classList.contains('active')) renderExtensions();
+    }, 10000);
+    document.body.focus();
 });

@@ -97,6 +97,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    // ── Clear storage errors (called from popup) ────────────────────────
+    if (request.action === 'CLEAR_STORAGE_ERRORS') {
+        chrome.storage.local.set({ extension_errors: [] }, () => {
+            lastErrorCount = 0;
+            chrome.action.setBadgeText({ text: '' });
+            sendResponse({ ok: true });
+        });
+        return true;
+    }
+});
+
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
@@ -113,13 +124,9 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === "gigasnap") {
-        // We can't easily open the popup, so we just trigger a message
-        // Usually, for GIGASNAP we want it in the clipboard.
-        // We'll use a script to gather and copy.
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                // This is a simplified version of GIGASNAP for the context menu
                 const megasnapshot = {
                     metadata: { timestamp: new Date().toISOString(), url: window.location.href, title: document.title },
                     system: { viewport: `${window.innerWidth}x${window.innerHeight}` },
@@ -137,26 +144,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             }
         });
     } else if (info.menuItemId === "annotator") {
-        // Trigger annotator logic from popup script (injecting it)
-        // Since the code is in popup.js, we have to duplicate or use a message.
-        // For now, let's just alert the instruction or inject a minimal version.
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
                 alert("Open the Dev Vault popup and click 'AI Task Annotator' to begin!");
             }
         });
-    }
-});
-
-// Clear storage errors (called from popup) ────────────────────────
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'CLEAR_STORAGE_ERRORS') {
-        chrome.storage.local.set({ extension_errors: [] }, () => {
-            lastErrorCount = 0;
-            chrome.action.setBadgeText({ text: '' });
-            sendResponse({ ok: true });
-        });
-        return true;
     }
 });
