@@ -1145,28 +1145,65 @@ Please use this mapping to help build the feature.
                 target: { tabId: tab.id },
                 func: () => {
                     const cleanDomForTokens = (docEl) => {
-                        let cloned = docEl.cloneNode(true);
-                        // 1. Remove comments
-                        const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
-                        let comment;
-                        while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
-                        
-                        // 2. Remove bloat elements
-                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
-                        removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
-                        
-                        // 3. Strip non-essential attributes
-                        const allElements = cloned.querySelectorAll('*');
-                        allElements.forEach(el => {
-                            const attrs = el.attributes;
-                            for (let i = attrs.length - 1; i >= 0; i--) {
-                                const n = attrs[i].name;
-                                if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
-                            }
-                            // Collapse empty divs/spans with no attrs
-                            if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
-                        });
-                        return cloned.outerHTML;
+                        const traverse = (node) => {
+                            let cloned = node.cloneNode(true);
+                            
+                            // 1. Remove comments
+                            const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
+                            let comment;
+                            while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
+                            
+                            // 2. Handle Shadow DOM recursion (on original node, not clone)
+                            const allOriginal = node.querySelectorAll('*');
+                            const allCloned = cloned.querySelectorAll('*');
+                            allOriginal.forEach((orig, i) => {
+                                if (orig.shadowRoot) {
+                                    const shadowContent = traverse(orig.shadowRoot);
+                                    const wrapper = document.createElement('shadow-root');
+                                    wrapper.innerHTML = shadowContent;
+                                    if (allCloned[i]) allCloned[i].appendChild(wrapper);
+                                }
+                            });
+
+                            // 3. Remove bloat elements
+                            const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
+                            removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                            
+                            // 4. Refine SVGs (Keep tag for context, strip path data)
+                            cloned.querySelectorAll('svg').forEach(s => { s.innerHTML = '<!-- [SVG CONTENT STRIPPED] -->'; });
+
+                            // 5. Strip non-essential attributes
+                            const allElements = cloned.querySelectorAll('*');
+                            allElements.forEach(el => {
+                                const attrs = el.attributes;
+                                for (let i = attrs.length - 1; i >= 0; i--) {
+                                    const n = attrs[i].name;
+                                    if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
+                                }
+                                // Collapse empty divs/spans with no attrs
+                                if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
+                            });
+                            return cloned.outerHTML;
+                        };
+                        return traverse(docEl);
+                    };
+
+                    const getRawDom = (docEl) => {
+                        const traverseRaw = (node) => {
+                            let cloned = node.cloneNode(true);
+                            const allOriginal = node.querySelectorAll('*');
+                            const allCloned = cloned.querySelectorAll('*');
+                            allOriginal.forEach((orig, i) => {
+                                if (orig.shadowRoot) {
+                                    const shadowContent = traverseRaw(orig.shadowRoot);
+                                    const wrapper = document.createElement('shadow-root');
+                                    wrapper.innerHTML = shadowContent;
+                                    if (allCloned[i]) allCloned[i].appendChild(wrapper);
+                                }
+                            });
+                            return cloned.outerHTML;
+                        };
+                        return traverseRaw(docEl);
                     };
 
                     const detectStack = () => {
@@ -1195,7 +1232,11 @@ Please use this mapping to help build the feature.
                             ttfb: t.responseStart - t.navigationStart,
                             transferSize: nav.transferSize,
                             decodedBodySize: nav.decodedBodySize,
-                            protocol: nav.nextHopProtocol
+                            protocol: nav.nextHopProtocol,
+                            memory: window.performance.memory ? {
+                                limit: Math.round(window.performance.memory.jsHeapSizeLimit / 1048576) + 'MB',
+                                used: Math.round(window.performance.memory.usedJSHeapSize / 1048576) + 'MB'
+                            } : 'N/A'
                         };
                     };
 
@@ -1225,7 +1266,7 @@ Please use this mapping to help build the feature.
                         sessionStorage: Object.assign({}, window.sessionStorage),
                         cookies: document.cookie,
                         clean_dom: cleanDomForTokens(document.documentElement),
-                        raw_dom: document.documentElement.outerHTML,
+                        raw_dom: getRawDom(document.documentElement),
                         stack: detectStack(),
                         performance: getPerformance(),
                         network_history: window.__DEV_VAULT_NET_LOG || [],
