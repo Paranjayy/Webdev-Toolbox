@@ -1,0 +1,1058 @@
+document.addEventListener('DOMContentLoaded', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    // ── Tab switching ────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+            if (btn.dataset.tab === 'storage') renderStorage();
+            if (btn.dataset.tab === 'errors') renderErrors();
+            if (btn.dataset.tab === 'sentinel') renderSentinelErrors();
+        });
+    });
+
+    // Auto-switch to errors tab if there are any errors
+    async function checkAutoSwitch() {
+        const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
+        if (domErrors.length + storageErrors.length > 0) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector('[data-tab="errors"]').classList.add('active');
+            document.getElementById('tab-errors').classList.add('active');
+            renderErrors();
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    function escHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function copyToClipboard(text) {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        console.log('Copied to clipboard.');
+    }
+
+    async function getDomErrors() {
+        if (!tab || tab.url?.startsWith('chrome://')) return [];
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => window.__DEV_VAULT_ERRORS || []
+            });
+            return results?.[0]?.result || [];
+        } catch { return []; }
+    }
+
+    function getStorageErrors() {
+        return new Promise(resolve => {
+            chrome.storage.local.get(['extension_errors'], res => {
+                resolve(Array.isArray(res.extension_errors) ? res.extension_errors : []);
+            });
+        });
+    }
+
+    // ── Render errors ─────────────────────────────────────────────────────
+    async function renderErrors() {
+        const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
+        const total = domErrors.length + storageErrors.length;        
+        document.getElementById('error-count').textContent = total;
+        document.getElementById('error-count-badge').textContent = total;
+
+        const errConsole = document.getElementById('error-console');
+        const noErrors = document.getElementById('no-errors');
+
+        if (total === 0) {
+            errConsole.innerHTML = '';
+            errConsole.style.display = 'none';
+            noErrors.style.display = 'block';
+            return;
+        }
+
+        noErrors.style.display = 'none';
+        errConsole.style.display = 'block';
+
+        let html = '';
+        if (domErrors.length > 0) {
+            html += `<div class="err-section-label">📍 Live DOM Errors (${domErrors.length})</div>`;
+            domErrors.slice(-20).reverse().forEach(e => {
+                html += `<div class="err-entry">${escHtml(typeof e === 'string' ? e : JSON.stringify(e))}</div>`;
+            });
+        }
+        if (storageErrors.length > 0) {
+            html += `<div class="err-section-label" style="margin-top:${domErrors.length ? 0 : -1}px">💾 SocialHoardr Logged (${storageErrors.length})</div>`;
+            storageErrors.slice(-40).reverse().forEach(e => {
+                const src = String(e.source || 'unknown');
+                const msg = String(e.message || '');
+                const ts = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '';
+                const colors = { youtube: '#f87171', twitter: '#60a5fa', instagram: '#f472b6', instagram_posts: '#f472b6', reddit: '#fb923c', twitch: '#a78bfa', github: '#6ee7b7' };
+                const clr = Object.entries(colors).find(([k]) => src.includes(k))?.[1] || '#94a3b8';
+                html += `<div class="err-entry"><span style="color:${clr};font-weight:700">[${src}]</span> <span style="color:#475569;font-size:0.65rem">${ts}</span><br>${escHtml(msg)}</div>`;
+            });
+        }
+        errConsole.innerHTML = html;
+    }
+
+    // ── Sentinel errors (Boot.dev Sentinel prefix) ─────────────────────────
+    async function getSentinelErrors() {
+        if (!tab || tab.url?.startsWith('chrome://')) return [];
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => (window.__DEV_VAULT_ERRORS || []).filter(e => String(e).includes('[Sentinel]'))
+            });
+            return results?.[0]?.result || [];
+        } catch { return []; }
+    }
+
+    async function renderSentinelErrors() {
+        const errors = await getSentinelErrors();
+        const n = errors.length;
+        const sentinelCount = document.getElementById('sentinel-count');
+        const sentinelCountBadge = document.getElementById('sentinel-count-badge');
+        const sentinelConsole = document.getElementById('sentinel-console');
+        const noSentinel = document.getElementById('no-sentinel');
+        if (sentinelCount) sentinelCount.textContent = n;
+        if (sentinelCountBadge) sentinelCountBadge.textContent = `${n} error${n !== 1 ? 's' : ''}`;
+
+        if (n === 0) {
+            sentinelConsole.innerHTML = '';
+            noSentinel.style.display = 'block';
+            return;
+        }
+        noSentinel.style.display = 'none';
+        sentinelConsole.innerHTML = errors.slice(-30).reverse().map(e => {
+            const text = typeof e === 'string' ? e : JSON.stringify(e);
+            // separate timestamp from message
+            const m = text.match(/^(\[.+?\])\s*(.*)$/);
+            const ts = m ? m[1] : '';
+            const msg = m ? m[2] : text;
+            return `<div class="sentinel-err-entry"><span style="color:#6b7280;font-size:0.65rem">${escHtml(ts)} </span><span class="sentinel-label">${escHtml(msg.replace('[Sentinel] ', ''))}</span></div>`;
+        }).join('');
+    }
+
+    // ── Render storage ────────────────────────────────────────────────────
+    function renderStorage() {
+        const grid = document.getElementById('storage-grid');
+        grid.innerHTML = '<div class="section-label" style="margin-top:0">Loading...</div>';
+        chrome.storage.local.get(null, (all) => {
+            const SH_KEYS = ['tweets','instagram_posts','instagram_profiles','youtube_videos','reddit_posts','twitch_live','github_items','twitter_trends','captured_texts','live_sessions','extension_errors'];
+            const SENTINEL_KEYS = ['history', 'latestScrape'];
+            let html = '<div class="section-label">Boot.dev Sentinel</div>';
+            SENTINEL_KEYS.forEach(key => {
+                const val = all[key];
+                let count = 0;
+                let label = '';
+                if (Array.isArray(val)) {
+                    count = val.length;
+                    label = `${count} lessons`;
+                } else if (val && typeof val === 'object') {
+                    count = 1;
+                    label = val.lesson?.title ? `Latest: "${val.lesson.title.slice(0, 28)}"` : '1 item';
+                }
+                const color = count === 0 ? '#475569' : '#E5AE3C';
+                html += `<div class="storage-item"><span class="storage-key">${key}</span><span class="storage-count" style="color:${color}">${label || count + ' items'}</span></div>`;
+            });
+            html += '<div class="section-label" style="margin-top: 12px">SocialHoardr</div>';
+            SH_KEYS.forEach(key => {
+                const val = all[key];
+                let count = 0;
+                if (Array.isArray(val)) count = val.length;
+                else if (val && typeof val === 'object') count = Object.keys(val).length;
+                const color = count === 0 ? '#475569' : count > 1000 ? '#f87171' : count > 200 ? '#fbbf24' : '#6ee7b7';
+                html += `<div class="storage-item"><span class="storage-key">${key}</span><span class="storage-count" style="color:${color}">${count} items</span></div>`;
+            });
+            // Time & opens keys
+            const timeKeys = Object.keys(all).filter(k => k.startsWith('time_') || k.startsWith('opens_'));
+            if (timeKeys.length) {
+                html += `<div class="section-label" style="margin-top:12px">Daily Sessions (${timeKeys.length} days)</div>`;
+                timeKeys.slice(-3).reverse().forEach(k => {
+                    const v = all[k];
+                    const summary = Object.entries(v || {}).map(([p, n]) => `${p}:${n}`).join(' ');
+                    html += `<div class="storage-item"><span class="storage-key" style="font-size:0.72rem">${k.replace('time_','⏱ ').replace('opens_','🚀 ')}</span><span class="storage-count" style="font-size:0.65rem;color:#94a3b8">${summary}</span></div>`;
+                });
+            }
+            grid.innerHTML = html || '<div class="empty-state">No SocialHoardr data found.</div>';
+        });
+    }
+
+    // ── Extension cards ───────────────────────────────────────────────────
+    const list = document.getElementById('ext-list');
+    chrome.management.getAll((extensions) => {
+        const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'Antigravity Dev Vault');
+        if (devExts.length === 0) {
+            list.innerHTML = `<div class="empty-state"><span>📭</span>No unpacked extensions found.</div>`;
+            return;
+        }
+        devExts.forEach(ext => {
+            const card = document.createElement('div');
+            card.className = 'ext-card';
+            const isEnabled = ext.enabled;
+            const isSH = ext.name.toLowerCase().includes('social') || ext.name.toLowerCase().includes('hoardr');
+            card.innerHTML = `
+                <div class="ext-header">
+                    <div style="min-width:0">
+                        <div class="ext-name">${ext.name}${isSH ? ' 🗄️' : ''}</div>
+                        <div class="ext-sub">ID: ${ext.id}</div>
+                    </div>
+                    <div class="${isEnabled ? 'status-badge' : 'status-badge disabled'}">${isEnabled ? 'ACTIVE' : 'DISABLED'}</div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" id="reload-${ext.id}">Reload &amp; Refresh Tab</button>
+                    <button class="btn btn-secondary" id="toggle-${ext.id}">${isEnabled ? 'Disable' : 'Enable'}</button>
+                </div>
+            `;
+            list.appendChild(card);
+
+            document.getElementById(`reload-${ext.id}`).addEventListener('click', () => {
+                const btn = document.getElementById(`reload-${ext.id}`);
+                btn.textContent = 'Reloading…';
+                btn.disabled = true;
+                chrome.runtime.sendMessage({ action: 'RELOAD_EXT_AND_TAB', id: ext.id }, () => {
+                    setTimeout(() => window.close(), 350);
+                });
+            });
+            document.getElementById(`toggle-${ext.id}`).addEventListener('click', () => {
+                chrome.management.setEnabled(ext.id, !isEnabled, () => location.reload());
+            });
+        });
+    });
+
+    // ── Clear handlers ────────────────────────────────────────────────────
+    document.getElementById('clear-dom-errors').addEventListener('click', async () => {
+        if (tab && !tab.url?.startsWith('chrome://')) {
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => { window.__DEV_VAULT_ERRORS = []; }
+            }).catch(() => {});
+        }
+        renderErrors();
+    });
+
+    document.getElementById('clear-storage-errors').addEventListener('click', () => {
+        // Use background so badge clears too
+        chrome.runtime.sendMessage({ action: 'CLEAR_STORAGE_ERRORS' }, renderErrors);
+    });
+
+    document.getElementById('refresh-errors').addEventListener('click', renderErrors);
+
+    // ── Sentinel controls ──────────────────────────────────────────────────
+    const clearSentinelBtn = document.getElementById('clear-sentinel-errors');
+    if (clearSentinelBtn) {
+        clearSentinelBtn.addEventListener('click', async () => {
+            if (tab && !tab.url?.startsWith('chrome://')) {
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => { window.__DEV_VAULT_ERRORS = (window.__DEV_VAULT_ERRORS || []).filter(e => !String(e).includes('[Sentinel]')); }
+                }).catch(() => {});
+            }
+            renderSentinelErrors();
+        });
+    }
+    const refreshSentinelBtn = document.getElementById('refresh-sentinel');
+    if (refreshSentinelBtn) refreshSentinelBtn.addEventListener('click', renderSentinelErrors);
+
+    // "Open Sentinel Panel" — sends a message to the boot.dev tab content script
+    const openSentinelBtn = document.getElementById('open-sentinel-panel');
+    if (openSentinelBtn) {
+        openSentinelBtn.addEventListener('click', () => {
+            if (!tab || !tab.url?.includes('boot.dev')) {
+                alert('Navigate to boot.dev first!');
+                return;
+            }
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const host = document.getElementById('sentinel-host');
+                    if (!host) return;
+                    const shadow = host.shadowRoot;
+                    const fab = shadow?.getElementById('fab');
+                    const panel = shadow?.getElementById('panel');
+                    if (panel?.classList.contains('hidden')) {
+                        fab?.classList.add('hidden');
+                        panel?.classList.remove('hidden');
+                    }
+                }
+            }).catch(() => {});
+            window.close();
+        });
+    }
+
+    // ── Toolkit controls ───────────────────────────────────────────────────
+    const btnCleanDom = document.getElementById('btn-copy-dom');
+    if (btnCleanDom) {
+        btnCleanDom.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            const originalText = btnCleanDom.textContent;
+            btnCleanDom.textContent = 'Copying...';
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => {
+                        let cloned = document.documentElement.cloneNode(true);
+                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head'];
+                        removeSelectors.forEach(sel => {
+                            cloned.querySelectorAll(sel).forEach(el => el.remove());
+                        });
+                        const allElements = cloned.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            const attrs = el.attributes;
+                            for (let i = attrs.length - 1; i >= 0; i--) {
+                                const name = attrs[i].name;
+                                if (name.startsWith('data-') || name.startsWith('aria-') || name === 'class' || name === 'id' || name === 'href' || name === 'src') {
+                                    // keep
+                                } else {
+                                    el.removeAttribute(name);
+                                }
+                            }
+                        });
+                        const textData = cloned.outerHTML;
+                        const el = document.createElement('textarea');
+                        el.value = textData;
+                        document.body.appendChild(el);
+                        el.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(el);
+                        console.log('DOM Copied! (Simplified for LLMs)');
+                    }
+                });
+                btnCleanDom.textContent = 'Copied!';
+            } catch (err) {
+                console.error(err);
+                btnCleanDom.textContent = 'Error!';
+            }
+            setTimeout(() => { btnCleanDom.textContent = originalText; }, 2000);
+        });
+    }
+
+    const btnInjectNetwork = document.getElementById('btn-inject-network');
+    if (btnInjectNetwork) {
+        btnInjectNetwork.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                 target: { tabId: tab.id, allFrames: true },
+                 world: 'MAIN',
+                 func: () => {
+                     if (window.__DEV_TOOLKIT_HOOKED) return;
+                     window.__DEV_TOOLKIT_HOOKED = true;
+
+                     const origFetch = window.fetch;
+                     window.fetch = async function(...args) {
+                         const start = performance.now();
+                         try {
+                             const response = await origFetch.apply(this, args);
+                             const clone = response.clone();
+                             const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || 'unknown');
+                             console.groupCollapsed(`%c[Network Fetch Hook] %c${url}`, 'color: #38bdf8; font-weight: bold;', 'color: #94a3b8');
+                             console.log('Request args:', args);
+                             clone.text().then(text => {
+                                 let data = text;
+                                 try { data = JSON.parse(text); } catch(e){}
+                                 console.log('Response:', data);
+                             }).catch(() => {});
+                             console.log(`Duration: ${(performance.now() - start).toFixed(1)}ms`);
+                             console.groupEnd();
+                             return response;
+                         } catch (err) {
+                             console.error('[Network Fetch Hook] Error:', err);
+                             throw err;
+                         }
+                     };
+
+                     const XHR = XMLHttpRequest.prototype;
+                     const origOpen = XHR.open;
+                     const origSend = XHR.send;
+                     XHR.open = function(method, url) {
+                         this._url = url;
+                         this._method = method;
+                         return origOpen.apply(this, arguments);
+                     };
+                     XHR.send = function(body) {
+                         this.addEventListener('load', function() {
+                             console.groupCollapsed(`%c[Network XHR Hook] %c${this._url}`, 'color: #f472b6; font-weight: bold;', 'color: #94a3b8');
+                             console.log('Method:', this._method, 'Body:', body);
+                             let res = this.responseText;
+                             try { res = JSON.parse(this.responseText); } catch(e){}
+                             console.log('Response:', res);
+                             console.groupEnd();
+                         });
+                         return origSend.apply(this, arguments);
+                     };
+                     console.log("%c🚀 Network Interceptor Injected successfully! Check the console.", "color: #10b981; font-weight: bold; font-size: 14px;");
+                     alert("Reverse Engineering Toolkit: Network interceptor active! Open devtools console to see captured events.");
+                 }
+            });
+            window.close();
+        });
+    }
+
+    const btnInjectConsole = document.getElementById('btn-inject-console');
+    if (btnInjectConsole) {
+        btnInjectConsole.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id, allFrames: true },
+                world: 'MAIN',
+                func: () => {
+                    if (window.__DEV_CONSOLE_HOOKED) return;
+                    window.__DEV_CONSOLE_HOOKED = true;
+                    const logTypes = ['log', 'warn', 'error', 'info', 'debug'];
+                    logTypes.forEach(type => {
+                        const original = console[type];
+                        console[type] = (...args) => {
+                            const icon = { log: '📝', warn: '⚠️', error: '❌', info: 'ℹ️', debug: '🐛' }[type];
+                            original.apply(console, [`%c${icon} [VIBE CONSOLE]`, 'font-weight:bold; color:#6366f1; background:#1e1b4b; padding:2px 4px; border-radius:3px;', ...args]);
+                        };
+                    });
+                    console.log('Console Hooked! Logs are now tagged for easier vibecoding filtering.');
+                    alert('Console Hooked! Check DevTools for styled [VIBE CONSOLE] output.');
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnVibeSnapshot = document.getElementById('btn-vibe-snapshot');
+    if (btnVibeSnapshot) {
+        btnVibeSnapshot.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            const originalText = btnVibeSnapshot.textContent;
+            btnVibeSnapshot.textContent = 'Snapping...';
+            try {
+                const results = await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => {
+                        // 1. Get Clean DOM (logic from before)
+                        let cloned = document.documentElement.cloneNode(true);
+                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head'];
+                        removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                        const allElements = cloned.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            const attrs = el.attributes;
+                            for (let i = attrs.length - 1; i >= 0; i--) {
+                                const n = attrs[i].name;
+                                if (!/^(data-|aria-|class|id|href|src|value|type|name)/.test(n)) el.removeAttribute(n);
+                            }
+                        });
+                        const cleanDom = cloned.outerHTML;
+
+                        // 2. Get Storage Snapshots
+                        const localS = JSON.stringify(window.localStorage, null, 2);
+                        const sessionS = JSON.stringify(window.sessionStorage, null, 2);
+                        
+                        // 3. Build Markdown
+                        return `
+# VIBE SNAPSHOT: ${document.title}
+- URL: ${window.location.href}
+- Time: ${new Date().toLocaleString()}
+
+## Local Storage
+\`\`\`json
+${localS}
+\`\`\`
+
+## Clean DOM
+\`\`\`html
+${cleanDom}
+\`\`\`
+`.trim();
+                    }
+                });
+
+                const mdContent = results?.[0]?.result;
+                const el = document.createElement('textarea');
+                el.value = mdContent;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+
+                btnVibeSnapshot.textContent = 'Copied MD!';
+            } catch (err) {
+                console.error(err);
+                btnVibeSnapshot.textContent = 'Error!';
+            }
+            setTimeout(() => { btnVibeSnapshot.textContent = originalText; }, 2000);
+        });
+    }
+
+    const btnToggleOutline = document.getElementById('btn-toggle-outline');
+    if (btnToggleOutline) {
+        btnToggleOutline.addEventListener('click', async () => {
+             if (!tab || tab.url?.startsWith('chrome://')) return;
+             await chrome.scripting.executeScript({
+                 target: { tabId: tab.id },
+                 func: () => {
+                     let style = document.getElementById('__vibe_outliner_style');
+                     if (style) {
+                         style.remove();
+                         return;
+                     }
+                     style = document.createElement('style');
+                     style.id = '__vibe_outliner_style';
+                     style.textContent = `
+                        a, button, [role="button"], input, select, textarea {
+                            outline: 2px dashed #6366f1 !important;
+                            outline-offset: 2px !important;
+                            background-color: rgba(99, 102, 241, 0.05) !important;
+                        }
+                     `;
+                     document.head.appendChild(style);
+                 }
+             });
+             window.close();
+        });
+    }
+
+    const btnHuntJson = document.getElementById('btn-hunt-json');
+    if (btnHuntJson) {
+        btnHuntJson.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            const res = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    let results = [];
+                    // 1. Hunt in scripts
+                    document.querySelectorAll('script[type="application/json"], script[type="application/ld+json"]').forEach(s => {
+                        try {
+                            const data = JSON.parse(s.textContent);
+                            results.push({ source: 'Script Tag', data });
+                        } catch(e) {}
+                    });
+                    // 2. Hunt in window (common framework vars)
+                    ['__NEXT_DATA__', '__PRELOADED_STATE__', 'ytInitialData', 'initialState', '__INITIAL_STATE__'].forEach(key => {
+                        if (window[key]) results.push({ source: `window.${key}`, data: window[key] });
+                    });
+                    return results;
+                }
+            });
+            const data = res?.[0]?.result || [];
+            if (data.length === 0) {
+                alert('No obvious JSON blobs found.');
+            } else {
+                console.log('JSON Hunter found:', data);
+                const el = document.createElement('textarea');
+                el.value = JSON.stringify(data, null, 2);
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                alert(`Found ${data.length} JSON blobs! Copied to clipboard and logged to console.`);
+            }
+        });
+    }
+
+    const btnFreeze = document.getElementById('btn-freeze-page');
+    if (btnFreeze) {
+        btnFreeze.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    console.log('%c❄️ FREEZING PAGE IN 3 SECONDS...', 'color: #ef4444; font-weight: bold; font-size: 16px;');
+                    setTimeout(() => {
+                        debugger;
+                    }, 3000);
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnExtractTheme = document.getElementById('btn-extract-theme');
+    if (btnExtractTheme) {
+        btnExtractTheme.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            const res = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const vars = {};
+                    const computed = getComputedStyle(document.documentElement);
+                    // Extract common CSS variables
+                    const patterns = ['color', 'bg', 'background', 'primary', 'secondary', 'font-family'];
+                    // Note: accessing all variables is hard, but we can try to find them in stylesheets
+                    try {
+                        for (let i = 0 ; i < document.styleSheets.length ; i++) {
+                            const sheet = document.styleSheets[i];
+                            const rules = sheet.cssRules || sheet.rules;
+                            for (let j = 0 ; j < rules.length ; j++) {
+                                const rule = rules[j];
+                                if (rule.style) {
+                                    for (let k = 0 ; k < rule.style.length ; k++) {
+                                        const name = rule.style[k];
+                                        if (name.startsWith('--')) {
+                                            vars[name] = computed.getPropertyValue(name).trim();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                    return vars;
+                }
+            });
+            const vars = res?.[0]?.result || {};
+            const el = document.createElement('textarea');
+            el.value = JSON.stringify(vars, null, 2);
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert(`Extracted ${Object.keys(vars).length} CSS variables to clipboard!`);
+        });
+    }
+
+    const btnPickSelector = document.getElementById('btn-pick-selector');
+    if (btnPickSelector) {
+        btnPickSelector.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                   if (window.__SELECTOR_PICKER_ACTIVE) return;
+                   window.__SELECTOR_PICKER_ACTIVE = true;
+
+                   const overlay = document.createElement('div');
+                   overlay.id = '__selector_picker_overlay';
+                   overlay.style = 'position:fixed; top:10px; right:10px; background:#6366f1; color:white; padding:8px 12px; border-radius:8px; z-index:999999; font-family:sans-serif; font-size:12px; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                   overlay.textContent = 'Selector Picker: Hover over elements, Click to Copy';
+                   document.body.appendChild(overlay);
+
+                   const highlight = document.createElement('div');
+                   highlight.style = 'position:fixed; background:rgba(99,102,241,0.2); border:2px solid #6366f1; z-index:999998; pointer-events:none; transition: all 0.1s;';
+                   document.body.appendChild(highlight);
+
+                   const getSelector = (el) => {
+                       if (el.id) return `#${el.id}`;
+                       if (el === document.body) return 'body';
+                       let path = [];
+                       while (el.parentElement) {
+                           let sibling = el;
+                           let nth = 1;
+                           while (sibling.previousElementSibling) {
+                               sibling = sibling.previousElementSibling;
+                               if (sibling.tagName === el.tagName) nth++;
+                           }
+                           path.unshift(`${el.tagName.toLowerCase()}:nth-of-type(${nth})`);
+                           el = el.parentElement;
+                       }
+                       return path.join(' > ');
+                   };
+
+                   const onMouseOver = (e) => {
+                       const rect = e.target.getBoundingClientRect();
+                       highlight.style.top = `${rect.top}px`;
+                       highlight.style.left = `${rect.left}px`;
+                       highlight.style.width = `${rect.width}px`;
+                       highlight.style.height = `${rect.height}px`;
+                       overlay.textContent = getSelector(e.target);
+                   };
+
+                   const onClick = (e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       const sel = getSelector(e.target);
+                       const tmp = document.createElement('textarea');
+                       tmp.value = sel;
+                       document.body.appendChild(tmp);
+                       tmp.select();
+                       document.execCommand('copy');
+                       document.body.removeChild(tmp);
+                       
+                       cleanup();
+                       alert(`Copied: ${sel}`);
+                   };
+
+                   const cleanup = () => {
+                       document.removeEventListener('mouseover', onMouseOver);
+                       document.removeEventListener('click', onClick, true);
+                       overlay.remove();
+                       highlight.remove();
+                       window.__SELECTOR_PICKER_ACTIVE = false;
+                   };
+
+                   document.addEventListener('mouseover', onMouseOver);
+                   document.addEventListener('click', onClick, true);
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnAutoScroll = document.getElementById('btn-auto-scroll');
+    if (btnAutoScroll) {
+        btnAutoScroll.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnToggleVibe = document.getElementById('btn-toggle-vibe');
+    if (btnToggleVibe) {
+        btnToggleVibe.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    let style = document.getElementById('__cyber_vibe_style');
+                    if (style) {
+                        style.remove();
+                        document.body.style.filter = 'none';
+                        return;
+                    }
+                    style = document.createElement('style');
+                    style.id = '__cyber_vibe_style';
+                    style.textContent = `
+                        * { 
+                            background-color: #030712 !important; 
+                            color: #d946ef !important; 
+                            border-color: #d946ef !important; 
+                            font-family: 'SF Mono', monospace !important;
+                            text-shadow: 0 0 5px #d946ef !important;
+                        }
+                        a, button { color: #22d3ee !important; text-shadow: 0 0 5px #22d3ee !important; }
+                        img, video, iframe { filter: grayscale(1) invert(1) brightness(0.6) sepia(1) hue-rotate(270deg) !important; opacity: 0.5; }
+                        div, section, nav { border: 1px solid #d946ef33 !important; }
+                    `;
+                    document.head.appendChild(style);
+                    document.body.style.filter = 'contrast(1.2) brightness(0.8)';
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnStartAnnotator = document.getElementById('btn-start-annotator');
+    if (btnStartAnnotator) {
+        btnStartAnnotator.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                   if (window.__ANNOTATOR_ACTIVE) return;
+                   window.__ANNOTATOR_ACTIVE = true;
+
+                   const selections = [];
+
+                   // 1. Create Floating UI
+                   const container = document.createElement('div');
+                   container.id = '__vibe_annotator_ui';
+                   container.style = `
+                       position: fixed; top: 10px; right: 10px; width: 320px; max-height: 80vh;
+                       background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+                       z-index: 9999999; color: white; display: flex; flex-direction: column;
+                       font-family: 'Outfit', sans-serif; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+                       overflow: hidden;
+                   `;
+                   container.innerHTML = `
+                       <div style="padding:12px; background:#1e293b; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+                           <span style="font-weight:700; font-size:13px; color:#6366f1;">AI TASK ANNOTATOR</span>
+                           <button id="__annotator_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
+                       </div>
+                       <div id="__annotator_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
+                           <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>
+                       </div>
+                       <div style="padding:12px; border-top:1px solid #334155; background:#0f172a;">
+                           <button id="__annotator_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
+                       </div>
+                   `;
+                   document.body.appendChild(container);
+
+                   const list = container.querySelector('#__annotator_list');
+                   const copyBtn = container.querySelector('#__annotator_copy');
+                   const closeBtn = container.querySelector('#__annotator_close');
+
+                   const highlight = document.createElement('div');
+                   highlight.style = 'position:fixed; background:rgba(99,102,241,0.1); border:2px dashed #6366f1; z-index:9999998; pointer-events:none; transition: all 0.05s;';
+                   document.body.appendChild(highlight);
+
+                   const getSelector = (el) => {
+                       if (el.id) return `#${el.id}`;
+                       let path = [];
+                       let curr = el;
+                       while (curr && curr.parentElement) {
+                           let nth = 1, sib = curr;
+                           while (sib.previousElementSibling) { sib = sib.previousElementSibling; if (sib.tagName === curr.tagName) nth++; }
+                           path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
+                           curr = curr.parentElement;
+                           if (curr.id) { path.unshift(`#${curr.id}`); break; }
+                       }
+                       return path.join(' > ');
+                   };
+
+                   const refreshList = () => {
+                       if (selections.length === 0) {
+                           list.innerHTML = '<div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>';
+                           return;
+                       }
+                       list.innerHTML = selections.map((s, i) => `
+                           <div style="background:#1e293b; padding:8px; border-radius:6px; border:1px solid #334155;">
+                               <div style="font-family:monospace; font-size:10px; color:#818cf8; margin-bottom:4px; word-break:break-all;">${s.selector}</div>
+                               <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;"></textarea>
+                           </div>
+                       `).join('');
+                       list.querySelectorAll('textarea').forEach(tx => {
+                           tx.addEventListener('input', (e) => { selections[e.target.dataset.idx].comment = e.target.value; });
+                       });
+                   };
+
+                   const onMouseOver = (e) => {
+                       if (container.contains(e.target)) return;
+                       const rect = e.target.getBoundingClientRect();
+                       highlight.style.top = `${rect.top}px`;
+                       highlight.style.left = `${rect.left}px`;
+                       highlight.style.width = `${rect.width}px`;
+                       highlight.style.height = `${rect.height}px`;
+                   };
+
+                   const onClick = (e) => {
+                       if (container.contains(e.target)) return;
+                       e.preventDefault(); e.stopPropagation();
+                       const sel = getSelector(e.target);
+                       selections.push({ selector: sel, comment: '' });
+                       refreshList();
+                   };
+
+                   const cleanup = () => {
+                       document.removeEventListener('mouseover', onMouseOver);
+                       document.removeEventListener('click', onClick, true);
+                       container.remove();
+                       highlight.remove();
+                       window.__ANNOTATOR_ACTIVE = false;
+                   };
+
+                   closeBtn.onclick = cleanup;
+
+                   copyBtn.onclick = () => {
+                       const prompt = `
+### AI TASK ANNOTATIONS
+I have identified the following elements on this page for specific tasks:
+
+${selections.map(s => `- **ELEMENT**: \`${s.selector}\`\n  **TASK**: ${s.comment || 'No specific task described.'}`).join('\n\n')}
+
+Please use this mapping to help build the feature.
+                       `.trim();
+                       const tmp = document.createElement('textarea');
+                       tmp.value = prompt;
+                       document.body.appendChild(tmp);
+                       tmp.select();
+                       document.execCommand('copy');
+                       document.body.removeChild(tmp);
+                       alert('AI Task Annotations copied to clipboard!');
+                       cleanup();
+                   };
+
+                   document.addEventListener('mouseover', onMouseOver, { passive: true });
+                   document.addEventListener('click', onClick, true);
+                }
+            });
+            window.close();
+        });
+    }
+
+    const btnInjectNetwork = document.getElementById('btn-inject-network');
+    if (btnInjectNetwork) {
+        btnInjectNetwork.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                 target: { tabId: tab.id, allFrames: true },
+                 world: 'MAIN',
+                 func: () => {
+                     if (window.__DEV_TOOLKIT_HOOKED) return;
+                     window.__DEV_TOOLKIT_HOOKED = true;
+                     window.__DEV_VAULT_NET_LOG = []; // Cache for GIGASNAP
+
+                     const logNet = (type, url, method, reqBody, resData) => {
+                        window.__DEV_VAULT_NET_LOG.push({
+                            type, url, method, reqBody, resData,
+                            timestamp: new Date().toISOString()
+                        });
+                        if (window.__DEV_VAULT_NET_LOG.length > 50) window.__DEV_VAULT_NET_LOG.shift();
+                     };
+
+                     const origFetch = window.fetch;
+                     window.fetch = async function(...args) {
+                         const start = performance.now();
+                         try {
+                             const response = await origFetch.apply(this, args);
+                             const clone = response.clone();
+                             const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || 'unknown');
+                             const method = args[1]?.method || 'GET';
+                             
+                             clone.text().then(text => {
+                                 let data = text;
+                                 try { data = JSON.parse(text); } catch(e){}
+                                 logNet('FETCH', url, method, args[1]?.body, data);
+                                 console.groupCollapsed(`%c[Network Fetch Hook] %c${url}`, 'color: #38bdf8; font-weight: bold;', 'color: #94a3b8');
+                                 console.log('Response:', data);
+                                 console.groupEnd();
+                             }).catch(() => {});
+                             return response;
+                         } catch (err) {
+                             throw err;
+                         }
+                     };
+
+                     const XHR = XMLHttpRequest.prototype;
+                     const origOpen = XHR.open;
+                     const origSend = XHR.send;
+                     XHR.open = function(m, u) { this._url = u; this._method = m; return origOpen.apply(this, arguments); };
+                     XHR.send = function(body) {
+                         this.addEventListener('load', function() {
+                             let res = this.responseText;
+                             try { res = JSON.parse(this.responseText); } catch(e){}
+                             logNet('XHR', this._url, this._method, body, res);
+                             console.groupCollapsed(`%c[Network XHR Hook] %c${this._url}`, 'color: #f472b6; font-weight: bold;', 'color: #94a3b8');
+                             console.log('Response:', res);
+                             console.groupEnd();
+                         });
+                         return origSend.apply(this, arguments);
+                     };
+                     console.log("%c🚀 Network Interceptor Active & Logging for GIGASNAP!", "color: #10b981; font-weight: bold;");
+                     alert("Network Interceptor Active! I am now caching requests for your next GIGASNAP.");
+                 }
+            });
+            window.close();
+        });
+    }
+
+    const btnReloadDomain = document.getElementById('btn-reload-domain');
+    if (btnReloadDomain) {
+        btnReloadDomain.addEventListener('click', async () => {
+            if (!tab) return;
+            const domain = new URL(tab.url).hostname;
+            const tabs = await chrome.tabs.query({});
+            const targetTabs = tabs.filter(t => t.url && t.url.includes(domain));
+            targetTabs.forEach(t => chrome.tabs.reload(t.id));
+            window.close();
+        });
+    }
+
+    // ── GIGASNAP (Copy All) ──────────────────────────────────────────────
+    document.getElementById('btn-gigasnap').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-gigasnap');
+        btn.textContent = 'SNAPPING EVERYTHING...';
+        try {
+            // 1. Get DOM + Storage + System info + Tech Stack + Network Log
+            const contentRes = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const cleanDomForTokens = (docEl) => {
+                        let cloned = docEl.cloneNode(true);
+                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head'];
+                        removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                        const allElements = cloned.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            const attrs = el.attributes;
+                            for (let i = attrs.length - 1; i >= 0; i--) {
+                                const n = attrs[i].name;
+                                if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
+                            }
+                        });
+                        return cloned.outerHTML;
+                    };
+
+                    const detectStack = () => {
+                        const stack = [];
+                        if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
+                        if (window.__NEXT_DATA__) stack.push('Next.js');
+                        if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
+                        if (window.jQuery) stack.push('jQuery');
+                        if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]')) stack.push('Tailwind');
+                        return stack;
+                    };
+
+                    return {
+                        url: window.location.href,
+                        title: document.title,
+                        localStorage: Object.assign({}, window.localStorage),
+                        sessionStorage: Object.assign({}, window.sessionStorage),
+                        cookies: document.cookie,
+                        clean_dom: cleanDomForTokens(document.documentElement),
+                        stack: detectStack(),
+                        network_history: window.__DEV_VAULT_NET_LOG || "[] (Hook not injected yet)",
+                        system: {
+                            userAgent: navigator.userAgent,
+                            viewport: `${window.innerWidth}x${window.innerHeight}`,
+                            language: navigator.language
+                        }
+                    };
+                }
+            });
+            const pageData = contentRes?.[0]?.result || {};
+
+            // 2. Get Chrome Local Storage
+            const chromeStorage = await new Promise(r => chrome.storage.local.get(null, r));
+
+            // 3. Get Errors
+            const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
+
+            const megasnapshot = {
+                metadata: { timestamp: new Date().toISOString(), url: pageData.url, title: pageData.title },
+                stack: pageData.stack,
+                network_activity: pageData.network_history,
+                errors: { dom: domErrors, vault_logs: storageErrors },
+                storage: { 
+                    page: { local: pageData.localStorage, session: pageData.sessionStorage }, 
+                    extension: chromeStorage,
+                    cookies: pageData.cookies 
+                },
+                system: pageData.system,
+                cleaned_dom_for_ai: pageData.clean_dom
+            };
+
+            const godPrompt = `
+I am working on this project. Here is a TOKEN-OPTIMIZED GIGASNAP:
+
+### ANALYZED CONTEXT
+- **STACK**: ${megasnapshot.stack.join(', ') || 'Unknown'}
+- **PERFORMANCE**: ${JSON.stringify(megasnapshot.performance)}
+- **SYSTEM**: ${JSON.stringify(megasnapshot.system)}
+
+### FULL SNAPSHOT (JSON)
+${JSON.stringify(megasnapshot, null, 2)}
+
+---
+Please review this state and help me.
+`.trim();
+
+            await copyToClipboard(godPrompt);
+            btn.textContent = 'GIGA-SNAPPED!';
+        } catch (e) {
+            btn.textContent = 'ERR';
+            console.error(e);
+        }
+        setTimeout(() => btn.textContent = '⚡ GIGASNAP', 2000);
+    });
+
+    document.getElementById('copy-errors').addEventListener('click', async () => {
+        const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
+        copyToClipboard(JSON.stringify({ dom: domErrors, storage: storageErrors }, null, 2));
+    });
+
+    document.getElementById('copy-storage').addEventListener('click', () => {
+        chrome.storage.local.get(null, all => {
+            copyToClipboard(JSON.stringify(all, null, 2));
+        });
+    });
+
+    // ── Boot ──────────────────────────────────────────────────────────────
+    renderErrors();
+    renderSentinelErrors();
+    checkAutoSwitch();
+    setInterval(() => { renderErrors(); renderSentinelErrors(); }, 6000);
+});

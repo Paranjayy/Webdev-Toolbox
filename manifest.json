@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Antigravity Dev Vault",
+  "version": "1.1.0",
+  "description": "Chrome Extension Reloader & Error Monitor built for the God Build.",
+  "permissions": [
+    "management",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage",
+    "notifications",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Dev Vault",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
