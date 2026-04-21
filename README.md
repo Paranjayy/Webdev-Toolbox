@@ -12,6 +12,7 @@ The ultimate toolkit for reverse engineers, web scrapers, and "vibecoding" speed
 ### ⚡ Intelligence & Extraction
 - **⚡ GIGASNAP**: The master command. Captures **URL, Stack Analysis, Performance Metrics, Storage, Cookies,** and a **Token-Optimized Clean DOM**.
 - **⚡ GIGA-RAW**: For when you need every single byte. Captures the full raw DOM state.
+- **Global Variable Hunter**: Scans the `window` object for hidden config/data objects (Next.js, YT, etc.) and includes them in snaps.
 - **External Intel**: One-click deep dives into **PageSpeed Insights** and **Wappalyzer**.
 - **AI Task Annotator**: Select UI elements, add notes, and copy a Markdown task list for your LLM.
 

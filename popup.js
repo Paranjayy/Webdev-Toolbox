@@ -1199,6 +1199,25 @@ Please use this mapping to help build the feature.
                         };
                     };
 
+                    const huntGlobalVars = () => {
+                        const globals = {};
+                        const skip = ['window', 'self', 'document', 'location', 'history', 'chrome', 'navigator', 'screen'];
+                        Object.keys(window).forEach(k => {
+                            if (skip.includes(k) || k.startsWith('__DEV_')) return;
+                            try {
+                                const val = window[k];
+                                if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length > 3) {
+                                    globals[k] = '(Object with ' + Object.keys(val).length + ' keys)';
+                                    // If it looks like a config/data object, grab some keys
+                                    if (k.toLowerCase().includes('config') || k.toLowerCase().includes('data') || k.toLowerCase().includes('initial')) {
+                                        globals[k] = val;
+                                    }
+                                }
+                            } catch(e){}
+                        });
+                        return globals;
+                    };
+
                     return {
                         url: window.location.href,
                         title: document.title,
@@ -1211,6 +1230,7 @@ Please use this mapping to help build the feature.
                         performance: getPerformance(),
                         network_history: window.__DEV_VAULT_NET_LOG || [],
                         ws_history: window.__DEV_VAULT_WS_LOG || [],
+                        global_vars: huntGlobalVars(),
                         hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
                         system: {
                             userAgent: navigator.userAgent,
@@ -1233,6 +1253,7 @@ Please use this mapping to help build the feature.
                 performance: pageData.performance,
                 network_activity: pageData.network_history,
                 websocket_activity: pageData.ws_history,
+                global_variables: pageData.global_vars,
                 hidden_fields: pageData.hidden_fields,
                 errors: { dom: domErrors, vault_logs: storageErrors },
                 storage: { 
@@ -1245,16 +1266,29 @@ Please use this mapping to help build the feature.
             };
 
             const type = isRaw ? 'RAW-GIGASNAP' : 'TOKEN-OPTIMIZED GIGASNAP';
+            const netStatus = pageData.network_history.length > 0 ? '✅ ACTIVE' : '⚠️ NOT INJECTED (Click "Inject Network Hook")';
+            const wsStatus = pageData.ws_history.length > 0 ? '✅ ACTIVE' : '⚠️ NOT INJECTED (Click "Inject WS Sniffer")';
+
             const godPrompt = `
 I am working on this project. Here is a ${type}:
 
-### ANALYZED CONTEXT
+### 🧩 ANALYZED CONTEXT
 - **STACK**: ${megasnapshot.stack.join(', ') || 'Unknown'}
 - **PERFORMANCE**: ${megasnapshot.performance.loadTime}ms (Load), ${megasnapshot.performance.ttfb}ms (TTFB)
 - **SYSTEM**: ${megasnapshot.system.viewport} | ${megasnapshot.system.userAgent.split(' ').slice(-1)}
+- **NETWORK LOG**: ${netStatus} (${pageData.network_history.length} entries)
+- **WS LOG**: ${wsStatus} (${pageData.ws_history.length} entries)
 
-### FULL SNAPSHOT (JSON)
+### 🛠️ DEBUGGING INSTRUCTIONS
+1. **Network Activity**: Review \`network_activity\` for API endpoints, payload structures, and hidden backend signals.
+2. **WebSockets**: Review \`websocket_activity\` for live stream data (useful for real-time reverse engineering).
+3. **Storage**: Check \`storage.page.local\` for auth tokens, cached preferences, or persistence logic.
+4. **Clean DOM**: The \`content.cleaned_dom_for_ai\` is token-optimized. Focus on \`data-\` and \`aria-\` attributes to understand the state management.
+
+### 📦 FULL SNAPSHOT (JSON)
+\`\`\`json
 ${JSON.stringify(megasnapshot, null, 2)}
+\`\`\`
 
 ---
 Please review this state and help me.
