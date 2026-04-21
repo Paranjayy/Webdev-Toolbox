@@ -19,7 +19,7 @@ The extension is currently a "God-Tier" Swiss Army Knife. We are shifting focus 
 
 ### 3. Advanced Interceptors (High Permission)
 - [ ] **Global Fetch/XHR Rewriter**: UI to "Mock" or "Modify" network responses on the fly.
-- [ ] **WebSocket Stream Watcher**: Monitor live data flows (essential for reverse engineering).
+- [x] **WebSocket Stream Watcher**: Monitor live data flows (Now in Toolkit).
 - [ ] **DOM Mutation Pulse**: Visual heatmap of which elements are changing the most.
 
 ### 4. Developer Quality of Life

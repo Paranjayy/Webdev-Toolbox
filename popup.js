@@ -885,6 +885,57 @@ Please use this mapping to help build the feature.
         });
     }
 
+    const btnInjectWS = document.getElementById('btn-inject-ws');
+    if (btnInjectWS) {
+        btnInjectWS.addEventListener('click', async () => {
+            if (!tab || tab.url?.startsWith('chrome://')) return;
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id, allFrames: true },
+                world: 'MAIN',
+                func: () => {
+                    if (window.__DEV_WS_HOOKED) return;
+                    window.__DEV_WS_HOOKED = true;
+                    window.__DEV_VAULT_WS_LOG = [];
+
+                    const OriginalWebSocket = window.WebSocket;
+                    window.WebSocket = function(url, protocols) {
+                        const ws = new OriginalWebSocket(url, protocols);
+                        const wsUrl = typeof url === 'string' ? url : url.href;
+
+                        const logWS = (dir, data) => {
+                            window.__DEV_VAULT_WS_LOG.push({
+                                url: wsUrl, direction: dir, data, timestamp: new Date().toISOString()
+                            });
+                            if (window.__DEV_VAULT_WS_LOG.length > 100) window.__DEV_VAULT_WS_LOG.shift();
+                        };
+
+                        ws.addEventListener('message', (e) => {
+                            logWS('INCOMING', e.data);
+                            console.groupCollapsed(`%c[WS INCOMING] %c${wsUrl}`, 'color: #a78bfa; font-weight: bold;', 'color: #94a3b8');
+                            console.log('Data:', e.data);
+                            console.groupEnd();
+                        });
+
+                        const origSend = ws.send;
+                        ws.send = function(data) {
+                            logWS('OUTGOING', data);
+                            console.groupCollapsed(`%c[WS OUTGOING] %c${wsUrl}`, 'color: #fbbf24; font-weight: bold;', 'color: #94a3b8');
+                            console.log('Data:', data);
+                            console.groupEnd();
+                            return origSend.apply(this, arguments);
+                        };
+
+                        return ws;
+                    };
+                    window.WebSocket.prototype = OriginalWebSocket.prototype;
+                    console.log("%c📡 WebSocket Sniffer Active & Logging for GIGASNAP!", "color: #a78bfa; font-weight: bold;");
+                    alert("WebSocket Sniffer Active! Caching stream data for your next GIGASNAP.");
+                }
+            });
+            window.close();
+        });
+    }
+
     const btnStartMagnifier = document.getElementById('btn-start-magnifier');
     if (btnStartMagnifier) {
         btnStartMagnifier.addEventListener('click', async () => {
@@ -1159,6 +1210,7 @@ Please use this mapping to help build the feature.
                         stack: detectStack(),
                         performance: getPerformance(),
                         network_history: window.__DEV_VAULT_NET_LOG || [],
+                        ws_history: window.__DEV_VAULT_WS_LOG || [],
                         hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
                         system: {
                             userAgent: navigator.userAgent,
@@ -1180,6 +1232,7 @@ Please use this mapping to help build the feature.
                 stack: pageData.stack,
                 performance: pageData.performance,
                 network_activity: pageData.network_history,
+                websocket_activity: pageData.ws_history,
                 hidden_fields: pageData.hidden_fields,
                 errors: { dom: domErrors, vault_logs: storageErrors },
                 storage: { 
