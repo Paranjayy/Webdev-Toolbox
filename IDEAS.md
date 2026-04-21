@@ -2,29 +2,30 @@
 
 This file tracks "The Vault" - features that require deeper permissions or higher complexity.
 
-## 🔴 Saturated Status: 75%
-The extension is currently a "God-Tier" Swiss Army Knife. Adding too much more to the UI might lead to clutter. Next phase should focus on **Background Autonomy**.
+## 🔴 Saturated Status: 65%
+The extension is currently a "God-Tier" Swiss Army Knife. We are shifting focus from simple UI tools to **Deep Intelligence** and **Cross-Tab Automation**.
 
-## 🚀 High-Impact Ideas (Permission Required)
+## 🚀 Near-Term Roadmap (Build Queue)
 
-### 1. Global Intercept Proxy (MITM)
-- Move beyond console logging and allow **rewriting** of Fetch/XHR responses in the background.
-- UI to "Force Success" on 500 errors or "Mock Data" for specific endpoints.
+### 1. GIGA-SNAP Evolution
+- [x] **GIGA-RAW Mode**: Full DOM + Storage + System info for raw debugging.
+- [x] **Token-Optimized GIGASNAP**: High-fidelity cleaned DOM for LLM context.
+- [ ] **Snap History**: Keep the last 5 snaps in a local "Snap Vault" for comparison.
 
-### 2. The Recorder (Macro Mode)
-- Record a series of clicks and typing.
-- Export as a Playwright/Puppeteer script instantly.
-- *Status: High complexity.*
+### 2. External Intelligence Integration
+- [x] **PageSpeed Insights**: One-click audit of current tab performance.
+- [x] **Wappalyzer Deep-Dive**: One-click tech stack lookup.
+- [ ] **BuiltWith API Integration**: Get even deeper infrastructure data.
 
-### 3. I18n Ghost Writer
-- Scan the page for all text nodes.
-- Use a local/API model to translate the UI on the fly without refreshing.
+### 3. Advanced Interceptors (High Permission)
+- [ ] **Global Fetch/XHR Rewriter**: UI to "Mock" or "Modify" network responses on the fly.
+- [ ] **WebSocket Stream Watcher**: Monitor live data flows (essential for reverse engineering).
+- [ ] **DOM Mutation Pulse**: Visual heatmap of which elements are changing the most.
 
-### 4. DOM Mutation "Pulse"
-- Add a visual heat-map to the page showing which elements are changing the most (good for spotting live score updates or hidden background polling).
-
-### 5. WebSocket Sniffer
-- Hook into the `WebSocket` constructor to monitor live binary/JSON stream data (essential for betting sites/crypto dashboards).
+### 4. Developer Quality of Life
+- [ ] **Error Vault**: Automatically ingest and group all errors from `chrome://extensions`.
+- [ ] **Macro Recorder (VibeScript)**: Record interactions and export as Playwright/Puppeteer.
+- [ ] **CSS Variable Live-Editor**: A specialized panel to tweak the page's theme variables in real-time.
 
 ---
 *Drafted for Antigravity Dev Vault.*

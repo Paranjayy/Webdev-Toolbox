@@ -55,11 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getDomErrors() {
-        const tab = await getActiveTab();
-        if (!tab || tab.url?.startsWith('chrome://')) return [];
+        const t = await getActiveTab();
+        if (!t || t.url?.startsWith('chrome://')) return [];
         try {
             const results = await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
+                target: { tabId: t.id },
                 func: () => window.__DEV_VAULT_ERRORS || []
             });
             return results?.[0]?.result || [];
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         if (storageErrors.length > 0) {
-            html += `<div class="err-section-label" style="margin-top:${domErrors.length ? 0 : -1}px">💾 SocialHoardr Logged (${storageErrors.length})</div>`;
+            html += `<div class="err-section-label" style="margin-top:${domErrors.length ? 0 : -1}px">💾 Vault Logged (${storageErrors.length})</div>`;
             storageErrors.slice(-40).reverse().forEach(e => {
                 const src = String(e.source || 'unknown');
                 const msg = String(e.message || '');
@@ -117,10 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Sentinel errors (Boot.dev Sentinel prefix) ─────────────────────────
     async function getSentinelErrors() {
-        if (!tab || tab.url?.startsWith('chrome://')) return [];
+        const t = await getActiveTab();
+        if (!t || t.url?.startsWith('chrome://')) return [];
         try {
             const results = await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
+                target: { tabId: t.id },
                 func: () => (window.__DEV_VAULT_ERRORS || []).filter(e => String(e).includes('[Sentinel]'))
             });
             return results?.[0]?.result || [];
@@ -241,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Clear handlers ────────────────────────────────────────────────────
-    document.getElementById('clear-dom-errors').addEventListener('click', async () => { const tab = await getActiveTab();
+    document.getElementById('clear-dom-errors').addEventListener('click', async () => {
         const tab = await getActiveTab();
         if (tab && !tab.url?.startsWith('chrome://')) {
             await chrome.scripting.executeScript({
@@ -262,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Sentinel controls ──────────────────────────────────────────────────
     const clearSentinelBtn = document.getElementById('clear-sentinel-errors');
     if (clearSentinelBtn) {
-        clearSentinelBtn.addEventListener('click', async () => { const tab = await getActiveTab();
+        clearSentinelBtn.addEventListener('click', async () => {
             if (tab && !tab.url?.startsWith('chrome://')) {
                 await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
@@ -304,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Toolkit controls ───────────────────────────────────────────────────
     const btnCleanDom = document.getElementById('btn-copy-dom');
     if (btnCleanDom) {
-        btnCleanDom.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnCleanDom.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const originalText = btnCleanDom.textContent;
             btnCleanDom.textContent = 'Copying...';
@@ -348,70 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnInjectNetwork = document.getElementById('btn-inject-network');
-    if (btnInjectNetwork) {
-        btnInjectNetwork.addEventListener('click', async () => { const tab = await getActiveTab();
-            if (!tab || tab.url?.startsWith('chrome://')) return;
-            await chrome.scripting.executeScript({
-                 target: { tabId: tab.id, allFrames: true },
-                 world: 'MAIN',
-                 func: () => {
-                     if (window.__DEV_TOOLKIT_HOOKED) return;
-                     window.__DEV_TOOLKIT_HOOKED = true;
-
-                     const origFetch = window.fetch;
-                     window.fetch = async function(...args) {
-                         const start = performance.now();
-                         try {
-                             const response = await origFetch.apply(this, args);
-                             const clone = response.clone();
-                             const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || 'unknown');
-                             console.groupCollapsed(`%c[Network Fetch Hook] %c${url}`, 'color: #38bdf8; font-weight: bold;', 'color: #94a3b8');
-                             console.log('Request args:', args);
-                             clone.text().then(text => {
-                                 let data = text;
-                                 try { data = JSON.parse(text); } catch(e){}
-                                 console.log('Response:', data);
-                             }).catch(() => {});
-                             console.log(`Duration: ${(performance.now() - start).toFixed(1)}ms`);
-                             console.groupEnd();
-                             return response;
-                         } catch (err) {
-                             console.error('[Network Fetch Hook] Error:', err);
-                             throw err;
-                         }
-                     };
-
-                     const XHR = XMLHttpRequest.prototype;
-                     const origOpen = XHR.open;
-                     const origSend = XHR.send;
-                     XHR.open = function(method, url) {
-                         this._url = url;
-                         this._method = method;
-                         return origOpen.apply(this, arguments);
-                     };
-                     XHR.send = function(body) {
-                         this.addEventListener('load', function() {
-                             console.groupCollapsed(`%c[Network XHR Hook] %c${this._url}`, 'color: #f472b6; font-weight: bold;', 'color: #94a3b8');
-                             console.log('Method:', this._method, 'Body:', body);
-                             let res = this.responseText;
-                             try { res = JSON.parse(this.responseText); } catch(e){}
-                             console.log('Response:', res);
-                             console.groupEnd();
-                         });
-                         return origSend.apply(this, arguments);
-                     };
-                     console.log("%c🚀 Network Interceptor Injected successfully! Check the console.", "color: #10b981; font-weight: bold; font-size: 14px;");
-                     alert("Reverse Engineering Toolkit: Network interceptor active! Open devtools console to see captured events.");
-                 }
-            });
-            window.close();
-        });
-    }
-
     const btnInjectConsole = document.getElementById('btn-inject-console');
     if (btnInjectConsole) {
-        btnInjectConsole.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnInjectConsole.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id, allFrames: true },
@@ -437,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnVibeSnapshot = document.getElementById('btn-vibe-snapshot');
     if (btnVibeSnapshot) {
-        btnVibeSnapshot.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnVibeSnapshot.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const originalText = btnVibeSnapshot.textContent;
             btnVibeSnapshot.textContent = 'Snapping...';
@@ -501,7 +441,7 @@ ${cleanDom}
 
     const btnToggleOutline = document.getElementById('btn-toggle-outline');
     if (btnToggleOutline) {
-        btnToggleOutline.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnToggleOutline.addEventListener('click', async () => {
              if (!tab || tab.url?.startsWith('chrome://')) return;
              await chrome.scripting.executeScript({
                  target: { tabId: tab.id },
@@ -529,7 +469,7 @@ ${cleanDom}
 
     const btnHuntJson = document.getElementById('btn-hunt-json');
     if (btnHuntJson) {
-        btnHuntJson.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnHuntJson.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const res = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -567,7 +507,7 @@ ${cleanDom}
 
     const btnFreeze = document.getElementById('btn-freeze-page');
     if (btnFreeze) {
-        btnFreeze.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnFreeze.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -584,7 +524,7 @@ ${cleanDom}
 
     const btnExtractTheme = document.getElementById('btn-extract-theme');
     if (btnExtractTheme) {
-        btnExtractTheme.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnExtractTheme.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             const res = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -627,7 +567,7 @@ ${cleanDom}
 
     const btnPickSelector = document.getElementById('btn-pick-selector');
     if (btnPickSelector) {
-        btnPickSelector.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnPickSelector.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -704,7 +644,7 @@ ${cleanDom}
 
     const btnAutoScroll = document.getElementById('btn-auto-scroll');
     if (btnAutoScroll) {
-        btnAutoScroll.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnAutoScroll.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -718,7 +658,7 @@ ${cleanDom}
 
     const btnToggleVibe = document.getElementById('btn-toggle-vibe');
     if (btnToggleVibe) {
-        btnToggleVibe.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnToggleVibe.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -753,7 +693,7 @@ ${cleanDom}
 
     const btnStartAnnotator = document.getElementById('btn-start-annotator');
     if (btnStartAnnotator) {
-        btnStartAnnotator.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnStartAnnotator.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -881,7 +821,7 @@ Please use this mapping to help build the feature.
 
     const btnInjectNetwork = document.getElementById('btn-inject-network');
     if (btnInjectNetwork) {
-        btnInjectNetwork.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnInjectNetwork.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                  target: { tabId: tab.id, allFrames: true },
@@ -947,7 +887,7 @@ Please use this mapping to help build the feature.
 
     const btnStartMagnifier = document.getElementById('btn-start-magnifier');
     if (btnStartMagnifier) {
-        btnStartMagnifier.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnStartMagnifier.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -986,7 +926,7 @@ Please use this mapping to help build the feature.
 
     const btnWipeDomain = document.getElementById('btn-wipe-domain');
     if (btnWipeDomain) {
-        btnWipeDomain.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnWipeDomain.addEventListener('click', async () => {
             if (!tab || !confirm('Wipe all local storage and cookies for this site?')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -1005,7 +945,7 @@ Please use this mapping to help build the feature.
 
     const btnToggleEdit = document.getElementById('btn-toggle-edit');
     if (btnToggleEdit) {
-        btnToggleEdit.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnToggleEdit.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -1021,7 +961,7 @@ Please use this mapping to help build the feature.
 
     const btnToggleLatency = document.getElementById('btn-toggle-latency');
     if (btnToggleLatency) {
-        btnToggleLatency.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnToggleLatency.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id, allFrames: true },
@@ -1065,7 +1005,7 @@ Please use this mapping to help build the feature.
 
     const btnNukeOverlays = document.getElementById('btn-nuke-overlays');
     if (btnNukeOverlays) {
-        btnNukeOverlays.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnNukeOverlays.addEventListener('click', async () => {
             if (!tab || tab.url?.startsWith('chrome://')) return;
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -1102,7 +1042,7 @@ Please use this mapping to help build the feature.
     const btnGodSearch = document.getElementById('btn-god-search');
     const godSearchInput = document.getElementById('god-search-input');
     if (btnGodSearch && godSearchInput) {
-        btnGodSearch.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnGodSearch.addEventListener('click', async () => {
             const query = godSearchInput.value.trim().toLowerCase();
             if (!query || !tab || tab.url?.startsWith('chrome://')) return;
             
@@ -1130,7 +1070,7 @@ Please use this mapping to help build the feature.
 
     const btnReloadDomain = document.getElementById('btn-reload-domain');
     if (btnReloadDomain) {
-        btnReloadDomain.addEventListener('click', async () => { const tab = await getActiveTab();
+        btnReloadDomain.addEventListener('click', async () => {
             if (!tab) return;
             const domain = new URL(tab.url).hostname;
             const tabs = await chrome.tabs.query({});
@@ -1140,21 +1080,31 @@ Please use this mapping to help build the feature.
         });
     }
 
-    // ── GIGASNAP (Copy All) ──────────────────────────────────────────────
-    document.getElementById('btn-gigasnap').addEventListener('click', async () => { const tab = await getActiveTab();
+    // ── GIGASNAP & GIGA-RAW ─────────────────────────────────────────────
+    const runSnap = async (isRaw = false) => {
         const tab = await getActiveTab();
         if (!tab) return;
-        const btn = document.getElementById('btn-gigasnap');
-        btn.textContent = 'SNAPPING EVERYTHING...';
+        const btnId = isRaw ? 'btn-gigaraw' : 'btn-gigasnap';
+        const btn = document.getElementById(btnId);
+        const originalText = btn.textContent;
+        btn.textContent = 'SNAPPING...';
+        
         try {
-            // 1. Get DOM + Storage + System info + Tech Stack + Network Log
             const contentRes = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 func: () => {
                     const cleanDomForTokens = (docEl) => {
                         let cloned = docEl.cloneNode(true);
-                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head'];
+                        // 1. Remove comments
+                        const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
+                        let comment;
+                        while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
+                        
+                        // 2. Remove bloat elements
+                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'svg', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
                         removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                        
+                        // 3. Strip non-essential attributes
                         const allElements = cloned.querySelectorAll('*');
                         allElements.forEach(el => {
                             const attrs = el.attributes;
@@ -1162,6 +1112,8 @@ Please use this mapping to help build the feature.
                                 const n = attrs[i].name;
                                 if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
                             }
+                            // Collapse empty divs/spans with no attrs
+                            if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
                         });
                         return cloned.outerHTML;
                     };
@@ -1172,8 +1124,28 @@ Please use this mapping to help build the feature.
                         if (window.__NEXT_DATA__) stack.push('Next.js');
                         if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
                         if (window.jQuery) stack.push('jQuery');
+                        if (window.Angular || document.querySelector('[ng-app], [ng-version]')) stack.push('Angular');
+                        if (window.Svelte || document.querySelector('[class*="svelte-"]')) stack.push('Svelte');
+                        if (document.querySelector('meta[name="next-head-count"]')) stack.push('Next.js (Static)');
                         if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]')) stack.push('Tailwind');
+                        if (window.bootstrap) stack.push('Bootstrap');
+                        if (window.LottieInteractive) stack.push('Lottie');
+                        if (window.THREE) stack.push('Three.js');
+                        if (window.gsap) stack.push('GSAP');
                         return stack;
+                    };
+
+                    const getPerformance = () => {
+                        const t = window.performance.timing;
+                        const nav = window.performance.getEntriesByType('navigation')[0] || {};
+                        return {
+                            loadTime: t.loadEventEnd - t.navigationStart,
+                            domReady: t.domContentLoadedEventEnd - t.navigationStart,
+                            ttfb: t.responseStart - t.navigationStart,
+                            transferSize: nav.transferSize,
+                            decodedBodySize: nav.decodedBodySize,
+                            protocol: nav.nextHopProtocol
+                        };
                     };
 
                     return {
@@ -1183,28 +1155,30 @@ Please use this mapping to help build the feature.
                         sessionStorage: Object.assign({}, window.sessionStorage),
                         cookies: document.cookie,
                         clean_dom: cleanDomForTokens(document.documentElement),
+                        raw_dom: document.documentElement.outerHTML,
                         stack: detectStack(),
-                        network_history: window.__DEV_VAULT_NET_LOG || "[] (Hook not injected yet)",
+                        performance: getPerformance(),
+                        network_history: window.__DEV_VAULT_NET_LOG || [],
                         hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
                         system: {
                             userAgent: navigator.userAgent,
                             viewport: `${window.innerWidth}x${window.innerHeight}`,
-                            language: navigator.language
+                            language: navigator.language,
+                            deviceMemory: navigator.deviceMemory,
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            screen: { w: screen.width, h: screen.height, colorDepth: screen.colorDepth }
                         }
                     };
                 }
             });
             const pageData = contentRes?.[0]?.result || {};
-
-            // 2. Get Chrome Local Storage
             const chromeStorage = await new Promise(r => chrome.storage.local.get(null, r));
-
-            // 3. Get Errors
             const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
 
             const megasnapshot = {
                 metadata: { timestamp: new Date().toISOString(), url: pageData.url, title: pageData.title },
                 stack: pageData.stack,
+                performance: pageData.performance,
                 network_activity: pageData.network_history,
                 hidden_fields: pageData.hidden_fields,
                 errors: { dom: domErrors, vault_logs: storageErrors },
@@ -1214,16 +1188,17 @@ Please use this mapping to help build the feature.
                     cookies: pageData.cookies 
                 },
                 system: pageData.system,
-                cleaned_dom_for_ai: pageData.clean_dom
+                content: isRaw ? { raw_dom: pageData.raw_dom } : { cleaned_dom_for_ai: pageData.clean_dom }
             };
 
+            const type = isRaw ? 'RAW-GIGASNAP' : 'TOKEN-OPTIMIZED GIGASNAP';
             const godPrompt = `
-I am working on this project. Here is a TOKEN-OPTIMIZED GIGASNAP:
+I am working on this project. Here is a ${type}:
 
 ### ANALYZED CONTEXT
 - **STACK**: ${megasnapshot.stack.join(', ') || 'Unknown'}
-- **PERFORMANCE**: ${JSON.stringify(megasnapshot.performance)}
-- **SYSTEM**: ${JSON.stringify(megasnapshot.system)}
+- **PERFORMANCE**: ${megasnapshot.performance.loadTime}ms (Load), ${megasnapshot.performance.ttfb}ms (TTFB)
+- **SYSTEM**: ${megasnapshot.system.viewport} | ${megasnapshot.system.userAgent.split(' ').slice(-1)}
 
 ### FULL SNAPSHOT (JSON)
 ${JSON.stringify(megasnapshot, null, 2)}
@@ -1233,15 +1208,35 @@ Please review this state and help me.
 `.trim();
 
             await copyToClipboard(godPrompt);
-            btn.textContent = 'GIGA-SNAPPED!';
+            btn.textContent = 'SNAPPED!';
         } catch (e) {
             btn.textContent = 'ERR';
             console.error(e);
         }
-        setTimeout(() => btn.textContent = '⚡ GIGASNAP', 2000);
-    });
+        setTimeout(() => btn.textContent = originalText, 2000);
+    };
 
-    document.getElementById('copy-errors').addEventListener('click', async () => { const tab = await getActiveTab();
+    document.getElementById('btn-gigasnap').addEventListener('click', () => runSnap(false));
+    const btnGigaRaw = document.getElementById('btn-gigaraw');
+    if (btnGigaRaw) btnGigaRaw.addEventListener('click', () => runSnap(true));
+
+    // ── External Tools ────────────────────────────────────────────────────
+    const btnPageSpeed = document.getElementById('btn-pagespeed');
+    if (btnPageSpeed) {
+        btnPageSpeed.addEventListener('click', async () => {
+            const tab = await getActiveTab();
+            if (tab?.url) window.open(`https://pagespeed.web.dev/report?url=${encodeURIComponent(tab.url)}`, '_blank');
+        });
+    }
+    const btnWappalyzer = document.getElementById('btn-wappalyzer');
+    if (btnWappalyzer) {
+        btnWappalyzer.addEventListener('click', async () => {
+            const tab = await getActiveTab();
+            if (tab?.url) window.open(`https://www.wappalyzer.com/lookup/${new URL(tab.url).hostname}`, '_blank');
+        });
+    }
+
+    document.getElementById('copy-errors').addEventListener('click', async () => {
         const [domErrors, storageErrors] = await Promise.all([getDomErrors(), getStorageErrors()]);
         copyToClipboard(JSON.stringify({ dom: domErrors, storage: storageErrors }, null, 2));
     });

@@ -13,7 +13,7 @@ async function pollActiveTabErrors() {
 
         const domErrors = results?.[0]?.result || [];
 
-        // Also read SocialHoardr storage errors
+        // Also read Vault storage errors
         chrome.storage.local.get(['extension_errors'], (res) => {
             const storageErrors = Array.isArray(res.extension_errors) ? res.extension_errors : [];
             const total = domErrors.length + storageErrors.length;
@@ -127,20 +127,31 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
+                const detectStack = () => {
+                    const stack = [];
+                    if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
+                    if (window.__NEXT_DATA__) stack.push('Next.js');
+                    if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
+                    if (window.jQuery) stack.push('jQuery');
+                    if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]')) stack.push('Tailwind');
+                    return stack;
+                };
+
                 const megasnapshot = {
                     metadata: { timestamp: new Date().toISOString(), url: window.location.href, title: document.title },
-                    system: { viewport: `${window.innerWidth}x${window.innerHeight}` },
-                    storage: { local: window.localStorage },
-                    dom_preview: document.documentElement.outerHTML.slice(0, 30000)
+                    stack: detectStack(),
+                    system: { viewport: `${window.innerWidth}x${window.innerHeight}`, userAgent: navigator.userAgent },
+                    storage: { local: Object.assign({}, window.localStorage) },
+                    dom_preview: document.documentElement.outerHTML.slice(0, 40000)
                 };
-                const prompt = `### AI GIGASNAP CONTEXT\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
+                const prompt = `### AI GIGASNAP CONTEXT (Quick Snap)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
                 const tmp = document.createElement('textarea');
                 tmp.value = prompt;
                 document.body.appendChild(tmp);
                 tmp.select();
                 document.execCommand('copy');
                 document.body.removeChild(tmp);
-                alert("GIGASNAP copied to clipboard from Context Menu!");
+                alert("GIGASNAP (Quick) copied! Open the popup for the full Token-Optimized version.");
             }
         });
     } else if (info.menuItemId === "annotator") {
