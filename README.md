@@ -1,4 +1,4 @@
-# Antigravity Dev Vault: God Build Edition 🔓🚀
+# Nexus Dev Toolbox: God Build Edition 🔓🚀
 
 The ultimate toolkit for reverse engineers, web scrapers, and "vibecoding" speed-demons. Built to bridge the gap between the browser and the LLM.
 

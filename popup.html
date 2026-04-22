@@ -133,7 +133,7 @@
 </head>
 <body>
     <header>
-        <div class="title">DEVSYNC VAULT</div>
+        <div class="title">NEXUS DEV TOOLBOX</div>
         <div style="display:flex; gap:5px;">
             <button id="btn-gigasnap" style="background:var(--primary); color:white; border:none; border-radius:4px; font-size:0.6rem; padding:4px 8px; cursor:pointer; font-weight:700;" title="Token Optimized Copy">⚡ GIGASNAP</button>
             <button id="btn-gigaraw" style="background:rgba(255,255,255,0.1); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.6rem; padding:4px 8px; cursor:pointer; font-weight:700;" title="Full Raw Data Copy">⚡ GIGA-RAW</button>
@@ -216,7 +216,8 @@
             </button>
         </div>
 
-        <div class="section-label">Web Inspector Tools</div>
+        <!-- 🎯 Intelligence & Snaps -->
+        <div class="section-label" style="margin-top:4px">🎯 Intelligence & Snaps</div>
         <div class="storage-grid">
             <div class="ext-card">
                 <div class="ext-header">
@@ -225,6 +226,10 @@
                 </div>
                 <button class="btn btn-primary" id="btn-copy-dom" style="margin-top:8px;">Copy Clean DOM</button>
             </div>
+        </div>
+        <!-- 📡 Runtime Interceptors -->
+        <div class="section-label" style="margin-top:16px;">📡 Runtime Interceptors</div>
+        <div class="storage-grid">
             <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">Network Interceptor</div>
@@ -295,6 +300,10 @@
                 </div>
                 <button class="btn btn-secondary" id="btn-auto-scroll" style="margin-top:8px;">Scroll to Bottom</button>
             </div>
+        </div>
+        <!-- 🎨 UI Tools -->
+        <div class="section-label" style="margin-top:16px;">🎨 UI Tools</div>
+        <div class="storage-grid">
             <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">AI Task Annotator</div>
@@ -353,7 +362,26 @@
                    <input type="text" id="god-search-input" placeholder="Search string..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
                    <button class="btn btn-secondary" id="btn-god-search" style="flex:none; padding:4px 10px;">Find</button>
                 </div>
+                </div>
+        <!-- 📊 External Analysis -->
+        <div class="section-label" style="margin-top:16px;">📊 External Analysis</div>
+        <div class="storage-grid">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">PageSpeed Insights</div>
+                    <div class="ext-sub">Open official Google performance audit for this tab.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-pagespeed" style="margin-top:8px;">Open PageSpeed</button>
             </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Wappalyzer Check</div>
+                    <div class="ext-sub">Look up tech stack and built-with info via Wappalyzer.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-wappalyzer" style="margin-top:8px;">Open Wappalyzer</button>
+            </div>
+        </div>
+    </div>
             <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">Domain Reloader</div>

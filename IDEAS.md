@@ -1,6 +1,6 @@
 # Future Ideas & Saturated Status 🧪
 
-This file tracks "The Vault" - features that require deeper permissions or higher complexity.
+This file tracks "Nexus Dev Toolbox" - features that require deeper permissions or higher complexity.
 
 ## 🔴 Saturated Status: 65%
 The extension is currently a "God-Tier" Swiss Army Knife. We are shifting focus from simple UI tools to **Deep Intelligence** and **Cross-Tab Automation**.

@@ -112,12 +112,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: "gigasnap",
-        title: "⚡ Dev Vault: GIGASNAP Context",
+        title: "⚡ Nexus: GIGASNAP Context",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "annotator",
-        title: "📝 Dev Vault: AI Annotator mode",
+        title: "📝 Nexus: AI Annotator mode",
         contexts: ["all"]
     });
 });
@@ -158,7 +158,108 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                alert("Open the Dev Vault popup and click 'AI Task Annotator' to begin!");
+                if (window.__ANNOTATOR_ACTIVE) return;
+                window.__ANNOTATOR_ACTIVE = true;
+                const selections = [];
+
+                const container = document.createElement('div');
+                container.id = '__vibe_annotator_ui';
+                container.style = `
+                    position: fixed; top: 10px; right: 10px; width: 320px; max-height: 80vh;
+                    background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+                    z-index: 9999999; color: white; display: flex; flex-direction: column;
+                    font-family: sans-serif; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+                    overflow: hidden;
+                `;
+                container.innerHTML = `
+                    <div style="padding:12px; background:#1e293b; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; font-size:13px; color:#6366f1;">AI TASK ANNOTATOR</span>
+                        <button id="__annotator_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
+                    </div>
+                    <div id="__annotator_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>
+                    </div>
+                    <div style="padding:12px; border-top:1px solid #334155; background:#0f172a;">
+                        <button id="__annotator_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
+                    </div>
+                `;
+                document.body.appendChild(container);
+
+                const list = container.querySelector('#__annotator_list');
+                const copyBtn = container.querySelector('#__annotator_copy');
+                const closeBtn = container.querySelector('#__annotator_close');
+
+                const highlight = document.createElement('div');
+                highlight.style = 'position:fixed; background:rgba(99,102,241,0.1); border:2px dashed #6366f1; z-index:9999998; pointer-events:none; transition: all 0.05s;';
+                document.body.appendChild(highlight);
+
+                const getSelector = (el) => {
+                    if (el.id) return `#${el.id}`;
+                    let path = [];
+                    let curr = el;
+                    while (curr && curr.parentElement) {
+                        let nth = 1, sib = curr;
+                        while (sib.previousElementSibling) { sib = sib.previousElementSibling; if (sib.tagName === curr.tagName) nth++; }
+                        path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
+                        curr = curr.parentElement;
+                        if (curr.id) { path.unshift(`#${curr.id}`); break; }
+                    }
+                    return path.join(' > ');
+                };
+
+                const refreshList = () => {
+                    if (selections.length === 0) {
+                        list.innerHTML = '<div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>';
+                        return;
+                    }
+                    list.innerHTML = selections.map((s, i) => `
+                        <div style="background:#1e293b; padding:8px; border-radius:6px; border:1px solid #334155;">
+                            <div style="font-family:monospace; font-size:10px; color:#818cf8; margin-bottom:4px; word-break:break-all;">${s.selector}</div>
+                            <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;"></textarea>
+                        </div>
+                    `).join('');
+                    list.querySelectorAll('textarea').forEach(tx => {
+                        tx.addEventListener('input', (e) => { selections[e.target.dataset.idx].comment = e.target.value; });
+                    });
+                };
+
+                const onMouseOver = (e) => {
+                    if (container.contains(e.target)) return;
+                    const rect = e.target.getBoundingClientRect();
+                    highlight.style.top = `${rect.top}px`;
+                    highlight.style.left = `${rect.left}px`;
+                    highlight.style.width = `${rect.width}px`;
+                    highlight.style.height = `${rect.height}px`;
+                };
+
+                const onClick = (e) => {
+                    if (container.contains(e.target)) return;
+                    e.preventDefault(); e.stopPropagation();
+                    const sel = getSelector(e.target);
+                    selections.push({ selector: sel, comment: '' });
+                    refreshList();
+                };
+
+                const cleanup = () => {
+                    document.removeEventListener('mouseover', onMouseOver);
+                    document.removeEventListener('click', onClick, true);
+                    container.remove();
+                    highlight.remove();
+                    window.__ANNOTATOR_ACTIVE = false;
+                };
+
+                closeBtn.onclick = cleanup;
+                copyBtn.onclick = () => {
+                    const prompt = `### AI TASK ANNOTATIONS\n\n${selections.map(s => `- **ELEMENT**: \`${s.selector}\`\n  **TASK**: ${s.comment || 'No specific task described.'}`).join('\n\n')}`;
+                    const tmp = document.createElement('textarea');
+                    tmp.value = prompt; document.body.appendChild(tmp);
+                    tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+                    alert('AI Task Annotations copied to clipboard!');
+                    cleanup();
+                };
+
+                document.addEventListener('mouseover', onMouseOver, { passive: true });
+                document.addEventListener('click', onClick, true);
             }
         });
     }
