@@ -112,12 +112,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: "gigasnap",
-        title: "⚡ Nexus: GIGASNAP Context",
+        title: "⚡ GIGASNAP: Copy Context",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "annotator",
-        title: "📝 Nexus: AI Annotator mode",
+        title: "📝 GIGASNAP: Annotator Mode",
         contexts: ["all"]
     });
 });
