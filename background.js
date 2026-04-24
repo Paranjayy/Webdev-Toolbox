@@ -127,31 +127,151 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
+                const cleanDomForTokens = (docEl) => {
+                    const traverse = (node) => {
+                        let cloned = node.cloneNode(true);
+                        
+                        // 1. Remove comments
+                        const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
+                        let comment;
+                        while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
+                        
+                        // 2. Handle Shadow DOM recursion
+                        const allOriginal = node.querySelectorAll('*');
+                        const allCloned = cloned.querySelectorAll('*');
+                        allOriginal.forEach((orig, i) => {
+                            if (orig.shadowRoot) {
+                                const shadowContent = traverse(orig.shadowRoot);
+                                const wrapper = document.createElement('shadow-root');
+                                wrapper.innerHTML = shadowContent;
+                                if (allCloned[i]) allCloned[i].appendChild(wrapper);
+                            }
+                        });
+
+                        // 3. Remove bloat elements
+                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
+                        removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                        
+                        // 4. Refine SVGs
+                        cloned.querySelectorAll('svg').forEach(s => { s.innerHTML = '<!-- [SVG CONTENT STRIPPED] -->'; });
+
+                        // 5. Strip non-essential attributes
+                        const allElements = cloned.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            const attrs = el.attributes;
+                            for (let i = attrs.length - 1; i >= 0; i--) {
+                                const n = attrs[i].name;
+                                if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
+                            }
+                            // Collapse empty divs/spans with no attrs
+                            if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
+                        });
+                        return cloned.outerHTML;
+                    };
+                    return traverse(docEl);
+                };
+
                 const detectStack = () => {
                     const stack = [];
                     if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
                     if (window.__NEXT_DATA__) stack.push('Next.js');
                     if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
                     if (window.jQuery) stack.push('jQuery');
+                    if (window.Angular || document.querySelector('[ng-app], [ng-version]')) stack.push('Angular');
+                    if (window.Svelte || document.querySelector('[class*="svelte-"]')) stack.push('Svelte');
                     if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]')) stack.push('Tailwind');
+                    if (window.bootstrap) stack.push('Bootstrap');
+                    if (window.THREE) stack.push('Three.js');
+                    if (window.gsap) stack.push('GSAP');
                     return stack;
                 };
 
-                const megasnapshot = {
-                    metadata: { timestamp: new Date().toISOString(), url: window.location.href, title: document.title },
-                    stack: detectStack(),
-                    system: { viewport: `${window.innerWidth}x${window.innerHeight}`, userAgent: navigator.userAgent },
-                    storage: { local: Object.assign({}, window.localStorage) },
-                    dom_preview: document.documentElement.outerHTML.slice(0, 40000)
+                const getPerformance = () => {
+                    const t = window.performance.timing;
+                    const nav = window.performance.getEntriesByType('navigation')[0] || {};
+                    return {
+                        loadTime: t.loadEventEnd - t.navigationStart,
+                        domReady: t.domContentLoadedEventEnd - t.navigationStart,
+                        ttfb: t.responseStart - t.navigationStart,
+                        transferSize: nav.transferSize,
+                        protocol: nav.nextHopProtocol
+                    };
                 };
-                const prompt = `### AI GIGASNAP CONTEXT (Quick Snap)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
+
+                const huntGlobalVars = () => {
+                    const globals = {};
+                    const skip = ['window', 'self', 'document', 'location', 'history', 'chrome', 'navigator', 'screen'];
+                    Object.keys(window).forEach(k => {
+                        if (skip.includes(k) || k.startsWith('__DEV_')) return;
+                        try {
+                            const val = window[k];
+                            if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length > 3) {
+                                if (k.toLowerCase().includes('config') || k.toLowerCase().includes('data') || k.toLowerCase().includes('initial')) {
+                                    globals[k] = val;
+                                }
+                            }
+                        } catch(e){}
+                    });
+                    return globals;
+                };
+
+                const getDesignTokens = () => {
+                    const colors = new Set();
+                    const fonts = new Set();
+                    const walk = (node) => {
+                        if (node.nodeType === 1) {
+                            const style = window.getComputedStyle(node);
+                            if (style.color && !style.color.includes('rgba(0, 0, 0, 0)')) colors.add(style.color);
+                            if (style.backgroundColor && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) colors.add(style.backgroundColor);
+                            if (style.fontFamily) fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
+                        }
+                        node.childNodes.forEach(walk);
+                    };
+                    // Sampling only first 200 elements to avoid performance hit
+                    const samples = Array.from(document.querySelectorAll('*')).slice(0, 200);
+                    samples.forEach(el => {
+                        const style = window.getComputedStyle(el);
+                        colors.add(style.color);
+                        colors.add(style.backgroundColor);
+                        fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
+                    });
+                    return { colors: Array.from(colors).slice(0, 15), fonts: Array.from(fonts).slice(0, 5) };
+                };
+
+                const megasnapshot = {
+                    metadata: { 
+                        timestamp: new Date().toISOString(), 
+                        url: window.location.href, 
+                        title: document.title,
+                        type: 'Token-Optimized (Full)'
+                    },
+                    stack: detectStack(),
+                    performance: getPerformance(),
+                    design_tokens: getDesignTokens(),
+                    errors: window.__DEV_VAULT_ERRORS || [],
+                    global_variables: huntGlobalVars(),
+                    hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
+                    system: { 
+                        viewport: `${window.innerWidth}x${window.innerHeight}`, 
+                        userAgent: navigator.userAgent,
+                        language: navigator.language
+                    },
+                    storage: { 
+                        local: Object.assign({}, window.localStorage),
+                        session: Object.assign({}, window.sessionStorage),
+                        cookies: document.cookie
+                    },
+                    clean_dom: cleanDomForTokens(document.documentElement)
+                };
+
+                const prompt = `### AI GIGASNAP CONTEXT (Full Intelligence Snap)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
                 const tmp = document.createElement('textarea');
                 tmp.value = prompt;
                 document.body.appendChild(tmp);
                 tmp.select();
                 document.execCommand('copy');
                 document.body.removeChild(tmp);
-                alert("GIGASNAP (Quick) copied! Open the popup for the full Token-Optimized version.");
+                alert("GIGASNAP (Perfected) copied!\n- Full Cleaned DOM\n- Performance Metrics\n- Global State Keys\n- Storage & Metadata");
             }
         });
     } else if (info.menuItemId === "annotator") {
@@ -215,7 +335,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     list.innerHTML = selections.map((s, i) => `
                         <div style="background:#1e293b; padding:8px; border-radius:6px; border:1px solid #334155;">
                             <div style="font-family:monospace; font-size:10px; color:#818cf8; margin-bottom:4px; word-break:break-all;">${s.selector}</div>
-                            <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;"></textarea>
+                            <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;">${s.comment || ''}</textarea>
                         </div>
                     `).join('');
                     list.querySelectorAll('textarea').forEach(tx => {
