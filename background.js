@@ -174,15 +174,18 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 const detectStack = () => {
                     const stack = [];
                     if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
-                    if (window.__NEXT_DATA__) stack.push('Next.js');
+                    if (window.next || window.__NEXT_DATA__) stack.push('Next.js');
                     if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
                     if (window.jQuery) stack.push('jQuery');
                     if (window.Angular || document.querySelector('[ng-app], [ng-version]')) stack.push('Angular');
                     if (window.Svelte || document.querySelector('[class*="svelte-"]')) stack.push('Svelte');
-                    if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]')) stack.push('Tailwind');
+                    if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]') || document.querySelector('link[href*="tailwind"]')) stack.push('Tailwind');
                     if (window.bootstrap) stack.push('Bootstrap');
                     if (window.THREE) stack.push('Three.js');
                     if (window.gsap) stack.push('GSAP');
+                    if (window.framer || window.MotionConfig) stack.push('Framer Motion');
+                    if (document.querySelector('[data-radix-portal]')) stack.push('Radix UI');
+                    if (document.querySelector('[class*="lucide"]')) stack.push('Lucide Icons');
                     return stack;
                 };
 

@@ -8,30 +8,58 @@
     <style>
         :root {
             --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
             --red: #ef4444;
             --bg: #030712;
-            --panel: rgba(17, 24, 39, 0.8);
+            --panel: rgba(17, 24, 39, 0.6);
             --border: rgba(255, 255, 255, 0.08);
             --text-main: #f3f4f6;
             --text-dim: #9ca3af;
+            --glass: rgba(255, 255, 255, 0.03);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            width: 420px; max-height: 640px; overflow: hidden;
-            background: var(--bg); color: var(--text-main);
+            width: 420px; height: 600px; overflow: hidden;
+            background: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.05) 0px, transparent 50%);
+            color: var(--text-main);
             font-family: 'Outfit', sans-serif;
             display: flex; flex-direction: column;
+            animation: meshMove 20s ease infinite alternate;
         }
+        @keyframes meshMove {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 10% 10%; }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
         header {
-            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between;
-            background: rgba(3, 7, 18, 0.7); backdrop-filter: blur(12px);
-            flex-shrink: 0;
+            background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(12px);
+            flex-shrink: 0; z-index: 10;
         }
-        .title { font-family: 'Space Grotesk'; font-weight: 700; font-size: 1rem; color: var(--primary); }
-        .version { font-size: 0.68rem; color: var(--text-dim); }
+        .title { 
+            font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; 
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .version { font-size: 0.65rem; color: var(--text-dim); opacity: 0.7; }
         
-        .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .tabs { 
+            display: flex; background: rgba(0,0,0,0.2); 
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+            padding: 0 10px;
+        }
         .tab-btn {
             flex: 1; padding: 9px; font-family: 'Outfit'; font-size: 0.78rem;
             font-weight: 600; background: none; border: none; color: var(--text-dim);
@@ -48,13 +76,17 @@
             color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
         }
 
+        .toolkit-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;
+        }
         .ext-card {
             background: var(--panel); border: 1px solid var(--border);
-            border-radius: 12px; padding: 12px; margin-bottom: 10px;
-            display: flex; flex-direction: column; gap: 9px;
-            transition: 0.2s;
+            border-radius: 12px; padding: 12px; margin-bottom: 0px;
+            display: flex; flex-direction: column; gap: 6px;
+            transition: 0.2s; position: relative; overflow: hidden;
+            background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, transparent 100%);
         }
-        .ext-card:hover { border-color: rgba(99, 102, 241, 0.35); }
+        .ext-card:hover { border-color: rgba(99, 102, 241, 0.4); background: rgba(99,102,241,0.02); }
         .ext-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
         .ext-name { font-weight: 600; font-size: 0.9rem; }
         .ext-sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; word-break: break-all; }
@@ -73,12 +105,29 @@
             font-family: 'Outfit'; font-weight: 600; font-size: 0.78rem; transition: 0.2s;
         }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover:not(:disabled) { background: #4f46e5; box-shadow: 0 0 10px rgba(99,102,241,0.4); }
-        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-        .btn-red { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-        .btn-red:hover { background: rgba(239,68,68,0.2); }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary), #818cf8); 
+            color: white; 
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        .btn-primary:hover:not(:disabled) { 
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+        .btn-secondary { 
+            background: rgba(255,255,255,0.03); 
+            color: var(--text-main); 
+            border: 1px solid var(--border);
+            backdrop-filter: blur(4px);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+        .btn-red { 
+            background: rgba(239,68,68,0.1); 
+            color: #f87171; 
+            border: 1px solid rgba(239,68,68,0.2); 
+        }
+        .btn-red:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; }
 
         /* Error console */
         #error-console {
@@ -206,188 +255,194 @@
     </div>
 
     <div class="tab-panel" id="tab-toolkit">
-        <div class="section-label" style="margin-top:4px">External Analysis Tools</div>
-        <div class="btn-row" style="margin-bottom:14px">
-            <button class="btn btn-secondary" id="btn-pagespeed" style="display:flex; align-items:center; justify-content:center; gap:6px;">
-                <img src="https://www.gstatic.com/images/branding/product/1x/pagespeed_64dp.png" style="width:14px;height:14px;"> PageSpeed
-            </button>
-            <button class="btn btn-secondary" id="btn-wappalyzer" style="display:flex; align-items:center; justify-content:center; gap:6px;">
-                <img src="https://www.wappalyzer.com/apple-touch-icon.png" style="width:14px;height:14px;"> Wappalyzer
-            </button>
-        </div>
-
-        <!-- 🎯 Intelligence & Snaps -->
-        <div class="section-label" style="margin-top:4px">🎯 Intelligence & Snaps</div>
-        <div class="storage-grid">
+        <!-- 🎯 Intelligence & Data -->
+        <div class="section-label" style="margin-top:4px">🎯 Intelligence & Data</div>
+        <div class="toolkit-grid">
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Clean DOM Copy</div>
-                    <div class="ext-sub">Copy simplified HTML to clipboard for LLMs/analysis.</div>
+                    <div class="ext-name">GigaSnap</div>
+                    <div class="ext-sub">Clean DOM + Metadata.</div>
                 </div>
-                <button class="btn btn-primary" id="btn-copy-dom" style="margin-top:8px;">Copy Clean DOM</button>
-            </div>
-        </div>
-        <!-- 📡 Runtime Interceptors -->
-        <div class="section-label" style="margin-top:16px;">📡 Runtime Interceptors</div>
-        <div class="storage-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Network Interceptor</div>
-                    <div class="ext-sub">Injects a fetch/XHR hook to trace requests.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-inject-network" style="margin-top:8px;">Inject Network Hook</button>
+                <button class="btn btn-primary" id="btn-copy-dom" style="margin-top:auto;">Copy</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">WebSocket Sniffer</div>
-                    <div class="ext-sub">Hooks WebSocket constructor to log stream data.</div>
+                    <div class="ext-name">Vibe Snap</div>
+                    <div class="ext-sub">AI Context Bundle.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-inject-ws" style="margin-top:8px;">Inject WS Sniffer</button>
+                <button class="btn btn-primary" id="btn-vibe-snapshot" style="margin-top:auto;">Snap</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Console Watcher</div>
-                    <div class="ext-sub">Intercepts console logs & formats them for clearer debugging.</div>
+                    <div class="ext-name">Theme Check</div>
+                    <div class="ext-sub">Extract CSS tokens.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-inject-console" style="margin-top:8px;">Hook Console Logs</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Vibe Snapshot (AI Ready)</div>
-                    <div class="ext-sub">Captures URL, Storage, and Clean DOM as Markdown.</div>
-                </div>
-                <button class="btn btn-primary" id="btn-vibe-snapshot" style="margin-top:8px;">Copy Vibe Context</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">UI Wireframer</div>
-                    <div class="ext-sub">Outlines all interactive elements for easier spotting.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-toggle-outline" style="margin-top:8px;">Toggle Outlines</button>
+                <button class="btn btn-secondary" id="btn-extract-theme" style="margin-top:auto;">Extract</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">JSON Hunter</div>
-                    <div class="ext-sub">Finds large JSON blobs in scripts/window variables.</div>
+                    <div class="ext-sub">Find hidden blobs.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-hunt-json" style="margin-top:8px;">Hunt JSON</button>
+                <button class="btn btn-secondary" id="btn-hunt-json" style="margin-top:auto;">Hunt</button>
+            </div>
+        </div>
+
+        <!-- 🕵️ Privacy & Scrambling -->
+        <div class="section-label">🕵️ Privacy & Scrambling</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Privacy Shield</div>
+                    <div class="ext-sub">Redact Emails/Phones.</div>
+                </div>
+                <button class="btn btn-primary" id="btn-redact-pii" style="margin-top:auto;">Shield</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Freeze Page (3s)</div>
-                    <div class="ext-sub">Triggers a debugger break after 3 seconds.</div>
+                    <div class="ext-name">Ghost Mode</div>
+                    <div class="ext-sub">Blur all media/avs.</div>
                 </div>
-                <button class="btn btn-red" id="btn-freeze-page" style="margin-top:8px;">Freeze in 3s</button>
+                <button class="btn btn-secondary" id="btn-ghost-mode" style="margin-top:auto;">Ghost</button>
+            </div>
+            <div class="ext-card" style="grid-column: span 2;">
+                <div class="ext-header">
+                    <div class="ext-name">Manual Scrambler</div>
+                    <div class="ext-sub">Find and replace any text mentions on the page.</div>
+                </div>
+                <div style="display:flex; gap:6px; margin-top:8px;">
+                   <input type="text" id="scramble-find" placeholder="Find..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
+                   <input type="text" id="scramble-replace" placeholder="Replace..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
+                   <button class="btn btn-primary" id="btn-scramble-manual" style="padding:4px 10px;">Go</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📡 Runtime Interceptors -->
+        <div class="section-label">📡 Runtime Interceptors</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Network</div>
+                    <div class="ext-sub">Trace requests.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-inject-network" style="margin-top:auto;">Inject</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Theme Extractor</div>
-                    <div class="ext-sub">Extracts CSS Variables & Colors used on the page.</div>
+                    <div class="ext-name">WS Sniffer</div>
+                    <div class="ext-sub">Log streams.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-extract-theme" style="margin-top:8px;">Copy Palette</button>
+                <button class="btn btn-secondary" id="btn-inject-ws" style="margin-top:auto;">Sniff</button>
             </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Console</div>
+                    <div class="ext-sub">Hook logs.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-inject-console" style="margin-top:auto;">Hook</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Latency</div>
+                    <div class="ext-sub">Simulate 2s delay.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-toggle-latency" style="margin-top:auto;">Toggle</button>
+            </div>
+        </div>
+
+        <!-- 🎨 UI & UX Tools -->
+        <div class="section-label">🎨 UI & UX Tools</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Annotator</div>
+                    <div class="ext-sub">Add notes for AI.</div>
+                </div>
+                <button class="btn btn-primary" id="btn-start-annotator" style="margin-top:auto;">Start</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Visual Edit</div>
+                    <div class="ext-sub">Click to edit text.</div>
+                </div>
+                <button class="btn btn-primary" id="btn-toggle-edit" style="margin-top:auto;">Toggle</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Wireframer</div>
+                    <div class="ext-sub">Outline elements.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-toggle-outline" style="margin-top:auto;">Toggle</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Nuke Modals</div>
+                    <div class="ext-sub">Kill popups.</div>
+                </div>
+                <button class="btn btn-red" id="btn-nuke-overlays" style="margin-top:auto;">Nuke</button>
+            </div>
+        </div>
+
+        <!-- 🕹️ Hacker & Dev Fun -->
+        <div class="section-label">🕹️ Hacker & Dev Fun</div>
+        <div class="toolkit-grid">
             <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">Selector Picker</div>
-                    <div class="ext-sub">Click an element to copy its unique CSS selector.</div>
+                    <div class="ext-sub">Copy unique CSS.</div>
                 </div>
-                <button class="btn btn-primary" id="btn-pick-selector" style="margin-top:8px;">Start Picker</button>
+                <button class="btn btn-primary" id="btn-pick-selector" style="margin-top:auto;">Start</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Lazy Load Trigger</div>
-                    <div class="ext-sub">Scrolls to the bottom to trigger infinite loaders.</div>
+                    <div class="ext-name">Gravity Mode</div>
+                    <div class="ext-sub">DOM Physics.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-auto-scroll" style="margin-top:8px;">Scroll to Bottom</button>
-            </div>
-        </div>
-        <!-- 🎨 UI Tools -->
-        <div class="section-label" style="margin-top:16px;">🎨 UI Tools</div>
-        <div class="storage-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">AI Task Annotator</div>
-                    <div class="ext-sub">Select multiple elements and add notes/tasks for AI.</div>
-                </div>
-                <button class="btn btn-primary" id="btn-start-annotator" style="margin-top:8px;">Start Annotation Mode</button>
+                <button class="btn btn-secondary" id="btn-gravity-mode" style="margin-top:auto;">Enable</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Cyberpunk Vibe</div>
-                    <div class="ext-sub">Transform any site into a neon-noir terminal.</div>
+                    <div class="ext-name">Text Explode</div>
+                    <div class="ext-sub">Break the page.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-toggle-vibe" style="margin-top:8px; border-color:#d946ef; color:#d946ef;">Toggle Cyberpunk</button>
+                <button class="btn btn-secondary" id="btn-explode-text" style="margin-top:auto;">Boom</button>
             </div>
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Element Magnifier</div>
-                    <div class="ext-sub">Hover over elements to see IDs/Classes in real-time.</div>
+                    <div class="ext-name">Auto Scroll</div>
+                    <div class="ext-sub">Trigger lazy load.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-start-magnifier" style="margin-top:8px;">Start Magnifier</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Deep Storage Wiper</div>
-                    <div class="ext-sub">Clears Cookies & LocalStorage for the current domain.</div>
-                </div>
-                <button class="btn btn-red" id="btn-wipe-domain" style="margin-top:8px;">Wipe Site Data</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Visual Content Editor</div>
-                    <div class="ext-sub">Turn on "Click-to-Edit" for any text on the page.</div>
-                </div>
-                <button class="btn btn-primary" id="btn-toggle-edit" style="margin-top:8px;">Toggle Visual Edit</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Network Latency (2s)</div>
-                    <div class="ext-sub">Simulate slow connections for all Fetch/XHR.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-toggle-latency" style="margin-top:8px;">Toggle 2s Delay</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Overlay Destroyer</div>
-                    <div class="ext-sub">Nukes annoying popups, modals, and screen-dimmers.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-nuke-overlays" style="margin-top:8px;">Nuke Popups</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">God Search</div>
-                    <div class="ext-sub">Search for a string across DOM, Storage, and Cookies.</div>
-                </div>
-                <div style="display:flex; gap:6px; margin-top:8px;">
-                   <input type="text" id="god-search-input" placeholder="Search string..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
-                   <button class="btn btn-secondary" id="btn-god-search" style="flex:none; padding:4px 10px;">Find</button>
-                </div>
-                </div>
-        <!-- 📊 External Analysis -->
-        <div class="section-label" style="margin-top:16px;">📊 External Analysis</div>
-        <div class="storage-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">PageSpeed Insights</div>
-                    <div class="ext-sub">Open official Google performance audit for this tab.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-pagespeed" style="margin-top:8px;">Open PageSpeed</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Wappalyzer Check</div>
-                    <div class="ext-sub">Look up tech stack and built-with info via Wappalyzer.</div>
-                </div>
-                <button class="btn btn-secondary" id="btn-wappalyzer" style="margin-top:8px;">Open Wappalyzer</button>
+                <button class="btn btn-secondary" id="btn-auto-scroll" style="margin-top:auto;">Scroll</button>
             </div>
         </div>
-    </div>
+
+        <!-- 🛠️ System Tools -->
+        <div class="section-label">🛠️ System Tools</div>
+        <div class="toolkit-grid">
             <div class="ext-card">
                 <div class="ext-header">
-                    <div class="ext-name">Domain Reloader</div>
-                    <div class="ext-sub">Refreshes every open tab on this current domain.</div>
+                    <div class="ext-name">Domain Wipe</div>
+                    <div class="ext-sub">Clear all data.</div>
                 </div>
-                <button class="btn btn-secondary" id="btn-reload-domain" style="margin-top:8px;">Reload All Domain Tabs</button>
+                <button class="btn btn-red" id="btn-wipe-domain" style="margin-top:auto;">Wipe</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Multi Reload</div>
+                    <div class="ext-sub">Refresh domain.</div>
+                </div>
+                <button class="btn btn-secondary" id="btn-reload-domain" style="margin-top:auto;">Reload</button>
+            </div>
+            <div class="ext-card" style="grid-column: span 2;">
+                <div class="btn-row">
+                    <button class="btn btn-secondary" id="btn-pagespeed" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/pagespeed_64dp.png" style="width:12px;height:12px;"> PageSpeed
+                    </button>
+                    <button class="btn btn-secondary" id="btn-wappalyzer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <img src="https://www.wappalyzer.com/apple-touch-icon.png" style="width:12px;height:12px;"> Wappalyzer
+                    </button>
+                </div>
             </div>
         </div>
     </div>

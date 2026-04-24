@@ -1427,6 +1427,126 @@ Please review this state and help me.
         });
     });
 
+    // ── Privacy & Scrambling ───────────────────────────────────────────
+    document.getElementById('btn-redact-pii').addEventListener('click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const regexes = {
+                    email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+                    phone: /(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g
+                };
+                const walk = (node) => {
+                    if (node.nodeType === 3) {
+                        let text = node.nodeValue;
+                        text = text.replace(regexes.email, '[EMAIL REDACTED]');
+                        text = text.replace(regexes.phone, '[PHONE REDACTED]');
+                        node.nodeValue = text;
+                    } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
+                        node.childNodes.forEach(walk);
+                    }
+                };
+                walk(document.body);
+                alert("Privacy Shield Active: Emails and Phones redacted.");
+            }
+        });
+    });
+
+    document.getElementById('btn-ghost-mode').addEventListener('click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const id = 'dev-vault-ghost-mode';
+                let style = document.getElementById(id);
+                if (style) {
+                    style.remove();
+                    alert("Ghost Mode Disabled.");
+                } else {
+                    style = document.createElement('style');
+                    style.id = id;
+                    style.innerHTML = `
+                        img, video, [style*="background-image"], .avatar, [class*="avatar"] { 
+                            filter: blur(20px) grayscale(1) !important; 
+                            opacity: 0.3 !important;
+                            transition: filter 0.5s ease !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    alert("Ghost Mode Enabled: Images and avatars blurred.");
+                }
+            }
+        });
+    });
+
+    document.getElementById('btn-scramble-manual').addEventListener('click', async () => {
+        const findText = document.getElementById('scramble-find').value;
+        const replaceText = document.getElementById('scramble-replace').value;
+        if (!findText) return alert("Please enter text to find.");
+        
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            args: [findText, replaceText],
+            func: (f, r) => {
+                const regex = new RegExp(f, 'gi');
+                const walk = (node) => {
+                    if (node.nodeType === 3) {
+                        node.nodeValue = node.nodeValue.replace(regex, r || '[REDACTED]');
+                    } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
+                        node.childNodes.forEach(walk);
+                    }
+                };
+                walk(document.body);
+            }
+        });
+    });
+
+    document.getElementById('btn-gravity-mode').addEventListener('click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const els = document.querySelectorAll('body *:not(script):not(style)');
+                els.forEach(el => {
+                    if (el.children.length > 0) return;
+                    el.style.transition = 'transform 1.5s cubic-bezier(0.47, 0, 0.745, 0.715)';
+                    el.style.transform = `translateY(${window.innerHeight}px) rotate(${Math.random() * 30 - 15}deg)`;
+                });
+                alert("Gravity constant modified. Everything is falling.");
+            }
+        });
+    });
+
+    document.getElementById('btn-explode-text').addEventListener('click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const walk = (node) => {
+                    if (node.nodeType === 3 && node.nodeValue.trim()) {
+                        const words = node.nodeValue.split(/\s+/);
+                        const frag = document.createDocumentFragment();
+                        words.forEach(word => {
+                            const span = document.createElement('span');
+                            span.textContent = word + ' ';
+                            span.style.display = 'inline-block';
+                            span.style.transition = 'all 2s ease-out';
+                            span.style.transform = `translate(${Math.random()*1000-500}px, ${Math.random()*1000-500}px) rotate(${Math.random()*360}deg)`;
+                            span.style.opacity = '0';
+                            frag.appendChild(span);
+                        });
+                        node.parentNode.replaceChild(frag, node);
+                    } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
+                        Array.from(node.childNodes).forEach(walk);
+                    }
+                };
+                walk(document.body);
+            }
+        });
+    });
+
     // ── Build Extensions List ─────────────────────────────────────────────
     function renderExtensions() {
         const list = document.getElementById('ext-list');
