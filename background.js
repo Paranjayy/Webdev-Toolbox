@@ -129,22 +129,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             func: () => {
                 const cleanDomForTokens = (docEl) => {
                     const traverse = (node) => {
-                        let cloned = node.cloneNode(true);
+                        // Handle ShadowRoot specifically since it cannot be cloned
+                        if (node instanceof ShadowRoot) {
+                            let shadowHtml = '';
+                            node.childNodes.forEach(child => {
+                                if (child.nodeType === 1) shadowHtml += traverse(child);
+                                else if (child.nodeType === 3) shadowHtml += child.textContent;
+                            });
+                            return `<shadow-root>${shadowHtml}</shadow-root>`;
+                        }
+
+                        const cloned = node.cloneNode(true);
                         
                         // 1. Remove comments
                         const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
                         let comment;
                         while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
                         
-                        // 2. Handle Shadow DOM recursion
+                        // 2. Handle Shadow DOM recursion for children
                         const allOriginal = node.querySelectorAll('*');
                         const allCloned = cloned.querySelectorAll('*');
                         allOriginal.forEach((orig, i) => {
-                            if (orig.shadowRoot) {
+                            if (orig.shadowRoot && allCloned[i]) {
                                 const shadowContent = traverse(orig.shadowRoot);
-                                const wrapper = document.createElement('shadow-root');
+                                const wrapper = document.createElement('div');
                                 wrapper.innerHTML = shadowContent;
-                                if (allCloned[i]) allCloned[i].appendChild(wrapper);
+                                allCloned[i].appendChild(wrapper.firstChild);
                             }
                         });
 
@@ -267,14 +277,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     clean_dom: cleanDomForTokens(document.documentElement)
                 };
 
-                const prompt = `### AI GIGASNAP CONTEXT (Full Intelligence Snap)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
+                const prompt = `### AI SNAPSHOT CONTEXT (Webdev Toolbox)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
                 const tmp = document.createElement('textarea');
                 tmp.value = prompt;
                 document.body.appendChild(tmp);
                 tmp.select();
                 document.execCommand('copy');
                 document.body.removeChild(tmp);
-                alert("GIGASNAP (Perfected) copied!\n- Full Cleaned DOM\n- Performance Metrics\n- Global State Keys\n- Storage & Metadata");
+                alert("Snapshot (Perfected) copied!\n- Full Cleaned DOM\n- Performance Metrics\n- Global State Keys\n- Storage & Metadata");
             }
         });
     } else if (info.menuItemId === "annotator") {
