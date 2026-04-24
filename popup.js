@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Extension cards ───────────────────────────────────────────────────
     const list = document.getElementById('ext-list');
     chrome.management.getAll((extensions) => {
-        const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'GIGASNAP Dev Vault');
+            const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'Dev Toolbox');
         if (devExts.length === 0) {
             list.innerHTML = `<div class="empty-state"><span>📭</span>No unpacked extensions found.</div>`;
             return;
@@ -1552,7 +1552,7 @@ Please review this state and help me.
         const list = document.getElementById('ext-list');
         if (!list) return;
         chrome.management.getAll((extensions) => {
-            const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'GIGASNAP Dev Vault');
+                const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'Dev Toolbox');
             if (devExts.length === 0) {
                 list.innerHTML = `<div class="empty-state"><span>📭</span>No unpacked extensions found.</div>`;
                 return;
