@@ -1,4 +1,4 @@
-# Dev Toolbox: God Build Edition 🔓🚀
+# Webdev Toolbox: God Build Edition 🔓🚀
 
 A high-fidelity orchestration utility for reverse engineers, web scrapers, and developers. Built to bridge the gap between the browser and the LLM.
 
