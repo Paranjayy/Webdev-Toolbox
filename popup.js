@@ -19,10 +19,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function getActiveTab() {
-        if (tab) return tab;
         const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
-        tab = t;
+        if (!t || !t.url) return t;
+        if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:')) {
+            // Internal pages are restricted
+            return { ...t, restricted: true };
+        }
         return t;
+    }
+
+    async function safeExecute(func, args = []) {
+        try {
+            const tab = await getActiveTab();
+            if (tab.restricted) {
+                alert("Restricted Page: Tools cannot be run on internal browser pages.");
+                return;
+            }
+            return await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: func,
+                args: args
+            });
+        } catch (err) {
+            console.error("SafeExecute Error:", err);
+        }
     }
 
     // Auto-switch to errors tab if there are any errors
