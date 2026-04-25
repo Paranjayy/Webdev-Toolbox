@@ -148,9 +148,43 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // ── Goated Features: Keyboard Shortcuts ────────────────────────────────
+    window.addEventListener('keydown', (e) => {
+        if ((e.cmdKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('global-search')?.focus();
+        }
+    });
+
+    // ── Goated Features: Theme Toggle ──────────────────────────────────────
+    let isCyberMode = false;
+    function toggleTheme() {
+        isCyberMode = !isCyberMode;
+        if (isCyberMode) {
+            document.documentElement.style.setProperty('--primary', '#8b5cf6');
+            document.documentElement.style.setProperty('--primary-glow', 'rgba(139, 92, 246, 0.5)');
+            document.documentElement.style.setProperty('--bg', '#020617');
+        } else {
+            document.documentElement.style.setProperty('--primary', '#3b82f6');
+            document.documentElement.style.setProperty('--primary-glow', 'rgba(59, 130, 246, 0.5)');
+            document.documentElement.style.setProperty('--bg', '#030712');
+        }
+    }
+
     // ── Boot ──────────────────────────────────────────────────────────────
     renderExtensions();
     renderReverse();
+    
+    // Add theme toggle button to header
+    const headerBtns = document.querySelector('header div:last-child');
+    if (headerBtns) {
+        const themeBtn = document.createElement('button');
+        themeBtn.className = 'btn';
+        themeBtn.style.width = 'auto';
+        themeBtn.textContent = '🌓 Theme';
+        themeBtn.onclick = toggleTheme;
+        headerBtns.prepend(themeBtn);
+    }
     document.getElementById('btn-refresh')?.addEventListener('click', () => {
         renderExtensions();
         renderShortcuts();
