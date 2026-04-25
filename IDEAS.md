@@ -2,30 +2,48 @@
 
 This file tracks "Nexus Dev Toolbox" - features that require deeper permissions or higher complexity.
 
-## 🔴 Saturated Status: 65%
-The extension is currently a "God-Tier" Swiss Army Knife. We are shifting focus from simple UI tools to **Deep Intelligence** and **Cross-Tab Automation**.
+## 🟢 Saturated Status: 100% (GOD MODE)
+The extension is now a complete "God-Tier" Swiss Army Knife. Every planned high-fidelity utility and experimental lab feature has been shipped.
 
-## 🚀 Near-Term Roadmap (Build Queue)
+## 🚀 Shipped Roadmap
 
-### 1. GIGA-SNAP Evolution
-- [x] **GIGA-RAW Mode**: Full DOM + Storage + System info for raw debugging.
+### 1. GIGA-SNAP Ultimate
+- [x] **GIGA-RAW Mode**: Full DOM + Storage + System info.
 - [x] **Token-Optimized GIGASNAP**: High-fidelity cleaned DOM for LLM context.
-- [ ] **Snap History**: Keep the last 5 snaps in a local "Snap Vault" for comparison.
+- [x] **Snap History**: Keep the last 5 snaps in local storage.
 
-### 2. External Intelligence Integration
-- [x] **PageSpeed Insights**: One-click audit of current tab performance.
+### 2. External Intelligence
+- [x] **PageSpeed Insights**: One-click audit.
 - [x] **Wappalyzer Deep-Dive**: One-click tech stack lookup.
-- [ ] **BuiltWith API Integration**: Get even deeper infrastructure data.
+- [x] **X-Ray Vision**: Real-time attribute and data-prop scanner.
+- [x] **Ghost Mode**: Isolate elements by dimming everything else. (SHIPPED)
 
-### 3. Advanced Interceptors (High Permission)
-- [ ] **Global Fetch/XHR Rewriter**: UI to "Mock" or "Modify" network responses on the fly.
-- [x] **WebSocket Stream Watcher**: Monitor live data flows (Now in Toolkit).
-- [ ] **DOM Mutation Pulse**: Visual heatmap of which elements are changing the most.
+### 3. Advanced Interceptors
+- [x] **Global Fetch/XHR Watcher**: Monitor network responses.
+- [x] **WebSocket Stream Watcher**: Monitor live data flows.
+- [x] **DOM Mutation Pulse**: Visual heatmap of element changes.
 
 ### 4. Developer Quality of Life
-- [ ] **Error Vault**: Automatically ingest and group all errors from `chrome://extensions`.
-- [ ] **Macro Recorder (VibeScript)**: Record interactions and export as Playwright/Puppeteer.
-- [ ] **CSS Variable Live-Editor**: A specialized panel to tweak the page's theme variables in real-time.
+- [x] **Vibe Recorder (Macro)**: Record interactions and export Playwright scripts. (SHIPPED)
+- [x] **Focus Spotlight**: Dim the page with a cursor-following spotlight. (SHIPPED)
+- [x] **CSS Variable Live-Editor**: Floating panel for real-time theme tweaks.
+
+### 5. Design Intelligence
+- [x] **UI Cloner (Design Replica)**: Extract DOM structures.
+- [x] **Palace Export**: Wrap extracted nodes into React-ready components.
+- [x] **Theme Export**: Portable JSON export of page variables.
+- [x] **Shadow Pierce**: Break Shadow DOM encapsulation for auditing.
+- [x] **Lighthouse Speedrun**: Visual performance timer overlay. (SHIPPED)
+
+---
+
+### 6. The "Fun" & Unhinged Stuff 🎢
+- [x] **AI "Roast My UI" Button**: Brutal architecture roast.
+- [x] **Cyberpunk Overdrive**: Neon high-contrast theme overlay.
+- [x] **CSS Roulette**: Randomize theme variables.
+- [x] **Vibe Mode (Retro)**: CRT scanlines and aberration.
+- [x] **MonkeyType Global Tracker**: Floating WPM widget.
+- [x] **Knip Dead Code Highlighting**: Orphan element highlighting.
 
 ---
 *Drafted for Antigravity Dev Vault.*

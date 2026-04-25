@@ -106,7 +106,159 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         return true;
     }
+
+    } else if (request.action === 'PERFORM_SNAPSHOT') {
+        handleGigaSnap(sender.tab?.id || request.tabId, request.raw || false);
+        sendResponse({ success: true });
+    } else if (request.action === 'PERFORM_MACRO') {
+        handleVibeRecorder(sender.tab?.id || request.tabId);
+        sendResponse({ success: true });
+    }
+    return true;
 });
+
+async function handleGigaSnap(tabId, raw = false) {
+    const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (isRaw) => {
+            const cleanDomForTokens = (docEl) => {
+                const traverse = (node) => {
+                    if (node instanceof ShadowRoot) {
+                        let shadowHtml = '';
+                        node.childNodes.forEach(child => {
+                            if (child.nodeType === 1) shadowHtml += traverse(child);
+                            else if (child.nodeType === 3) shadowHtml += child.textContent;
+                        });
+                        return `<shadow-root>${shadowHtml}</shadow-root>`;
+                    }
+                    const cloned = node.cloneNode(true);
+                    const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
+                    let comment;
+                    while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
+                    const allOriginal = node.querySelectorAll('*');
+                    const allCloned = cloned.querySelectorAll('*');
+                    allOriginal.forEach((orig, i) => {
+                        if (orig.shadowRoot && allCloned[i]) {
+                            const shadowContent = traverse(orig.shadowRoot);
+                            const wrapper = document.createElement('div');
+                            wrapper.innerHTML = shadowContent;
+                            allCloned[i].appendChild(wrapper.firstChild);
+                        }
+                    });
+                    const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
+                    removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
+                    cloned.querySelectorAll('svg').forEach(s => { s.innerHTML = '<!-- [SVG CONTENT STRIPPED] -->'; });
+                    const allElements = cloned.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        const attrs = el.attributes;
+                        for (let i = attrs.length - 1; i >= 0; i--) {
+                            const n = attrs[i].name;
+                            if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
+                        }
+                        if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
+                    });
+                    return cloned.outerHTML;
+                };
+                return traverse(docEl);
+            };
+
+            const detectStack = () => {
+                const stack = [];
+                if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
+                if (window.next || window.__NEXT_DATA__) stack.push('Next.js');
+                if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
+                if (window.jQuery) stack.push('jQuery');
+                if (window.Angular || document.querySelector('[ng-app], [ng-version]')) stack.push('Angular');
+                if (window.Svelte || document.querySelector('[class*="svelte-"]')) stack.push('Svelte');
+                if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]') || document.querySelector('link[href*="tailwind"]')) stack.push('Tailwind');
+                return stack;
+            };
+
+            const megasnapshot = {
+                metadata: { 
+                    timestamp: new Date().toISOString(), 
+                    url: window.location.href, 
+                    title: document.title,
+                    type: isRaw ? 'Raw' : 'Token-Optimized'
+                },
+                stack: detectStack(),
+                clean_dom: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)
+            };
+
+            const prompt = `### AI SNAPSHOT CONTEXT\n${JSON.stringify(megasnapshot, null, 2)}`;
+            const tmp = document.createElement('textarea');
+            tmp.value = prompt; document.body.appendChild(tmp);
+            tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+            return megasnapshot;
+        },
+        args: [raw]
+    });
+
+    if (results?.[0]?.result) {
+        const snap = results[0].result;
+        chrome.storage.local.get(['snap_history'], (res) => {
+            const history = Array.isArray(res.snap_history) ? res.snap_history : [];
+            history.unshift(snap);
+            chrome.storage.local.set({ snap_history: history.slice(0, 5) });
+        });
+    }
+}
+
+async function handleVibeRecorder(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: () => {
+            if (window.__MACRO_ACTIVE) {
+                const events = window.__MACRO_EVENTS || [];
+                const script = `const { test, expect } = require('@playwright/test');\n\ntest('recorded session', async ({ page }) => {\n  await page.goto('${window.location.href}');\n  ${events.map(e => {
+                    if (e.type === 'click') return `  await page.click('${e.selector}');`;
+                    if (e.type === 'input') return `  await page.fill('${e.selector}', '${e.value}');`;
+                    return '';
+                }).filter(Boolean).join('\n')}\n});`;
+                
+                const tmp = document.createElement('textarea');
+                tmp.value = script; document.body.appendChild(tmp);
+                tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+                
+                alert(`Macro Exported! Copied ${events.length} steps as Playwright script.`);
+                window.__MACRO_ACTIVE = false;
+                document.getElementById('macro-indicator')?.remove();
+                
+                // Cleanup listeners
+                document.removeEventListener('click', window.__MACRO_CLICK, true);
+                document.removeEventListener('input', window.__MACRO_INPUT, true);
+                return;
+            }
+
+            window.__MACRO_ACTIVE = true;
+            window.__MACRO_EVENTS = [];
+            const indicator = document.createElement('div');
+            indicator.id = 'macro-indicator';
+            indicator.style = 'position:fixed; top:20px; right:20px; background:#ef4444; color:white; padding:8px 15px; border-radius:20px; z-index:1000000; font-family:sans-serif; font-size:12px; font-weight:bold; animation: pulse 1s infinite; border: 2px solid white; pointer-events:none;';
+            indicator.innerText = '🔴 RECORDING MACRO...';
+            document.body.appendChild(indicator);
+
+            const getSelector = (el) => {
+                if (el.id) return `#${el.id}`;
+                if (el.className && typeof el.className === 'string') return `.${el.className.split(' ')[0]}`;
+                return el.tagName.toLowerCase();
+            };
+
+            window.__MACRO_CLICK = (e) => {
+                if (!window.__MACRO_ACTIVE) return;
+                window.__MACRO_EVENTS.push({ type: 'click', selector: getSelector(e.target) });
+            };
+
+            window.__MACRO_INPUT = (e) => {
+                if (!window.__MACRO_ACTIVE) return;
+                window.__MACRO_EVENTS.push({ type: 'input', selector: getSelector(e.target), value: e.target.value });
+            };
+
+            document.addEventListener('click', window.__MACRO_CLICK, true);
+            document.addEventListener('input', window.__MACRO_INPUT, true);
+        }
+    });
+}
 
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
@@ -120,171 +272,185 @@ chrome.runtime.onInstalled.addListener(() => {
         title: "📝 Snapshot: Annotator Mode",
         contexts: ["all"]
     });
+    chrome.contextMenus.create({
+        id: "visual_edit",
+        title: "🎨 Design: Toggle Edit Mode",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "inspect_style",
+        title: "🔍 Design: Inspect Style",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "copy_selector",
+        title: "📋 Dev: Copy Selector",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "nuke_element",
+        title: "💀 Dev: Nuke Element",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "css_roulette",
+        title: "🎲 Chaos: CSS Roulette",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "color_tweak",
+        title: "🎨 Design: Tweak Colors",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "vibe_recorder",
+        title: "🎬 Macro: Vibe Recorder",
+        contexts: ["all"]
+    });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === "gigasnap") {
+        handleGigaSnap(tab.id, false);
+    } else if (info.menuItemId === "vibe_recorder") {
+        handleVibeRecorder(tab.id);
+    } else if (info.menuItemId === "visual_edit") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const cleanDomForTokens = (docEl) => {
-                    const traverse = (node) => {
-                        // Handle ShadowRoot specifically since it cannot be cloned
-                        if (node instanceof ShadowRoot) {
-                            let shadowHtml = '';
-                            node.childNodes.forEach(child => {
-                                if (child.nodeType === 1) shadowHtml += traverse(child);
-                                else if (child.nodeType === 3) shadowHtml += child.textContent;
-                            });
-                            return `<shadow-root>${shadowHtml}</shadow-root>`;
+                document.designMode = document.designMode === 'on' ? 'off' : 'on';
+                alert(`Design Mode: ${document.designMode.toUpperCase()}`);
+            }
+        });
+    } else if (info.menuItemId === "inspect_style") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                // We use a small hack to get the element under context menu click
+                // since 'all' context doesn't pass the element directly in MV3 background script
+                // we'll use the last right-clicked element if we tracked it, 
+                // or just ask the user to click again for simplicity in this lab tool.
+                alert('Click an element to see its core styles in the console.');
+                const handler = (e) => {
+                    e.preventDefault();
+                    const style = window.getComputedStyle(e.target);
+                    console.log(`%c [VAULT INSPECT] ${e.target.tagName} `, 'background: #6366f1; color: white; font-weight: bold;');
+                    console.log('Font:', style.fontFamily, style.fontSize, style.fontWeight);
+                    console.log('Colors:', { color: style.color, background: style.backgroundColor });
+                    console.log('Spacing:', { margin: style.margin, padding: style.padding });
+                    console.log('Element:', e.target);
+                    document.removeEventListener('click', handler, true);
+                };
+                document.addEventListener('click', handler, true);
+            }
+        });
+    } else if (info.menuItemId === "copy_selector") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                alert('Click an element to copy its unique CSS selector.');
+                const handler = (e) => {
+                    e.preventDefault();
+                    const getSelector = (el) => {
+                        if (el.id) return `#${el.id}`;
+                        let path = [];
+                        while (el && el.nodeType === Node.ELEMENT_NODE) {
+                            let selector = el.nodeName.toLowerCase();
+                            if (el.id) {
+                                selector += '#' + el.id;
+                                path.unshift(selector);
+                                break;
+                            } else {
+                                let sibling = el, nth = 1;
+                                while (sibling = sibling.previousElementSibling) if (sibling.nodeName === el.nodeName) nth++;
+                                if (nth !== 1) selector += `:nth-of-type(${nth})`;
+                            }
+                            path.unshift(selector);
+                            el = el.parentNode;
                         }
-
-                        const cloned = node.cloneNode(true);
-                        
-                        // 1. Remove comments
-                        const iterator = document.createNodeIterator(cloned, NodeFilter.SHOW_COMMENT, null, false);
-                        let comment;
-                        while (comment = iterator.nextNode()) comment.parentNode.removeChild(comment);
-                        
-                        // 2. Handle Shadow DOM recursion for children
-                        const allOriginal = node.querySelectorAll('*');
-                        const allCloned = cloned.querySelectorAll('*');
-                        allOriginal.forEach((orig, i) => {
-                            if (orig.shadowRoot && allCloned[i]) {
-                                const shadowContent = traverse(orig.shadowRoot);
-                                const wrapper = document.createElement('div');
-                                wrapper.innerHTML = shadowContent;
-                                allCloned[i].appendChild(wrapper.firstChild);
-                            }
-                        });
-
-                        // 3. Remove bloat elements
-                        const removeSelectors = ['script', 'style', 'noscript', 'iframe', 'img', 'video', 'canvas', 'link', 'meta', 'head', 'template'];
-                        removeSelectors.forEach(sel => cloned.querySelectorAll(sel).forEach(el => el.remove()));
-                        
-                        // 4. Refine SVGs
-                        cloned.querySelectorAll('svg').forEach(s => { s.innerHTML = '<!-- [SVG CONTENT STRIPPED] -->'; });
-
-                        // 5. Strip non-essential attributes
-                        const allElements = cloned.querySelectorAll('*');
-                        allElements.forEach(el => {
-                            const attrs = el.attributes;
-                            for (let i = attrs.length - 1; i >= 0; i--) {
-                                const n = attrs[i].name;
-                                if (!/^(data-|aria-|class|id|href|src|value|type|name|role|placeholder|title)/.test(n)) el.removeAttribute(n);
-                            }
-                            // Collapse empty divs/spans with no attrs
-                            if ((el.tagName === 'DIV' || el.tagName === 'SPAN') && el.innerHTML.trim() === '' && el.attributes.length === 0) el.remove();
-                        });
-                        return cloned.outerHTML;
+                        return path.join(' > ');
                     };
-                    return traverse(docEl);
+                    const selector = getSelector(e.target);
+                    const tmp = document.createElement('textarea');
+                    tmp.value = selector;
+                    document.body.appendChild(tmp);
+                    tmp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tmp);
+                    console.log('Copied Selector:', selector);
+                    document.removeEventListener('click', handler, true);
                 };
-
-                const detectStack = () => {
-                    const stack = [];
-                    if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
-                    if (window.next || window.__NEXT_DATA__) stack.push('Next.js');
-                    if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
-                    if (window.jQuery) stack.push('jQuery');
-                    if (window.Angular || document.querySelector('[ng-app], [ng-version]')) stack.push('Angular');
-                    if (window.Svelte || document.querySelector('[class*="svelte-"]')) stack.push('Svelte');
-                    if (document.documentElement.classList.contains('tw-') || document.querySelector('[class*=":"]') || document.querySelector('link[href*="tailwind"]')) stack.push('Tailwind');
-                    if (window.bootstrap) stack.push('Bootstrap');
-                    if (window.THREE) stack.push('Three.js');
-                    if (window.gsap) stack.push('GSAP');
-                    if (window.framer || window.MotionConfig) stack.push('Framer Motion');
-                    if (document.querySelector('[data-radix-portal]')) stack.push('Radix UI');
-                    if (document.querySelector('[class*="lucide"]')) stack.push('Lucide Icons');
-                    return stack;
+                document.addEventListener('click', handler, true);
+            }
+        });
+    } else if (info.menuItemId === "nuke_element") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                alert('Click any element to delete it from the DOM.');
+                const handler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.remove();
+                    document.removeEventListener('click', handler, true);
                 };
-
-                const getPerformance = () => {
-                    const t = window.performance.timing;
-                    const nav = window.performance.getEntriesByType('navigation')[0] || {};
-                    return {
-                        loadTime: t.loadEventEnd - t.navigationStart,
-                        domReady: t.domContentLoadedEventEnd - t.navigationStart,
-                        ttfb: t.responseStart - t.navigationStart,
-                        transferSize: nav.transferSize,
-                        protocol: nav.nextHopProtocol
-                    };
-                };
-
-                const huntGlobalVars = () => {
-                    const globals = {};
-                    const skip = ['window', 'self', 'document', 'location', 'history', 'chrome', 'navigator', 'screen'];
-                    Object.keys(window).forEach(k => {
-                        if (skip.includes(k) || k.startsWith('__DEV_')) return;
-                        try {
-                            const val = window[k];
-                            if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length > 3) {
-                                if (k.toLowerCase().includes('config') || k.toLowerCase().includes('data') || k.toLowerCase().includes('initial')) {
-                                    globals[k] = val;
+                document.addEventListener('click', handler, true);
+            }
+        });
+    } else if (info.menuItemId === "css_roulette") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const root = document.documentElement;
+                const variables = [];
+                for (let i = 0; i < document.styleSheets.length; i++) {
+                    try {
+                        const sheet = document.styleSheets[i];
+                        for (let j = 0; j < sheet.cssRules.length; j++) {
+                            const rule = sheet.cssRules[j];
+                            if (rule.style) {
+                                for (let k = 0; k < rule.style.length; k++) {
+                                    const name = rule.style[k];
+                                    if (name.startsWith('--')) variables.push(name);
                                 }
                             }
-                        } catch(e){}
-                    });
-                    return globals;
-                };
-
-                const getDesignTokens = () => {
-                    const colors = new Set();
-                    const fonts = new Set();
-                    const walk = (node) => {
-                        if (node.nodeType === 1) {
-                            const style = window.getComputedStyle(node);
-                            if (style.color && !style.color.includes('rgba(0, 0, 0, 0)')) colors.add(style.color);
-                            if (style.backgroundColor && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) colors.add(style.backgroundColor);
-                            if (style.fontFamily) fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
                         }
-                        node.childNodes.forEach(walk);
-                    };
-                    // Sampling only first 200 elements to avoid performance hit
-                    const samples = Array.from(document.querySelectorAll('*')).slice(0, 200);
-                    samples.forEach(el => {
-                        const style = window.getComputedStyle(el);
-                        colors.add(style.color);
-                        colors.add(style.backgroundColor);
-                        fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
-                    });
-                    return { colors: Array.from(colors).slice(0, 15), fonts: Array.from(fonts).slice(0, 5) };
+                    } catch (e) {}
+                }
+                const uniqueVars = [...new Set(variables)];
+                uniqueVars.forEach(v => {
+                    const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                    root.style.setProperty(v, randomColor);
+                });
+                alert(`Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`);
+            }
+        });
+    } else if (info.menuItemId === "color_tweak") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                alert('Click an element to cycle its colors.');
+                const handler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const colors = ['#6366f1', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                    const current = e.target.style.color;
+                    const next = colors[(colors.indexOf(current) + 1) % colors.length];
+                    e.target.style.color = next;
+                    e.target.style.borderColor = next;
+                    // If it has a background-color that isn't transparent, maybe tweak that too
+                    const bg = window.getComputedStyle(e.target).backgroundColor;
+                    if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+                        e.target.style.backgroundColor = `${next}22`; // 20% opacity
+                    }
+                    console.log('Tweaked Color to:', next);
+                    // Don't remove listener yet, allow multiple clicks. 
+                    // Add a way to stop? Maybe a keypress or just leave it for the session.
+                    // For now, let's just make it a one-off or limited.
+                    // Actually, let's just stop after 10 seconds.
+                    setTimeout(() => document.removeEventListener('click', handler, true), 10000);
                 };
-
-                const megasnapshot = {
-                    metadata: { 
-                        timestamp: new Date().toISOString(), 
-                        url: window.location.href, 
-                        title: document.title,
-                        type: 'Token-Optimized (Full)'
-                    },
-                    stack: detectStack(),
-                    performance: getPerformance(),
-                    design_tokens: getDesignTokens(),
-                    errors: window.__DEV_VAULT_ERRORS || [],
-                    global_variables: huntGlobalVars(),
-                    hidden_fields: Array.from(document.querySelectorAll('input[type="hidden"]')).map(i => ({ name: i.name, id: i.id, value: i.value })),
-                    system: { 
-                        viewport: `${window.innerWidth}x${window.innerHeight}`, 
-                        userAgent: navigator.userAgent,
-                        language: navigator.language
-                    },
-                    storage: { 
-                        local: Object.assign({}, window.localStorage),
-                        session: Object.assign({}, window.sessionStorage),
-                        cookies: document.cookie
-                    },
-                    clean_dom: cleanDomForTokens(document.documentElement)
-                };
-
-                const prompt = `### AI SNAPSHOT CONTEXT (Webdev Toolbox)\n${JSON.stringify(megasnapshot, null, 2)}\n\nPlease help me analyze this.`;
-                const tmp = document.createElement('textarea');
-                tmp.value = prompt;
-                document.body.appendChild(tmp);
-                tmp.select();
-                document.execCommand('copy');
-                document.body.removeChild(tmp);
-                alert("Snapshot (Perfected) copied!\n- Full Cleaned DOM\n- Performance Metrics\n- Global State Keys\n- Storage & Metadata");
+                document.addEventListener('click', handler, true);
             }
         });
     } else if (info.menuItemId === "annotator") {
