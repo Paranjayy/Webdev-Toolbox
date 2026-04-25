@@ -200,33 +200,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Extension cards ───────────────────────────────────────────────────
-    const list = document.getElementById('ext-list');
-    chrome.management.getAll((extensions) => {
-                const devExts = extensions.filter(e => e.installType === 'development' && e.name !== 'Webdev Toolbox');
-        if (devExts.length === 0) {
-            list.innerHTML = `<div class="empty-state"><span>📭</span>No unpacked extensions found.</div>`;
-            return;
-        }
-        devExts.forEach(ext => {
-            const card = document.createElement('div');
-            card.className = 'ext-card';
-            const isEnabled = ext.enabled;
-            const isSH = ext.name.toLowerCase().includes('social') || ext.name.toLowerCase().includes('hoardr');
-            card.innerHTML = `
-                <div class="ext-header">
-                    <div style="min-width:0">
-                        <div class="ext-name">${ext.name}${isSH ? ' 🗄️' : ''}</div>
-                        <div class="ext-sub">ID: ${ext.id}</div>
-                    </div>
-                    <div class="${isEnabled ? 'status-badge' : 'status-badge disabled'}">${isEnabled ? 'ACTIVE' : 'DISABLED'}</div>
-                </div>
-                <div class="btn-row">
-                    <button class="btn btn-primary" id="reload-${ext.id}">Reload &amp; Refresh Tab</button>
-                    <button class="btn btn-secondary" id="toggle-${ext.id}">${isEnabled ? 'Disable' : 'Enable'}</button>
-                </div>
-            `;
-            list.appendChild(card);
+    const listUnpacked = document.getElementById('ext-list-unpacked');
+    const listStore = document.getElementById('ext-list-store');
 
+    function getExtIcon(ext) {
+        if (!ext.icons || ext.icons.length === 0) return 'icon.png';
+        // Prefer 32 or 48, otherwise largest
+        const preferred = ext.icons.find(i => i.size === 32 || i.size === 48);
+        if (preferred) return preferred.url;
+        return ext.icons.sort((a, b) => b.size - a.size)[0].url;
+    }
+
+    function renderExtensionCard(ext, container) {
+        const card = document.createElement('div');
+        card.className = 'ext-card';
+        const isEnabled = ext.enabled;
+        const iconUrl = getExtIcon(ext);
+        const isUnpacked = ext.installType === 'development';
+
+        card.innerHTML = `
+            <div class="ext-header">
+                <img src="${iconUrl}" class="ext-icon" onerror="this.src='icon.png'">
+                <div class="ext-info">
+                    <div class="ext-name">${ext.name}</div>
+                    <div class="ext-sub">v${ext.version} • ${ext.id.slice(0, 8)}...</div>
+                </div>
+                <div class="${isEnabled ? 'status-badge' : 'status-badge disabled'}">${isEnabled ? 'ACTIVE' : 'DISABLED'}</div>
+            </div>
+            <div class="btn-row" style="margin-top: 4px;">
+                ${isUnpacked ? `
+                    <button class="btn btn-primary" id="reload-${ext.id}" title="Reload extension and current tab">Reload & Refresh</button>
+                ` : `
+                    <button class="btn btn-primary" id="consolidate-${ext.id}" title="Reverse engineer and consolidate features">Consolidate</button>
+                `}
+                <button class="btn btn-secondary" id="toggle-${ext.id}">${isEnabled ? 'Disable' : 'Enable'}</button>
+            </div>
+        `;
+        container.appendChild(card);
+
+        if (isUnpacked) {
             document.getElementById(`reload-${ext.id}`).addEventListener('click', () => {
                 const btn = document.getElementById(`reload-${ext.id}`);
                 btn.textContent = 'Reloading…';
@@ -235,10 +247,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => window.close(), 350);
                 });
             });
-            document.getElementById(`toggle-${ext.id}`).addEventListener('click', () => {
-                chrome.management.setEnabled(ext.id, !isEnabled, () => location.reload());
+        } else {
+            document.getElementById(`consolidate-${ext.id}`).addEventListener('click', async () => {
+                const btn = document.getElementById(`consolidate-${ext.id}`);
+                const originalText = btn.textContent;
+                const path = `~/Library/Application\\ Support/Google/Chrome/Default/Extensions/${ext.id}/${ext.version}`;
+                const prompt = `Antigravity, please consolidate extension "${ext.name}" (ID: ${ext.id}).\n\nI want to reverse engineer its features. You can find the source at: ${path}\n\nPlease copy it to my workspace and analyze how it works so we can integrate its features into our toolkit.`;
+                await copyToClipboard(prompt);
+                btn.textContent = 'Copied Request!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
             });
+        }
+
+        document.getElementById(`toggle-${ext.id}`).addEventListener('click', () => {
+            chrome.management.setEnabled(ext.id, !isEnabled, () => location.reload());
         });
+    }
+
+    chrome.management.getAll((extensions) => {
+        // Clear containers
+        listUnpacked.innerHTML = '';
+        listStore.innerHTML = '';
+
+        const selfId = chrome.runtime.id;
+        const devExts = extensions.filter(e => e.installType === 'development' && e.id !== selfId);
+        const storeExts = extensions.filter(e => e.installType !== 'development' && e.type === 'extension' && e.id !== selfId);
+
+        if (devExts.length === 0) {
+            listUnpacked.innerHTML = `<div class="empty-state" style="padding:15px">No unpacked extensions.</div>`;
+        } else {
+            devExts.forEach(ext => renderExtensionCard(ext, listUnpacked));
+        }
+
+        if (storeExts.length === 0) {
+            listStore.innerHTML = `<div class="empty-state" style="padding:15px">No third-party extensions found.</div>`;
+        } else {
+            // Sort by enabled first, then name
+            storeExts.sort((a, b) => (b.enabled - a.enabled) || a.name.localeCompare(b.name));
+            storeExts.forEach(ext => renderExtensionCard(ext, listStore));
+        }
     });
 
     // ── Clear handlers ────────────────────────────────────────────────────
