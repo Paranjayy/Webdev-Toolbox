@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEV TOOLBOX</title>
+    <title>WEBDEV TOOLBOX</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -47,6 +47,7 @@
             background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(12px);
             flex-shrink: 0; z-index: 10;
         }
+        .logo { display: flex; flex-direction: column; }
         .title { 
             font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; 
             letter-spacing: -0.5px;
@@ -63,23 +64,23 @@
             padding: 0 10px;
         }
         .tab-btn {
-            flex: 1; padding: 9px; font-family: 'Outfit'; font-size: 0.78rem;
+            flex: 1; padding: 12px 6px; font-family: 'Outfit'; font-size: 0.72rem;
             font-weight: 600; background: none; border: none; color: var(--text-dim);
             cursor: pointer; transition: 0.2s; border-bottom: 2px solid transparent;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
         .tab-btn:hover:not(.active) { color: var(--text-main); background: rgba(255,255,255,0.03); }
 
         .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 14px; }
         .tab-panel.active { display: flex; flex-direction: column; }
 
-        /* Sub-tabs */
         .sub-tabs {
             display: flex; gap: 6px; padding: 0 0 10px 0; border-bottom: 1px solid var(--border);
             margin-bottom: 12px;
         }
         .sub-tab-btn {
-            padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+            padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 600;
             background: rgba(255,255,255,0.04); color: var(--text-dim); border: 1px solid var(--border);
             cursor: pointer; transition: 0.2s;
         }
@@ -91,30 +92,19 @@
         .sub-panel.active { display: block; }
 
         .section-label {
-            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px;
-            color: var(--text-dim); margin-bottom: 8px; font-weight: 700;
+            font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--text-dim); margin-bottom: 10px; font-weight: 700;
             display: flex; align-items: center; justify-content: space-between;
+            opacity: 0.8;
         }
-
-        .search-container {
-            position: sticky; top: 0; background: var(--bg); z-index: 5;
-            padding: 10px 0; border-bottom: 1px solid var(--border);
-            margin-bottom: 10px;
-        }
-        .search-input {
-            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            border-radius: 8px; padding: 8px 12px; color: white; font-size: 0.78rem;
-            outline: none; transition: 0.2s;
-        }
-        .search-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.08); }
 
         .toolkit-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;
         }
         .ext-card {
             background: var(--panel); border: 1px solid var(--border);
-            border-radius: 14px; padding: 12px; margin-bottom: 8px;
-            display: flex; flex-direction: column; gap: 8px;
+            border-radius: 12px; padding: 12px; margin-bottom: 8px;
+            display: flex; flex-direction: column; gap: 6px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             position: relative; overflow: hidden;
             backdrop-filter: blur(8px);
@@ -123,456 +113,44 @@
             border-color: rgba(129, 140, 248, 0.3); 
             background: rgba(129, 140, 248, 0.04);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
         }
-        .ext-header { display: flex; align-items: center; gap: 12px; }
-        .ext-icon { 
-            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; 
-            background: rgba(255,255,255,0.05); 
-            padding: 4px; border: 1px solid var(--border);
-        }
-        .ext-info { min-width: 0; flex: 1; }
-        .ext-name { font-weight: 700; font-size: 0.82rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ext-sub { font-size: 0.62rem; color: var(--text-dim); margin-top: 1px; font-family: 'SF Mono', monospace; opacity: 0.6; }
+        .ext-name { font-weight: 700; font-size: 0.78rem; color: var(--text-main); }
+        .ext-sub { font-size: 0.6rem; color: var(--text-dim); opacity: 0.6; }
 
-        .status-badge {
-            font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; font-weight: 700; flex-shrink: 0;
-            background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);
-            text-transform: uppercase;
-        }
-        .status-badge.disabled {
-            background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);
-        }
-
-        .btn-row { display: flex; gap: 7px; }
         .btn {
-            flex: 1; padding: 7px; border-radius: 8px; border: none; cursor: pointer;
-            font-family: 'Outfit'; font-weight: 600; font-size: 0.78rem; transition: 0.2s;
+            padding: 7px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: 'Outfit'; font-weight: 600; font-size: 0.72rem; transition: 0.2s;
         }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-primary { 
             background: linear-gradient(135deg, var(--primary), #818cf8); 
             color: white; 
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
-        .btn-primary:hover:not(:disabled) { 
-            transform: translateY(-1px);
-            box-shadow: 0 6px 15px var(--primary-glow);
-            filter: brightness(1.1);
-        }
         .btn-secondary { 
-            background: rgba(255,255,255,0.03); 
+            background: rgba(255,255,255,0.05); 
             color: var(--text-main); 
             border: 1px solid var(--border);
-            backdrop-filter: blur(4px);
         }
-        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
-        .btn-red { 
-            background: rgba(239,68,68,0.1); 
-            color: #f87171; 
-            border: 1px solid rgba(239,68,68,0.2); 
-        }
-        .btn-red:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
 
-        /* Error console */
-        #error-console {
-            background: #0d1117; border: 1px solid rgba(239,68,68,0.25); border-radius: 10px;
-            max-height: 360px; overflow-y: auto; display: none; margin-bottom: 10px;
+        .error-console {
+            background: #0d1117; border: 1px solid rgba(239,68,68,0.2); border-radius: 8px;
+            padding: 8px; font-family: 'SF Mono', monospace; font-size: 0.65rem;
+            color: #fca5a5; line-height: 1.4; max-height: 300px; overflow-y: auto;
         }
-        .err-section-label {
-            font-size: 0.68rem; font-weight: 700; color: var(--text-dim);
-            padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .err-entry {
-            font-family: 'SF Mono', monospace; font-size: 0.7rem;
-            color: #fca5a5; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
-            line-height: 1.5; white-space: pre-wrap; word-break: break-all;
-        }
-        .err-entry:last-child { border-bottom: none; }
-
-        .err-actions { display: flex; gap: 7px; margin-bottom: 12px; }
         .err-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            font-size: 0.68rem; color: var(--text-dim); margin-bottom: 8px;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.65rem; color: var(--text-dim); margin-bottom: 8px;
         }
-        .err-count { background: var(--red); color: #fff; border-radius: 99px; padding: 1px 6px; font-weight: 700; font-size: 0.65rem; }
-
-        /* Sentinel errors */
-        .sentinel-err-entry {
-            font-family: 'SF Mono', monospace; font-size: 0.7rem;
-            color: #fde68a; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
-            line-height: 1.5; white-space: pre-wrap; word-break: break-all;
-            border-left: 2px solid rgba(229,174,60,.4);
+        .err-count { background: var(--red); color: white; border-radius: 99px; padding: 1px 6px; font-weight: 700; }
+        
+        .search-input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 6px; padding: 7px 10px; color: white; font-size: 0.72rem; outline: none;
         }
-        .sentinel-label { color: #E5AE3C; font-weight: 700; font-size: 0.65rem; }
-        .sentinel-section { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 4px; }
-        .sentinel-badge {
-            font-size: 0.62rem; padding: 2px 8px; border-radius: 4px; font-weight: 700;
-            background: rgba(229,174,60,.12); color: #E5AE3C; border: 1px solid rgba(229,174,60,.25);
-        }
-
-        .empty-state { text-align: center; color: var(--text-dim); font-size: 0.82rem; padding: 26px 16px; }
-        .empty-state span { display: block; font-size: 1.6rem; margin-bottom: 8px; }
-
-        /* Storage panel */
-        .storage-grid { display: grid; gap: 6px; }
-        .storage-item {
-            background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-            padding: 9px 12px; display: flex; align-items: center; justify-content: space-between;
-        }
-        .storage-key { font-size: 0.78rem; font-weight: 600; }
-        .storage-count { font-size: 0.72rem; color: #6ee7b7; font-weight: 700; }
     </style>
 </head>
 <body>
-    <header>
-        <div class="title">⚡ THE VAULT</div>
-        <div style="display:flex; gap:5px; align-items:center;">
-            <button id="btn-open-dashboard" style="background:rgba(59,130,246,0.1); color:var(--primary); border:1px solid var(--primary); border-radius:4px; font-size:0.6rem; padding:4px 8px; cursor:pointer; font-weight:700; margin-right:8px;" title="Open Full Page Dashboard">DASHBOARD</button>
-            <button id="btn-gigasnap" style="background:var(--primary); color:white; border:none; border-radius:4px; font-size:0.6rem; padding:4px 8px; cursor:pointer; font-weight:700;" title="Token Optimized Copy">⚡ SNAPSHOT</button>
-            <button id="btn-gigaraw" style="background:rgba(255,255,255,0.1); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.6rem; padding:4px 8px; cursor:pointer; font-weight:700;" title="Full Raw Data Copy">⚡ RAW SNAP</button>
-        </div>
-        <div class="version">v1.3 God Build</div>
-    </header>
-
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="extensions">🧩 Extensions</button>
-        <button class="tab-btn" data-tab="sentinel">⚡ Sentinel <span id="sentinel-count" style="background:#E5AE3C;color:#0b0d14;border-radius:99px;padding:0 5px;font-size:0.6rem;margin-left:3px">0</span></button>
-        <button class="tab-btn" data-tab="errors">⚠️ Errors <span id="error-count" style="background:#ef4444;color:#fff;border-radius:99px;padding:0 5px;font-size:0.6rem;margin-left:3px">0</span></button>
-        <button class="tab-btn" data-tab="storage">💾 Storage</button>
-        <button class="tab-btn" data-tab="toolkit">🛠️ Toolkit</button>
-    </div>
-
-    <!-- Extensions Tab -->
-    <div class="tab-panel active" id="tab-extensions" style="padding-top:0">
-        <div class="search-container">
-            <div style="display:flex; gap:8px; margin-bottom:10px;">
-                <input type="text" id="ext-search" class="search-input" placeholder="Search extensions...">
-                <button id="btn-copy-ext-list" class="btn btn-secondary" style="flex:none; width:36px; padding:0;" title="Copy All Extensions List">📋</button>
-            </div>
-            <div class="sub-tabs">
-                <button class="sub-tab-btn active" data-sub="local">Local Workspaces <span id="unpacked-count">0</span></button>
-                <button class="sub-tab-btn" data-sub="store">Third Party <span id="store-count">0</span></button>
-            </div>
-        </div>
-
-        <div class="sub-panel active" id="sub-ext-local">
-            <div id="ext-list-unpacked"></div>
-        </div>
-        
-        <div class="sub-panel" id="sub-ext-store">
-            <div id="ext-list-store"></div>
-        </div>
-    </div>
-
-    <!-- Sentinel Tab -->
-    <div class="tab-panel" id="tab-sentinel">
-        <div class="sentinel-section">
-            <span class="sentinel-label">Boot.dev Sentinel Errors</span>
-            <span class="sentinel-badge" id="sentinel-count-badge">0 errors</span>
-        </div>
-        <div class="err-actions">
-            <button class="btn btn-secondary" id="clear-sentinel-errors" style="flex:none;padding:5px 10px;font-size:0.72rem">🗑 Clear</button>
-            <button class="btn btn-secondary" id="open-sentinel-panel" style="flex:none;padding:5px 10px;font-size:0.72rem">⚡ Open Sentinel Panel</button>
-            <button class="btn btn-secondary" id="refresh-sentinel" style="flex:none;padding:5px 10px;font-size:0.72rem">↻ Refresh</button>
-        </div>
-        <div id="sentinel-console"></div>
-        <div id="no-sentinel" class="empty-state"><span>⚡</span>No Sentinel errors — all systems nominal!</div>
-    </div>
-
-    <!-- Errors Tab -->
-    <div class="tab-panel" id="tab-errors">
-        <div class="err-badge">
-            Errors detected: <span class="err-count" id="error-count-badge">0</span>
-            <button id="copy-errors" style="background:none; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center;" title="Copy Errors">📋</button>
-        </div>
-        <div class="err-actions">
-            <button class="btn btn-red" id="clear-dom-errors" style="flex:none;padding:5px 10px;font-size:0.72rem">Clear DOM</button>
-            <button class="btn btn-red" id="clear-storage-errors" style="flex:none;padding:5px 10px;font-size:0.72rem">Clear Storage</button>
-            <button class="btn btn-secondary" id="refresh-errors" style="flex:none;padding:5px 10px;font-size:0.72rem">↻ Refresh</button>
-        </div>
-        <div id="error-console"></div>
-        <div id="no-errors" class="empty-state"><span>✅</span>No errors detected — looking clean!</div>
-    </div>
-
-    <div class="tab-panel" id="tab-storage">
-        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
-            <span>Vault Storage (Extension)</span>
-            <button id="copy-storage" style="background:none; border:none; cursor:pointer;" title="Copy Vault JSON">📋</button>
-        </div>
-        <div id="storage-grid" class="storage-grid"></div>
-
-        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
-            <span>Page LocalStorage</span>
-            <button id="copy-page-storage" style="background:none; border:none; cursor:pointer;" title="Copy Page Storage JSON">📋</button>
-        </div>
-        <div id="page-storage-grid" class="storage-grid"></div>
-
-        <div class="section-label" style="margin-top:16px;">
-            <span>System State</span>
-        </div>
-        <div class="btn-row">
-            <button class="btn btn-secondary" id="btn-export-vault">📤 Export Vault JSON</button>
-            <button class="btn btn-secondary" id="btn-import-vault">📥 Import Vault JSON</button>
-            <input type="file" id="vault-import-file" style="display:none" accept=".json">
-        </div>
-
-        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
-            <span>Page Cookies</span>
-            <button id="copy-page-cookies" style="background:none; border:none; cursor:pointer;" title="Copy Cookies JSON">📋</button>
-        </div>
-        <div id="page-cookies-grid" class="storage-grid"></div>
-    </div>
-
-    <div class="tab-panel" id="tab-toolkit">
-        <!-- 🎯 Intelligence & Data -->
-        <div class="section-label" style="margin-top:4px">🎯 Intelligence & Data</div>
-        <div class="toolkit-grid">
-            <div class="ext-card" style="grid-column: span 2;">
-                <div class="btn-row">
-                    <button class="btn btn-secondary" id="btn-pagespeed" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <img src="https://www.gstatic.com/images/branding/product/1x/pagespeed_64dp.png" style="width:12px;height:12px;"> PageSpeed
-                    </button>
-                    <button class="btn btn-secondary" id="btn-wappalyzer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <img src="https://www.wappalyzer.com/apple-touch-icon.png" style="width:12px;height:12px;"> Wappalyzer
-                    </button>
-                </div>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">GigaSnap</div>
-                    <div class="ext-sub">Token Optimized.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Captures Clean DOM + Global Vars + Design Tokens for AI context.</div>
-                <button class="btn btn-primary" id="btn-copy-dom" style="margin-top:auto;">Copy</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">JSON Hunter</div>
-                    <div class="ext-sub">Data Blobs.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Finds hidden application state and Next.js data blobs.</div>
-                <button class="btn btn-secondary" id="btn-hunt-json" style="margin-top:auto;">Hunt</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Theme Check</div>
-                    <div class="ext-sub">CSS Tokens.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Scrapes all CSS variables and theme tokens from the page.</div>
-                <button class="btn btn-secondary" id="btn-extract-theme" style="margin-top:auto;">Extract</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Vibe Snap</div>
-                    <div class="ext-sub">AI Bundle.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Bundles DOM with LocalStorage and SessionData in Markdown.</div>
-                <button class="btn btn-primary" id="btn-vibe-snapshot" style="margin-top:auto;">Snap</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Contrast</div>
-                    <div class="ext-sub">A11y Audit.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Audits current page for color contrast issues and accessibility.</div>
-                <button class="btn btn-secondary" id="btn-audit-contrast" style="margin-top:auto;">Audit</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Log View</div>
-                    <div class="ext-sub">Console.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Injects a live console log overlay directly onto the viewport.</div>
-                <button class="btn btn-secondary" id="btn-console-overlay" style="margin-top:auto;">Inject</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">DOM Heat</div>
-                    <div class="ext-sub">Perf.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Highlights DOM nodes with excessive depth or child counts.</div>
-                <button class="btn btn-secondary" id="btn-dom-heat" style="margin-top:auto;">Scan</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Var Editor</div>
-                    <div class="ext-sub">Theming.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Interactive panel to tweak all CSS variables discovered on the page.</div>
-                <button class="btn btn-secondary" id="btn-var-editor" style="margin-top:auto;">Open</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Palace Export</div>
-                    <div class="ext-sub">React.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Extracts a UI node into a ready-to-import Design Palace React component.</div>
-                <button class="btn btn-primary" id="btn-palace-export" style="margin-top:auto;">Export</button>
-            </div>
-        </div>
-        </div>
-
-        <!-- 🕵️ Privacy & Scrambling -->
-        <div class="section-label">🕵️ Privacy & Scrambling</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Privacy Shield</div>
-                    <div class="ext-sub">Redact PII.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Hides emails, phones, and sensitive keys from the UI before sharing screens.</div>
-                <button class="btn btn-primary" id="btn-redact-pii" style="margin-top:auto;">Shield</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Ghost Mode</div>
-                    <div class="ext-sub">Blur Media.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Instantly blurs all images and videos on the page for private recording.</div>
-                <button class="btn btn-secondary" id="btn-ghost-mode" style="margin-top:auto;">Ghost</button>
-            </div>
-            <div class="ext-card" style="grid-column: span 2;">
-                <div class="ext-header">
-                    <div class="ext-name">Global Redaction List</div>
-                    <div class="ext-sub">Strings in this list are automatically hidden by the Privacy Shield.</div>
-                </div>
-                <div style="display:flex; gap:6px; margin-top:8px;">
-                   <input type="text" id="redact-custom-input" placeholder="Add name, project, etc..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
-                   <button class="btn btn-primary" id="btn-add-redaction" style="padding:4px 10px;">Add</button>
-                </div>
-                <div id="redaction-list-tags" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;"></div>
-            </div>
-        </div>
-
-        <!-- 📡 Runtime Interceptors -->
-        <div class="section-label">📡 Runtime Interceptors</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Network</div>
-                    <div class="ext-sub">Trace Req.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Injects an XHR/Fetch hook to log all network traffic to the console.</div>
-                <button class="btn btn-secondary" id="btn-inject-network" style="margin-top:auto;">Inject</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">WS Sniffer</div>
-                    <div class="ext-sub">Log WS.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Intercepts WebSocket messages and logs them for stream analysis.</div>
-                <button class="btn btn-secondary" id="btn-inject-ws" style="margin-top:auto;">Sniff</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Console</div>
-                    <div class="ext-sub">Hook Logs.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Tags and styles console logs to make them easier to filter in DevTools.</div>
-                <button class="btn btn-secondary" id="btn-inject-console" style="margin-top:auto;">Hook</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Latency</div>
-                    <div class="ext-sub">2s Delay.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Simulates slow networks by adding a 2s delay to all network requests.</div>
-                <button class="btn btn-secondary" id="btn-toggle-latency" style="margin-top:auto;">Toggle</button>
-            </div>
-        </div>
-
-        <!-- 🎨 UI & UX Tools -->
-        <div class="section-label">🎨 UI & UX Tools</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Annotator</div>
-                    <div class="ext-sub">AI Notes.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Click elements to add specific task notes for LLMs to follow.</div>
-                <button class="btn btn-primary" id="btn-start-annotator" style="margin-top:auto;">Start</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Visual Edit</div>
-                    <div class="ext-sub">Edit Text.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Enables 'design mode' allowing you to edit any text directly on the page.</div>
-                <button class="btn btn-primary" id="btn-toggle-edit" style="margin-top:auto;">Toggle</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Wireframer</div>
-                    <div class="ext-sub">Outliner.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Adds dashed outlines to interactive elements to visualize layout structure.</div>
-                <button class="btn btn-secondary" id="btn-toggle-outline" style="margin-top:auto;">Toggle</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Nuke Modals</div>
-                    <div class="ext-sub">Kill Popups.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Forcefully removes all overlays, modals, and fixed-position blocking divs.</div>
-                <button class="btn btn-red" id="btn-nuke-overlays" style="margin-top:auto;">Nuke</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Type Audit</div>
-                    <div class="ext-sub">Fonts.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Analyze typography, line-heights, and weights across the page.</div>
-                <button class="btn btn-secondary" id="btn-audit-type" style="margin-top:auto;">Audit</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Grid Overlay</div>
-                    <div class="ext-sub">12-Col.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Toggles a standard 12-column grid overlay for alignment checks.</div>
-                <button class="btn btn-secondary" id="btn-toggle-grid" style="margin-top:auto;">Toggle</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Measure</div>
-                    <div class="ext-sub">Pixel Perfect.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Measure the distance between any two points on the screen in pixels.</div>
-                <button class="btn btn-secondary" id="btn-measure" style="margin-top:auto;">Start</button>
-            </div>
-        </div>
-
-        <!-- 🕹️ Hacker & Dev Fun -->
-        <div class="section-label">🕹️ Hacker & Dev Fun</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Selector Picker</div>
-                    <div class="ext-sub">CSS Paths.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Hover and click to copy the most unique CSS selector for any element.</div>
-                <button class="btn btn-primary" id="btn-pick-selector" style="margin-top:auto;">Start</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Gravity Mode</div>
-                    <div class="ext-sub">Physics.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Applies Matter.js physics to the DOM. Elements will drop and collide.</div>
-                <button class="btn btn-secondary" id="btn-gravity-mode" style="margin-top:auto;">Enable</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Text Explode</div>
-                    <div class="ext-sub">Break DOM.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Scatters all text nodes across the screen. Total visual destruction.</div>
-                <button class="btn btn-secondary" id="btn-explode-text" style="margin-top:auto;">Boom</button>
-            </div>
-            <div class="ext-card">
-   <body>
     <header>
         <div class="logo">
             <span class="title">WEBDEV TOOLBOX</span>
@@ -586,184 +164,142 @@
 
     <div class="tabs">
         <button class="tab-btn active" data-tab="core">Extensions</button>
-        <button class="tab-btn" data-tab="data">Sentinel</button>
+        <button class="tab-btn" data-tab="audits">Audits</button>
+        <button class="tab-btn" data-tab="bench">Benchmarks</button>
         <button class="tab-btn" data-tab="errors">Errors</button>
-        <button class="tab-btn" data-tab="storage">Storage</button>
         <button class="tab-btn" data-tab="labs">Toolkit</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
     </div>
 
-    <div class="container" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
-        
-        <!-- CORE: EXTENSIONS -->
-        <div id="tab-core" class="tab-panel active">
+    <div class="tab-panel active" id="tab-core">
+        <div class="sub-tabs">
+            <button class="sub-tab-btn active" data-sub="toolkit">TOOLKIT</button>
+            <button class="sub-tab-btn" data-sub="manager">MANAGER</button>
+        </div>
+
+        <div class="sub-panel active" id="sub-toolkit">
             <div class="section-label">🔒 PRIVACY & SCRAMBLING</div>
             <div class="toolkit-grid">
                 <div class="ext-card">
-                    <div class="ext-header">
-                        <div class="ext-name">Privacy Shield</div>
-                        <div class="ext-sub">Redact PII.</div>
-                    </div>
-                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">Hides emails, phones, and sensitive keys from the UI.</div>
+                    <div class="ext-name">Privacy Shield</div>
+                    <div class="ext-sub">Redact PII.</div>
                     <button class="btn btn-primary" id="btn-privacy-shield">Shield</button>
                 </div>
                 <div class="ext-card">
-                    <div class="ext-header">
-                        <div class="ext-name">Ghost Mode</div>
-                        <div class="ext-sub">Blur Media.</div>
-                    </div>
-                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">Instantly blurs all images and videos on the page.</div>
+                    <div class="ext-name">Ghost Mode</div>
+                    <div class="ext-sub">Blur Media.</div>
                     <button class="btn btn-secondary" id="btn-ghost-mode">Ghost</button>
                 </div>
             </div>
-
-            <div class="ext-card" style="margin-bottom: 16px;">
-                <div class="ext-header">
-                    <div class="ext-name">Global Redact</div>
-                    <div class="ext-sub">Strings in this list are automatically hidden by the Privacy Shield.</div>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <input type="text" id="redact-input" class="search-input" placeholder="Add name, project, etc..." style="margin-bottom:0;">
-                    <button class="btn btn-primary" id="btn-add-redact" style="width:80px;">Add</button>
-                </div>
-            </div>
-
             <div class="section-label">🔌 RUNTIME INTERCEPTORS</div>
             <div class="toolkit-grid">
                 <div class="ext-card">
-                    <div class="ext-header">
-                        <div class="ext-name">Network</div>
-                        <div class="ext-sub">Trace Req.</div>
-                    </div>
+                    <div class="ext-name">Network</div>
+                    <div class="ext-sub">Trace Req.</div>
                     <button class="btn btn-secondary" id="btn-inject-network">Inject</button>
                 </div>
                 <div class="ext-card">
-                    <div class="ext-header">
-                        <div class="ext-name">WS Sniffer</div>
-                        <div class="ext-sub">Log WS.</div>
-                    </div>
+                    <div class="ext-name">WS Sniffer</div>
+                    <div class="ext-sub">Log WS.</div>
                     <button class="btn btn-secondary" id="btn-sniff-ws">Sniff</button>
                 </div>
             </div>
         </div>
 
-        <!-- HEALTH TAB -->
-        <div id="tab-data" class="tab-panel">
-            <div class="sub-tabs">
-                <button class="sub-tab-btn active" data-sub="sentinel">Sentinel</button>
-                <button class="sub-tab-btn" data-sub="errors">DOM Errors</button>
-                <button class="sub-tab-btn" data-sub="storage">Local Storage</button>
-            </div>
-
-            <div id="sub-sentinel" class="sub-panel active">
-                <div class="err-badge"><span class="err-count" id="sentinel-count">0</span> Active Sentinel Probes</div>
-                <div id="sentinel-errors" class="error-console" style="display:block;"></div>
-            </div>
-
-            <div id="sub-errors" class="sub-panel">
-                <div class="err-badge"><span class="err-count" id="error-count">0</span> Errors Caught</div>
-                <div id="error-console" class="error-console" style="display:block;"></div>
-            </div>
-
-            <div id="sub-storage" class="sub-panel">
-                <div class="section-label">SNAPSHOT REGISTRY</div>
-                <div id="toolbox-storage-list"></div>
-            </div>
+        <div class="sub-panel" id="sub-manager">
+            <input type="text" class="search-input" id="ext-search" placeholder="Search extensions..." style="margin-bottom:12px;">
+            <div class="section-label">UNPACKED / DEV</div>
+            <div id="ext-list-unpacked"></div>
+            <div class="section-label" style="margin-top:15px;">CHROME STORE</div>
+            <div id="ext-list-store"></div>
         </div>
+    </div>
 
-        <!-- LABS TAB -->
-        <div id="tab-labs" class="tab-panel">
-            <div class="section">
-                <div class="section-label">🧪 EXPERIMENTAL LABS</div>
-                <div class="ext-grid">
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Cyberpunk</div>
-                            <div class="ext-sub">Vibe.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-cyber-vibe">Activate</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Vibe Mode</div>
-                            <div class="ext-sub">CRT.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-vibe-mode">Retro</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Mutation Pulse</div>
-                            <div class="ext-sub">DOM.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-mutation-pulse">Monitor</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">UI Roast</div>
-                            <div class="ext-sub">AI Audit.</div>
-                        </div>
-                        <button class="btn btn-red" id="btn-roast-ui">Roast</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Shadow Pierce</div>
-                            <div class="ext-sub">Shadow DOM.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-shadow-pierce">Pierce</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Vibe Recorder</div>
-                            <div class="ext-sub">Macro.</div>
-                        </div>
-                        <button class="btn btn-primary" id="btn-macro-record">Record</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Spotlight</div>
-                            <div class="ext-sub">Focus.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-focus-spotlight">Focus</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Z-Map</div>
-                            <div class="ext-sub">Depth.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-z-map">Map</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Outliner</div>
-                            <div class="ext-sub">Layout.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-outline-components">Detect</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Font Palace</div>
-                            <div class="ext-sub">Styles.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-font-palace">Cycle</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Ghost Mode</div>
-                            <div class="ext-sub">Isolation.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-ghost-mode">Ghost</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Speedrun</div>
-                            <div class="ext-sub">Lighthouse.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-speedrun">Start</button>
-                    </div>
-                </div>
+    <div class="tab-panel" id="tab-audits">
+        <div class="section-label">🧐 DESIGN QUALITY ASSURANCE</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-name">Contrast Audit</div>
+                <div class="ext-sub">Check a11y.</div>
+                <button class="btn btn-secondary" id="btn-audit-contrast">Run</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Font Map</div>
+                <div class="ext-sub">Extract Typography.</div>
+                <button class="btn btn-secondary" id="btn-extract-fonts">Map</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Image Audit</div>
+                <div class="ext-sub">Check Alt/Size.</div>
+                <button class="btn btn-secondary" id="btn-audit-images">Scan</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Layout Grid</div>
+                <div class="ext-sub">Toggle 12-col.</div>
+                <button class="btn btn-secondary" id="btn-toggle-grid">Toggle</button>
             </div>
         </div>
     </div>
+
+    <div class="tab-panel" id="tab-bench">
+        <div class="section-label">⚡ PERFORMANCE & STACK</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-name">Stack Sniff</div>
+                <div class="ext-sub">Detect Frameworks.</div>
+                <button class="btn btn-primary" id="btn-sniff-stack">Sniff</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Speed Check</div>
+                <div class="ext-sub">Simulate LCP.</div>
+                <button class="btn btn-secondary" id="btn-speed-check">Start</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">WPM Tracker</div>
+                <div class="ext-sub">Readability Score.</div>
+                <button class="btn btn-secondary" id="btn-track-wpm">Track</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="tab-errors">
+        <div class="err-badge"><span class="err-count" id="error-count">0</span> Errors Caught</div>
+        <div id="error-console" class="error-console"></div>
+        <button class="btn btn-red" id="btn-clear-errors" style="margin-top:10px;">Clear Console</button>
+    </div>
+
+    <div class="tab-panel" id="tab-labs">
+        <div class="section-label">🧪 EXPERIMENTAL LABS</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-name">Cyberpunk</div>
+                <button class="btn btn-secondary" id="btn-cyber-vibe">Activate</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Gravity</div>
+                <button class="btn btn-secondary" id="btn-gravity-mode">Enable</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Vibe Retro</div>
+                <button class="btn btn-secondary" id="btn-vibe-mode">Retro</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-name">Explode</div>
+                <button class="btn btn-secondary" id="btn-explode-text">Boom</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="tab-settings">
+        <div class="section-label">⚙️ PREFERENCES</div>
+        <div class="ext-card">
+            <div class="ext-name">Auto-Refresh</div>
+            <div class="ext-sub">Reload on change.</div>
+            <button class="btn btn-secondary">ON</button>
+        </div>
+        <button class="btn btn-primary" id="btn-open-dashboard" style="margin-top:10px;">Open Dev Dashboard</button>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 </html>

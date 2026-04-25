@@ -19,5 +19,7 @@ These are features that might be intrusive, require high-level permissions, or c
 - **Floating Nexus Toolbar**: Move the Dev Vault into a floating sidebar that works on any page without opening the popup.
 - **Visual Diff Mode**: Show side-by-side snapshots of the DOM to see what changed between two GIGASNAPs.
 
----
+## 5. System Intelligence
+- **The Great Shortcut Oracle**: Scan local `~/.zshrc`, `~/.gitconfig`, and Raycast configs to provide a unified, searchable dashboard of all user shortcuts and aliases.
+- **Local Context Bridge**: Automatically detect the current project directory from the terminal and provide relevant documentation/links in the vault.
 *Drafted for Antigravity Dev Vault.*

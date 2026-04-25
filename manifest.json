@@ -23,7 +23,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Open Dev Vault",
+    "default_title": "Open WEBDEV TOOLBOX",
     "default_icon": "icon.png"
   },
   "background": {
