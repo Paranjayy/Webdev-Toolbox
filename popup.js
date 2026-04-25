@@ -266,6 +266,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Extension Sub-Tabs ────────────────────────────────────────────────
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.sub;
+            document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            const panel = document.getElementById(`sub-ext-${target}`);
+            if (panel) panel.classList.add('active');
+        });
+    });
+
     // ── Extension Search & Filtering ─────────────────────────────────────
     const searchInput = document.getElementById('ext-search');
     searchInput.addEventListener('input', (e) => {
@@ -279,6 +291,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.display = 'none';
             }
         });
+        
+        // If searching, maybe auto-switch sub-tabs if results are only in one? 
+        // For now, let's just show counts on the sub-tabs.
     });
 
     // ── Copy Entire Extension List ────────────────────────────────────────
