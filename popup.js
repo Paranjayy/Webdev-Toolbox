@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (roasts.length === 0) {
                     alert("Professional Build Detected. No major sloppiness found. I am bored.");
                 } else {
-                    alert("🔥 TOOLBOX: UI ROAST 🔥\n\n" + roasts.join("\n\n"));
+                    alert("🔥 WEBDEV TOOLBOX: UI ROAST 🔥\n\n" + roasts.join("\n\n"));
                 }
             }
         });
@@ -1031,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 
                 const all = [...new Set([...images, ...backgrounds])].filter(Boolean);
-                console.log('%c 🕸️ TOOLBOX IMAGE CRAWL ', 'background: #10b981; color: white; font-weight: bold;');
+                console.log('%c 🕸️ WEBDEV TOOLBOX IMAGE CRAWL ', 'background: #10b981; color: white; font-weight: bold;');
                 console.log('Images Found:', all.length);
                 all.forEach(src => console.log(src));
                 alert(`Crawled ${all.length} images and ${svgs.length} SVGs. Check console for links.`);

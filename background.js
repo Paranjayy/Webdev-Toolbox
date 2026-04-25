@@ -107,7 +107,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
-    } else if (request.action === 'PERFORM_SNAPSHOT') {
+    if (request.action === 'PERFORM_SNAPSHOT') {
         handleGigaSnap(sender.tab?.id || request.tabId, request.raw || false);
         sendResponse({ success: true });
     } else if (request.action === 'PERFORM_MACRO') {
@@ -262,45 +262,20 @@ async function handleVibeRecorder(tabId) {
 
 // ── Context Menu Setup ───────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.create({
-        id: "gigasnap",
-        title: "📸 DEV: GigaSnap (Optimized)",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "annotator",
-        id: "visual_edit",
-        title: "🎨 DEV: Visual Edit Mode",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "color_tweak",
-        title: "🌈 DEV: Tweak Colors",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "vibe_recorder",
-        title: "🎬 DEV: Vibe Recorder",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "inspect_style",
-        title: "🔍 DEV: Inspect Style",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "copy_selector",
-        title: "📋 DEV: Copy Selector",
-        contexts: ["all"]
-    });
+    chrome.contextMenus.create({ id: 'gsnap', title: '📸 WEBDEV: GigaSnap', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'visual_edit', title: '🎨 WEBDEV: Visual Edit', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'vibe_record', title: '🔴 WEBDEV: Vibe Recorder', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'chaos_mode', title: '🧬 WEBDEV: Chaos Mode', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'inspect_style', title: '🔍 WEBDEV: Inspect Style', contexts: ['all'] });
+    chrome.contextMenus.create({ id: 'copy_selector', title: '📋 WEBDEV: Copy Selector', contexts: ['all'] });
     chrome.contextMenus.create({
         id: "nuke_element",
-        title: "💀 DEV: Nuke Element",
+        title: "💀 WEBDEV: Nuke Element",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "css_roulette",
-        title: "🎲 DEV: CSS Roulette",
+        title: "🎲 WEBDEV: CSS Roulette",
         contexts: ["all"]
     });
 });

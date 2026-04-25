@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executeCommand(cmd) {
-        appendToTerminal(`toolbox@paranjayy ~ % ${cmd}`, 'system');
+        appendToTerminal(`webdev@paranjayy ~ % ${cmd}`, 'system');
         const command = cmd.toLowerCase().trim();
 
         if (command === 'git sync') {
