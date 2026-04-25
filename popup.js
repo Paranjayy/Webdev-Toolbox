@@ -266,6 +266,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Extension Search & Filtering ─────────────────────────────────────
+    const searchInput = document.getElementById('ext-search');
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.ext-card').forEach(card => {
+            const name = card.querySelector('.ext-name').textContent.toLowerCase();
+            const id = card.querySelector('.ext-sub').textContent.toLowerCase();
+            if (name.includes(query) || id.includes(query)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+
+    // ── Copy Entire Extension List ────────────────────────────────────────
+    document.getElementById('btn-copy-ext-list').addEventListener('click', () => {
+        chrome.management.getAll((extensions) => {
+            const list = extensions
+                .filter(e => e.type === 'extension')
+                .map(e => `- **${e.name}**\n  - ID: \`${e.id}\`\n  - Version: ${e.version}\n  - Type: ${e.installType}\n  - Status: ${e.enabled ? 'Enabled' : 'Disabled'}`)
+                .join('\n\n');
+            const header = `### CHROME EXTENSIONS LIST (${new Date().toLocaleDateString()})\n\n`;
+            copyToClipboard(header + list);
+            const originalText = document.getElementById('btn-copy-ext-list').textContent;
+            document.getElementById('btn-copy-ext-list').textContent = '✅';
+            setTimeout(() => { document.getElementById('btn-copy-ext-list').textContent = '📋'; }, 2000);
+        });
+    });
+
+    // ── Export/Import Vault ──────────────────────────────────────────────
+    document.getElementById('btn-export-vault').addEventListener('click', () => {
+        chrome.storage.local.get(null, (data) => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `antigravity-vault-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    });
+
+    document.getElementById('btn-import-vault').addEventListener('click', () => {
+        document.getElementById('vault-import-file').click();
+    });
+
+    document.getElementById('vault-import-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                chrome.storage.local.clear(() => {
+                    chrome.storage.local.set(data, () => {
+                        alert('Vault Import Successful! Reloading...');
+                        location.reload();
+                    });
+                });
+            } catch (err) {
+                alert('Invalid JSON file.');
+            }
+        };
+        reader.readAsText(file);
+    });
+
     chrome.management.getAll((extensions) => {
         // Clear containers
         listUnpacked.innerHTML = '';
@@ -274,6 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const selfId = chrome.runtime.id;
         const devExts = extensions.filter(e => e.installType === 'development' && e.id !== selfId);
         const storeExts = extensions.filter(e => e.installType !== 'development' && e.type === 'extension' && e.id !== selfId);
+
+        document.getElementById('unpacked-count').textContent = devExts.length;
+        document.getElementById('store-count').textContent = storeExts.length;
 
         if (devExts.length === 0) {
             listUnpacked.innerHTML = `<div class="empty-state" style="padding:15px">No unpacked extensions.</div>`;

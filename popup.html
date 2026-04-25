@@ -73,9 +73,22 @@
         .tab-panel.active { display: block; }
 
         .section-label {
-            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.5px;
-            color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--text-dim); margin-bottom: 8px; font-weight: 700;
+            display: flex; align-items: center; justify-content: space-between;
         }
+
+        .search-container {
+            position: sticky; top: 0; background: var(--bg); z-index: 5;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+        .search-input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 12px; color: white; font-size: 0.78rem;
+            outline: none; transition: 0.2s;
+        }
+        .search-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.08); }
 
         .toolkit-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;
@@ -213,13 +226,23 @@
     </div>
 
     <!-- Extensions Tab -->
-    <div class="tab-panel active" id="tab-extensions">
-        <div class="section-label" style="margin-top:4px">Active Workspaces (Unpacked)</div>
+    <div class="tab-panel active" id="tab-extensions" style="padding-top:0">
+        <div class="search-container">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="ext-search" class="search-input" placeholder="Search extensions by name or ID...">
+                <button id="btn-copy-ext-list" class="btn btn-secondary" style="flex:none; width:36px; padding:0;" title="Copy All Extensions List">📋</button>
+            </div>
+        </div>
+
+        <div class="section-label" style="margin-top:4px">
+            <span>Active Workspaces (Unpacked)</span>
+            <span id="unpacked-count" style="opacity:0.5; font-size:0.6rem;">0</span>
+        </div>
         <div id="ext-list-unpacked"></div>
         
-        <div class="section-label" style="margin-top:20px; display:flex; align-items:center; justify-content:space-between;">
+        <div class="section-label" style="margin-top:20px;">
             <span>Third-Party Extensions</span>
-            <span style="font-size:0.6rem; opacity:0.5;">Chrome Web Store</span>
+            <span id="store-count" style="opacity:0.5; font-size:0.6rem;">0</span>
         </div>
         <div id="ext-list-store"></div>
     </div>
@@ -266,6 +289,15 @@
             <button id="copy-page-storage" style="background:none; border:none; cursor:pointer;" title="Copy Page Storage JSON">📋</button>
         </div>
         <div id="page-storage-grid" class="storage-grid"></div>
+
+        <div class="section-label" style="margin-top:16px;">
+            <span>System State</span>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" id="btn-export-vault">📤 Export Vault JSON</button>
+            <button class="btn btn-secondary" id="btn-import-vault">📥 Import Vault JSON</button>
+            <input type="file" id="vault-import-file" style="display:none" accept=".json">
+        </div>
 
         <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
             <span>Page Cookies</span>
