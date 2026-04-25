@@ -1562,27 +1562,103 @@ Please review this state and help me.
     });
 
     // ── Privacy & Scrambling ───────────────────────────────────────────
+    // ── Privacy Shield & Redaction List ──────────────────────────────────
+    const redactInput = document.getElementById('redact-custom-input');
+    const redactListContainer = document.getElementById('redaction-list-tags');
+    
+    function renderRedactionList() {
+        chrome.storage.local.get(['customRedactions'], (data) => {
+            const list = data.customRedactions || [];
+            redactListContainer.innerHTML = list.map((item, i) => `
+                <div class="storage-item" style="padding:2px 8px; border-radius:4px; font-size:0.65rem; background:rgba(255,255,255,0.05); display:flex; align-items:center; gap:6px;">
+                    ${item}
+                    <span class="remove-redaction" data-index="${i}" style="cursor:pointer; color:#f87171;">×</span>
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.remove-redaction').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    list.splice(idx, 1);
+                    chrome.storage.local.set({ customRedactions: list }, renderRedactionList);
+                });
+            });
+        });
+    }
+
+    document.getElementById('btn-add-redaction').addEventListener('click', () => {
+        const val = redactInput.value.trim();
+        if (!val) return;
+        chrome.storage.local.get(['customRedactions'], (data) => {
+            const list = data.customRedactions || [];
+            if (!list.includes(val)) {
+                list.push(val);
+                chrome.storage.local.set({ customRedactions: list }, () => {
+                    redactInput.value = '';
+                    renderRedactionList();
+                });
+            }
+        });
+    });
+
+    renderRedactionList();
+
     document.getElementById('btn-redact-pii').addEventListener('click', async () => {
         const tab = await getActiveTab();
+        const { customRedactions } = await chrome.storage.local.get(['customRedactions']);
+        
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            func: () => {
-                const regexes = {
+            args: [customRedactions || []],
+            func: (customList) => {
+                const patterns = {
                     email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-                    phone: /(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g
+                    phone: /(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
+                    apiKey: /(?:api_key|apikey|secret|token|bearer)\s*[:=]\s*["']?([a-zA-Z0-9-_.]{16,})["']?/gi,
+                    bearer: /Bearer\s+[a-zA-Z0-9-._~+/]+=*/g
                 };
+
+                const redact = (text) => {
+                    let result = text
+                        .replace(patterns.email, '[EMAIL REDACTED]')
+                        .replace(patterns.phone, '[PHONE REDACTED]')
+                        .replace(patterns.bearer, 'Bearer [REDACTED]')
+                        .replace(patterns.apiKey, (match, key) => match.replace(key, '[KEY REDACTED]'));
+                    
+                    // Custom redactions
+                    customList.forEach(item => {
+                        const escaped = item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escaped, 'gi');
+                        result = result.replace(regex, '[REDACTED]');
+                    });
+                    
+                    return result;
+                };
+
                 const walk = (node) => {
                     if (node.nodeType === 3) {
-                        let text = node.nodeValue;
-                        text = text.replace(regexes.email, '[EMAIL REDACTED]');
-                        text = text.replace(regexes.phone, '[PHONE REDACTED]');
-                        node.nodeValue = text;
-                    } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
+                        node.nodeValue = redact(node.nodeValue);
+                    } else if (node.nodeType === 1) {
+                        if (['SCRIPT', 'STYLE', 'TEXTAREA'].includes(node.tagName)) return;
+                        if (node.tagName === 'INPUT' && (node.type === 'text' || node.type === 'email' || node.type === 'tel')) {
+                            node.value = redact(node.value);
+                        }
                         node.childNodes.forEach(walk);
                     }
                 };
+
                 walk(document.body);
-                alert("Privacy Shield Active: Emails and Phones redacted.");
+
+                const toast = document.createElement('div');
+                toast.textContent = "🛡️ Privacy Shield Active: All sensitive data and custom targets redacted.";
+                Object.assign(toast.style, {
+                    position: 'fixed', bottom: '20px', right: '20px', padding: '12px 20px',
+                    background: '#1e293b', color: '#6ee7b7', borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)', zIndex: '999999',
+                    fontFamily: 'sans-serif', fontSize: '14px', border: '1px solid #10b981'
+                });
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
             }
         });
     });

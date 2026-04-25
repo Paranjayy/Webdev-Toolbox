@@ -382,14 +382,14 @@
             </div>
             <div class="ext-card" style="grid-column: span 2;">
                 <div class="ext-header">
-                    <div class="ext-name">Manual Scrambler</div>
-                    <div class="ext-sub">Find and replace any text mentions on the page. Useful for renaming projects in demos.</div>
+                    <div class="ext-name">Global Redaction List</div>
+                    <div class="ext-sub">Strings in this list are automatically hidden by the Privacy Shield.</div>
                 </div>
                 <div style="display:flex; gap:6px; margin-top:8px;">
-                   <input type="text" id="scramble-find" placeholder="Find..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
-                   <input type="text" id="scramble-replace" placeholder="Replace..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
-                   <button class="btn btn-primary" id="btn-scramble-manual" style="padding:4px 10px;">Go</button>
+                   <input type="text" id="redact-custom-input" placeholder="Add name, project, etc..." style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:0.7rem; padding:4px 8px;">
+                   <button class="btn btn-primary" id="btn-add-redaction" style="padding:4px 10px;">Add</button>
                 </div>
+                <div id="redaction-list-tags" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;"></div>
             </div>
         </div>
 
