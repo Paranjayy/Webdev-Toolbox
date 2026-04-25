@@ -214,6 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Search & Filter Listeners ──────────────────────────────────────────
+    safeListen('btn-open-dashboard', 'click', () => {
+        chrome.tabs.create({ url: 'dashboard.html' });
+    });
+
     safeListen('ext-search', 'input', (e) => {
         searchFilter = e.target.value;
         renderExtensions();

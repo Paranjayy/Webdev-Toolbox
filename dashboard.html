@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Dev Vault — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --surface: #0f172a;
+            --panel: #1e293b;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --accent: #8b5cf6;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            background: rgba(15, 23, 42, 0.8);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+            z-index: 10;
+        }
+
+        .brand {
+            padding: 32px 24px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+        }
+
+        .brand span { color: var(--text); }
+
+        nav { padding: 0 12px; flex: 1; }
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+            color: var(--text-dim);
+        }
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+        }
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        header {
+            height: 80px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: rgba(3, 7, 18, 0.5);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .view-title { font-size: 1.5rem; font-weight: 700; }
+
+        .search-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 8px 20px;
+            width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 0.9rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .content-area { padding: 40px; }
+
+        /* Dashboard Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .ext-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--panel);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-pill.on { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .status-pill.off { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .card-id { font-family: 'Fira Code', monospace; font-size: 0.75rem; color: var(--text-dim); }
+        .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 16px 0; flex: 1; }
+
+        .card-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--text);
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+        .btn-primary { background: var(--primary); border: none; color: white; }
+        .btn:hover { filter: brightness(1.2); }
+
+        /* Shortcuts Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 16px; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .key-badge {
+            background: #334155;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 0 0 #0f172a;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--panel); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="brand">⚡ Antigravity <span>Vault</span></div>
+        <nav>
+            <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
+            <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
+            <div class="nav-item" data-view="reverse">🧪 Reverse Ops</div>
+            <div class="nav-item" data-view="privacy">🛡️ Privacy Shield</div>
+            <div class="nav-item" data-view="settings">⚙️ Settings</div>
+        </nav>
+        <div style="padding: 24px; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border);">
+            v1.3 Enterprise Build<br>
+            Authorized Access Only
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="view-title" id="active-view-title">Extensions</div>
+            <div class="search-bar">
+                <span>🔍</span>
+                <input type="text" id="global-search" placeholder="Search across the vault...">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn" style="width:auto;" id="btn-refresh">↻ Refresh All</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <!-- Extensions View -->
+            <div class="view active" id="view-extensions">
+                <div style="display:flex; gap:10px; margin-bottom:30px;">
+                    <button class="btn active" style="width:auto; padding: 8px 24px; border-radius: 99px;">All</button>
+                    <button class="btn" style="width:auto; padding: 8px 24px; border-radius: 99px;">Development</button>
+                    <button class="btn" style="width:auto; padding: 8px 24px; border-radius: 99px;">Store</button>
+                </div>
+                <div class="grid" id="extensions-grid">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- Shortcuts View -->
+            <div class="view" id="view-shortcuts">
+                <div class="card">
+                    <h3 style="margin-bottom:20px;">Global Command Registry</h3>
+                    <p style="color:var(--text-dim); margin-bottom:30px; font-size:0.9rem;">
+                        This list tracks all keyboard shortcuts registered by your extensions. 
+                        Shortcuts for consolidated extensions are parsed directly from their manifests.
+                    </p>
+                    <table id="shortcuts-table">
+                        <thead>
+                            <tr>
+                                <th>Extension</th>
+                                <th>Command</th>
+                                <th>Shortcut</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shortcuts-body">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reverse Ops View -->
+            <div class="view" id="view-reverse">
+                <div class="grid" id="reverse-grid">
+                    <!-- Cards for reverse engineering targets -->
+                </div>
+            </div>
+
+            <!-- Privacy View -->
+            <div class="view" id="view-privacy">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h2 style="margin-bottom:10px;">Deep Privacy Shield</h2>
+                    <p style="color:var(--text-dim); margin-bottom:40px;">Configure full-page redaction and PII scrambling.</p>
+                    
+                    <div class="card" style="margin-bottom:24px;">
+                        <h4 style="margin-bottom:16px;">Global Target List</h4>
+                        <div style="display:flex; gap:12px;">
+                            <input type="text" id="dash-redact-input" class="btn" style="flex:1; text-align:left; background:var(--bg);" placeholder="Add custom string to hide (name, project, etc...)">
+                            <button class="btn btn-primary" style="width:100px;" id="dash-redact-add">Add</button>
+                        </div>
+                        <div id="dash-redact-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
