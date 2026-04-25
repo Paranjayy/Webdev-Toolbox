@@ -17,15 +17,29 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target === 'extensions') renderExtensions();
             if (target === 'shortcuts') renderShortcuts();
             if (target === 'privacy') renderPrivacy();
+            if (target === 'settings') renderSettings();
         });
     });
 
+    function renderSettings() {
+        // Settings are mostly static for now, but we could load state here
+        console.log("Settings view rendered.");
+    }
+
     // ── Extensions Logic ──────────────────────────────────────────────────
+    let currentFilter = 'all';
     function renderExtensions() {
         const grid = document.getElementById('extensions-grid');
         chrome.management.getAll((extensions) => {
             const list = extensions.filter(e => e.id !== chrome.runtime.id);
-            grid.innerHTML = list.map(ext => `
+            const filtered = list.filter(ext => {
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'development') return ext.installType === 'development';
+                if (currentFilter === 'store') return ext.installType !== 'development';
+                return true;
+            });
+
+            grid.innerHTML = filtered.map(ext => `
                 <div class="card">
                     <div class="card-header">
                         <img class="ext-icon" src="${ext.icons?.[ext.icons.length-1]?.url || 'icon/icon-48.png'}">
@@ -42,6 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         });
     }
+
+    // Hook up extension filters
+    document.querySelectorAll('.ext-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.ext-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            renderExtensions();
+        });
+    });
 
     window.toggleExt = (id, current) => {
         chrome.management.setEnabled(id, !current, () => renderExtensions());
@@ -64,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         body.innerHTML = myShortcuts.map(cmd => `
             <tr>
-                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> This Vault</div></td>
+                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> The Vault</div></td>
                 <td>${cmd.name}</td>
                 <td><span class="key-badge">${cmd.shortcut || 'Not Set'}</span></td>
                 <td>Global</td>

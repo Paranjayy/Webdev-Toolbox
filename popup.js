@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             store.forEach(ext => {
                 safeListen(`consolidate-${ext.id}`, 'click', async () => {
-                    const prompt = `Antigravity, please consolidate extension "${ext.name}" (${ext.id}). I want to reverse engineer its features. You can find the source at: ~/Library/Application\\ Support/Arc/User\\ Data/Default/Extensions/${ext.id}/${ext.version}`;
+                    const prompt = `Vault, please consolidate extension "${ext.name}" (${ext.id}). I want to reverse engineer its features. You can find the source at: ~/Library/Application\\ Support/Arc/User\\ Data/Default/Extensions/${ext.id}/${ext.version}`;
                     copyToClipboard(prompt);
                     const btn = document.getElementById(`consolidate-${ext.id}`);
                     btn.textContent = 'COPIED!';

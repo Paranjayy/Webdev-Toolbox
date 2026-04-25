@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Webdev Toolbox",
-  "version": "1.2.0",
-  "description": "High-fidelity AI orchestration and reverse engineering toolkit.",
+  "name": "The Vault",
+  "version": "1.3",
+  "description": "Unified high-fidelity dashboard for extension orchestration and reverse ops.",
   "permissions": [
     "management",
     "tabs",

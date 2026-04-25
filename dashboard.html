@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity Dev Vault — Dashboard</title>
+    <title>The Vault — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -225,7 +225,7 @@
 </head>
 <body>
     <aside>
-        <div class="brand">⚡ Antigravity <span>Vault</span></div>
+        <div class="brand">⚡ The <span>Vault</span></div>
         <nav>
             <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
             <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
@@ -252,12 +252,11 @@
         </header>
 
         <div class="content-area">
-            <!-- Extensions View -->
             <div class="view active" id="view-extensions">
                 <div style="display:flex; gap:10px; margin-bottom:30px;">
-                    <button class="btn active" style="width:auto; padding: 8px 24px; border-radius: 99px;">All</button>
-                    <button class="btn" style="width:auto; padding: 8px 24px; border-radius: 99px;">Development</button>
-                    <button class="btn" style="width:auto; padding: 8px 24px; border-radius: 99px;">Store</button>
+                    <button class="btn ext-filter active" data-filter="all" style="width:auto; padding: 8px 24px; border-radius: 99px;">All</button>
+                    <button class="btn ext-filter" data-filter="development" style="width:auto; padding: 8px 24px; border-radius: 99px;">Development</button>
+                    <button class="btn ext-filter" data-filter="store" style="width:auto; padding: 8px 24px; border-radius: 99px;">Store</button>
                 </div>
                 <div class="grid" id="extensions-grid">
                     <!-- Cards injected by JS -->
@@ -295,19 +294,42 @@
                 </div>
             </div>
 
-            <!-- Privacy View -->
-            <div class="view" id="view-privacy">
+            <div class="view" id="view-settings">
                 <div style="max-width: 800px; margin: 0 auto;">
-                    <h2 style="margin-bottom:10px;">Deep Privacy Shield</h2>
-                    <p style="color:var(--text-dim); margin-bottom:40px;">Configure full-page redaction and PII scrambling.</p>
+                    <h2 style="margin-bottom:10px;">Vault Configuration</h2>
+                    <p style="color:var(--text-dim); margin-bottom:40px;">Manage your orchestration environment and design preferences.</p>
                     
                     <div class="card" style="margin-bottom:24px;">
-                        <h4 style="margin-bottom:16px;">Global Target List</h4>
-                        <div style="display:flex; gap:12px;">
-                            <input type="text" id="dash-redact-input" class="btn" style="flex:1; text-align:left; background:var(--bg);" placeholder="Add custom string to hide (name, project, etc...)">
-                            <button class="btn btn-primary" style="width:100px;" id="dash-redact-add">Add</button>
+                        <h4 style="margin-bottom:20px;">System Preferences</h4>
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">Auto-Refresh Extensions</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Automatically reload dashboard on extension state change.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ON</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">High-Performance Mode</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Optimizes animations for lower CPU usage.</div>
+                                </div>
+                                <button class="btn" style="width:100px;">OFF</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">AI Context Sync</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Allow extensions to share state for bundled AI snapshots.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ACTIVE</button>
+                            </div>
                         </div>
-                        <div id="dash-redact-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="margin-bottom:20px; color:var(--danger);">Danger Zone</h4>
+                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and vault metadata.</p>
+                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Vault Data</button>
                     </div>
                 </div>
             </div>
