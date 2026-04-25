@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault</title>
+    <title>DEV TOOLBOX</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -572,187 +572,102 @@
                 <button class="btn btn-secondary" id="btn-explode-text" style="margin-top:auto;">Boom</button>
             </div>
             <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Auto Scroll</div>
-                    <div class="ext-sub">Lazy Load.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Automatically scrolls to the bottom to trigger all lazy-loaded content.</div>
-                <button class="btn btn-secondary" id="btn-auto-scroll" style="margin-top:auto;">Scroll</button>
-            </div>
-        </div>
-
-        <!-- 🛠️ System Tools -->
-        <div class="section-label">🛠️ System Tools</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Domain Wipe</div>
-                    <div class="ext-sub">Full Reset.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Clears LocalStorage, SessionStorage, and all Cookies for the current site.</div>
-                <button class="btn btn-red" id="btn-wipe-domain" style="margin-top:auto;">Wipe</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Multi Reload</div>
-                    <div class="ext-sub">Tab Sync.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Refreshes all open tabs that match the current domain simultaneously.</div>
-                <button class="btn btn-secondary" id="btn-reload-domain" style="margin-top:auto;">Reload</button>
-            </div>
-        </div>
-
-        <!-- 🧪 Labs / Experimental -->
-        <div class="section-label">🧪 Labs / Experimental</div>
-        <div class="toolkit-grid">
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">UI Cloner</div>
-                    <div class="ext-sub">Design Replica.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Snaps high-fidelity UI structures directly into Design Palace format.</div>
-                <button class="btn btn-secondary" id="btn-ui-cloner" style="margin-top:auto;">Clone</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">CSS Roulette</div>
-                    <div class="ext-sub">Chaos Mode.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Randomizes all --color variables to test contrast resilience.</div>
-                <button class="btn btn-secondary" id="btn-css-roulette" style="margin-top:auto;">Shuffle</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Knip Vis</div>
-                    <div class="ext-sub">Dead Code.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Highlights unused or orphaned DOM elements in glowing red.</div>
-                <button class="btn btn-secondary" id="btn-knip-vis" style="margin-top:auto;">Highlight</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Tracker</div>
-                    <div class="ext-sub">MonkeyType.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Records global WPM across all tabs manually.</div>
-                <button class="btn btn-secondary" id="btn-global-wpm" style="margin-top:auto;">Track</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Font Swap</div>
-                    <div class="ext-sub">Theme Test.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Instantly swaps all fonts to Inter/Roboto for a cleaner look.</div>
-                <button class="btn btn-secondary" id="btn-font-swap" style="margin-top:auto;">Swap</button>
-            </div>
-            <div class="ext-card">
-                <div class="ext-header">
-                    <div class="ext-name">Vibe Mode</div>
-                    <div class="ext-sub">CRT Retro.</div>
-                </div>
-                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Apply a retro CRT scanline filter to the entire viewport.</div>
-                    <header>
+   <body>
+    <header>
         <div class="logo">
-            <div class="logo-icon">V</div>
-            <div class="logo-text">DEV VAULT</div>
+            <span class="title">DEV TOOLBOX</span>
+            <span class="version">v1.3.1 God Build</span>
         </div>
-        <div class="badge">GOD MODE</div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" id="btn-gigasnap-header" style="padding: 4px 10px; font-size: 0.65rem;">SNAPSHOT</button>
+            <button class="btn btn-primary" id="btn-gigasnap-header-raw" style="padding: 4px 10px; font-size: 0.65rem;">RAW SNAP</button>
+        </div>
     </header>
 
-    <!-- Tab Bar -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="core">Core</button>
-        <button class="tab-btn" data-tab="data">Data</button>
-        <button class="tab-btn" data-tab="labs">Labs</button>
+        <button class="tab-btn active" data-tab="core">Extensions</button>
+        <button class="tab-btn" data-tab="data">Sentinel</button>
+        <button class="tab-btn" data-tab="errors">Errors</button>
+        <button class="tab-btn" data-tab="storage">Storage</button>
+        <button class="tab-btn" data-tab="labs">Toolkit</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
     </div>
 
-    <div class="container" style="padding: 0; display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-        <!-- CORE TAB -->
+    <div class="container" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+        
+        <!-- CORE: EXTENSIONS -->
         <div id="tab-core" class="tab-panel active">
-            <div class="section">
-                <div class="section-label">⚡ GIGA-SNAP <span style="opacity:0.5">V2.1</span></div>
-                <div class="ext-card" style="border: 1px solid var(--accent-dim);">
+            <div class="section-label">🔒 PRIVACY & SCRAMBLING</div>
+            <div class="toolkit-grid">
+                <div class="ext-card">
                     <div class="ext-header">
-                        <div class="ext-name">Perfect Snapshot</div>
-                        <div class="ext-sub">Intelligence.</div>
+                        <div class="ext-name">Privacy Shield</div>
+                        <div class="ext-sub">Redact PII.</div>
                     </div>
-                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:10px;">Token-optimized DOM + Performance + State context.</div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-primary" id="btn-gigasnap" style="flex:1;">Snap (Optimized)</button>
-                        <button class="btn btn-secondary" id="btn-gigasnap-raw" style="flex:1;">Snap (Raw)</button>
+                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">Hides emails, phones, and sensitive keys from the UI.</div>
+                    <button class="btn btn-primary" id="btn-privacy-shield">Shield</button>
+                </div>
+                <div class="ext-card">
+                    <div class="ext-header">
+                        <div class="ext-name">Ghost Mode</div>
+                        <div class="ext-sub">Blur Media.</div>
                     </div>
+                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px;">Instantly blurs all images and videos on the page.</div>
+                    <button class="btn btn-secondary" id="btn-ghost-mode">Ghost</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-label">⚡ TOOLKIT</div>
-                <div class="ext-grid">
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">PageSpeed</div>
-                            <div class="ext-sub">Audit.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-pagespeed">Launch</button>
+            <div class="ext-card" style="margin-bottom: 16px;">
+                <div class="ext-header">
+                    <div class="ext-name">Global Redact</div>
+                    <div class="ext-sub">Strings in this list are automatically hidden by the Privacy Shield.</div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <input type="text" id="redact-input" class="search-input" placeholder="Add name, project, etc..." style="margin-bottom:0;">
+                    <button class="btn btn-primary" id="btn-add-redact" style="width:80px;">Add</button>
+                </div>
+            </div>
+
+            <div class="section-label">🔌 RUNTIME INTERCEPTORS</div>
+            <div class="toolkit-grid">
+                <div class="ext-card">
+                    <div class="ext-header">
+                        <div class="ext-name">Network</div>
+                        <div class="ext-sub">Trace Req.</div>
                     </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Wappalyzer</div>
-                            <div class="ext-sub">Stack.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-wappalyzer">Analyze</button>
+                    <button class="btn btn-secondary" id="btn-inject-network">Inject</button>
+                </div>
+                <div class="ext-card">
+                    <div class="ext-header">
+                        <div class="ext-name">WS Sniffer</div>
+                        <div class="ext-sub">Log WS.</div>
                     </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Design Mode</div>
-                            <div class="ext-sub">Edit.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-design-mode">Toggle</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Annotate</div>
-                            <div class="ext-sub">Review.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-annotate">Start</button>
-                    </div>
+                    <button class="btn btn-secondary" id="btn-sniff-ws">Sniff</button>
                 </div>
             </div>
         </div>
 
-        <!-- DATA TAB -->
+        <!-- HEALTH TAB -->
         <div id="tab-data" class="tab-panel">
-            <div class="section">
-                <div class="section-label">📊 INTELLIGENCE & DATA</div>
-                <div class="ext-grid">
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Palace Export</div>
-                            <div class="ext-sub">React.</div>
-                        </div>
-                        <button class="btn btn-primary" id="btn-palace-export">Export</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Theme Export</div>
-                            <div class="ext-sub">Design.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-theme-export">Export</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">Var Editor</div>
-                            <div class="ext-sub">Theming.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-var-editor">Open</button>
-                    </div>
-                    <div class="ext-card">
-                        <div class="ext-header">
-                            <div class="ext-name">X-Ray Vision</div>
-                            <div class="ext-sub">Data.</div>
-                        </div>
-                        <button class="btn btn-secondary" id="btn-xray">Scan</button>
-                    </div>
-                </div>
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" data-sub="sentinel">Sentinel</button>
+                <button class="sub-tab-btn" data-sub="errors">DOM Errors</button>
+                <button class="sub-tab-btn" data-sub="storage">Local Storage</button>
+            </div>
+
+            <div id="sub-sentinel" class="sub-panel active">
+                <div class="err-badge"><span class="err-count" id="sentinel-count">0</span> Active Sentinel Probes</div>
+                <div id="sentinel-errors" class="error-console" style="display:block;"></div>
+            </div>
+
+            <div id="sub-errors" class="sub-panel">
+                <div class="err-badge"><span class="err-count" id="error-count">0</span> Errors Caught</div>
+                <div id="error-console" class="error-console" style="display:block;"></div>
+            </div>
+
+            <div id="sub-storage" class="sub-panel">
+                <div class="section-label">SNAPSHOT REGISTRY</div>
+                <div id="toolbox-storage-list"></div>
             </div>
         </div>
 

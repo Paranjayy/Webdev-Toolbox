@@ -16,6 +16,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Sub-tab Navigation
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const parent = btn.closest('.tab-panel');
+            const target = btn.dataset.sub;
+            parent.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            parent.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`sub-${target}`).classList.add('active');
+            
+            if (target === 'storage') renderStorage();
+            if (target === 'errors') renderErrors();
+            if (target === 'sentinel') renderSentinelErrors();
+        });
+    });
+
     async function getActiveTab() {
         const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!t || !t.url) return t;
@@ -58,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Storage Logic ─────────────────────────────────────────────────────
     async function renderStorage() {
-        const container = document.getElementById('vault-storage-list');
+        const container = document.getElementById('toolbox-storage-list');
         if (!container) return;
         chrome.storage.local.get(null, (data) => {
             container.innerHTML = '';
@@ -200,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             store.forEach(ext => {
                 safeListen(`consolidate-${ext.id}`, 'click', async () => {
-                    const prompt = `Vault, please consolidate extension "${ext.name}" (${ext.id}). I want to reverse engineer its features. You can find the source at: ~/Library/Application\\ Support/Arc/User\\ Data/Default/Extensions/${ext.id}/${ext.version}`;
+                    const prompt = `Toolbox, please consolidate extension "${ext.name}" (${ext.id}). I want to reverse engineer its features. You can find the source at: ~/Library/Application\\ Support/Arc/User\\ Data/Default/Extensions/${ext.id}/${ext.version}`;
                     copyToClipboard(prompt);
                     const btn = document.getElementById(`consolidate-${ext.id}`);
                     btn.textContent = 'COPIED!';
@@ -340,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-ghost-mode';
+                const id = 'dev-toolbox-ghost-mode';
                 let style = document.getElementById(id);
                 if (style) {
                     style.remove();
@@ -516,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-grid-overlay';
+                const id = 'dev-toolbox-grid-overlay';
                 let grid = document.getElementById(id);
                 if (grid) {
                     grid.remove();
@@ -546,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-font-swap';
+                const id = 'dev-toolbox-font-swap';
                 let style = document.getElementById(id);
                 if (style) {
                     style.remove();
@@ -574,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!point1) {
                         point1 = { x: e.clientX, y: e.clientY };
                         const dot = document.createElement('div');
-                        dot.className = 'dev-vault-measure-dot';
+                        dot.className = 'dev-toolbox-measure-dot';
                         dot.style.cssText = `position:fixed; left:${e.clientX-5}px; top:${e.clientY-5}px; width:10px; height:10px; background:red; border-radius:50%; z-index:999999;`;
                         document.body.appendChild(dot);
                     } else {
@@ -582,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const dy = Math.abs(e.clientY - point1.y);
                         const dist = Math.sqrt(dx*dx + dy*dy);
                         alert(`Distance: ${Math.round(dist)}px (Horizontal: ${dx}px, Vertical: ${dy}px)`);
-                        document.querySelectorAll('.dev-vault-measure-dot').forEach(d => d.remove());
+                        document.querySelectorAll('.dev-toolbox-measure-dot').forEach(d => d.remove());
                         document.removeEventListener('click', handler, true);
                     }
                 };
@@ -596,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-vibe-filter';
+                const id = 'dev-toolbox-vibe-filter';
                 let style = document.getElementById(id);
                 if (style) {
                     style.remove();
@@ -718,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error = (...args) => { originalError(...args); logToOverlay('error', ...args); };
                 console.warn = (...args) => { originalWarn(...args); logToOverlay('warn', ...args); };
                 
-                logToOverlay('log', 'Dev Vault Console Proxy Active...');
+                logToOverlay('log', 'Dev Toolbox Console Proxy Active...');
             }
         });
     });
@@ -753,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-component-outline';
+                const id = 'dev-toolbox-component-outline';
                 let style = document.getElementById(id);
                 if (style) {
                     style.remove();
@@ -791,11 +807,11 @@ document.addEventListener('DOMContentLoaded', () => {
             target: { tabId: tab.id },
             func: () => {
                 const fonts = ['Space Grotesk', 'Playfair Display', 'Outfit', 'Inter', 'Roboto Mono'];
-                const current = window.__VAULT_FONT_INDEX || 0;
+                const current = window.__TOOLBOX_FONT_INDEX || 0;
                 const nextFont = fonts[current % fonts.length];
-                window.__VAULT_FONT_INDEX = current + 1;
+                window.__TOOLBOX_FONT_INDEX = current + 1;
                 
-                const id = 'dev-vault-font-palace';
+                const id = 'dev-toolbox-font-palace';
                 let style = document.getElementById(id);
                 if (!style) {
                     style = document.createElement('style');
@@ -817,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'dev-vault-var-editor-ui';
+                const id = 'dev-toolbox-var-editor-ui';
                 if (document.getElementById(id)) {
                     document.getElementById(id).remove();
                     return;
@@ -944,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (roasts.length === 0) {
                     alert("Professional Build Detected. No major sloppiness found. I am bored.");
                 } else {
-                    alert("🔥 DEV VAULT: UI ROAST 🔥\n\n" + roasts.join("\n\n"));
+                    alert("🔥 TOOLBOX: UI ROAST 🔥\n\n" + roasts.join("\n\n"));
                 }
             }
         });
@@ -1015,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 
                 const all = [...new Set([...images, ...backgrounds])].filter(Boolean);
-                console.log('%c 🕸️ VAULT IMAGE CRAWL ', 'background: #10b981; color: white; font-weight: bold;');
+                console.log('%c 🕸️ TOOLBOX IMAGE CRAWL ', 'background: #10b981; color: white; font-weight: bold;');
                 console.log('Images Found:', all.length);
                 all.forEach(src => console.log(src));
                 alert(`Crawled ${all.length} images and ${svgs.length} SVGs. Check console for links.`);
@@ -1117,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const styleId = 'vault-cyberpunk-style';
+                const styleId = 'toolbox-cyberpunk-style';
                 if (document.getElementById(styleId)) {
                     document.getElementById(styleId).remove();
                     return;
@@ -1153,12 +1169,12 @@ document.addEventListener('DOMContentLoaded', () => {
             func: () => {
                 if (window.__XRAY_ACTIVE) {
                     window.__XRAY_ACTIVE = false;
-                    document.getElementById('vault-xray-box')?.remove();
+                    document.getElementById('toolbox-xray-box')?.remove();
                     return;
                 }
                 window.__XRAY_ACTIVE = true;
                 const box = document.createElement('div');
-                box.id = 'vault-xray-box';
+                box.id = 'toolbox-xray-box';
                 box.style = 'position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.9); color:#10b981; padding:15px; border-radius:8px; z-index:100000; font-family:monospace; font-size:10px; border:1px solid #10b981; pointer-events:none; max-width:300px; white-space:pre-wrap; box-shadow: 0 0 20px rgba(16,185,129,0.3);';
                 document.body.appendChild(box);
 
@@ -1189,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'vault-spotlight-mask';
+                const id = 'toolbox-spotlight-mask';
                 if (document.getElementById(id)) {
                     document.getElementById(id).remove();
                     document.removeEventListener('mousemove', window.__SPOTLIGHT_MOVE);
@@ -1237,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                const id = 'vault-speedrun-timer';
+                const id = 'toolbox-speedrun-timer';
                 if (document.getElementById(id)) {
                     document.getElementById(id).remove();
                     clearInterval(window.__SPEEDRUN_INT);

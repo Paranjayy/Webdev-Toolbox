@@ -260,51 +260,47 @@ async function handleVibeRecorder(tabId) {
     });
 }
 
-// ── Context Menu Setup ───────────────────────────────────────────────────────
+// ── Context Menu Setup ───────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: "gigasnap",
-        title: "⚡ Snapshot: Capture Context",
+        title: "📸 DEV: GigaSnap (Optimized)",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "annotator",
-        title: "📝 Snapshot: Annotator Mode",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
         id: "visual_edit",
-        title: "🎨 Design: Toggle Edit Mode",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "inspect_style",
-        title: "🔍 Design: Inspect Style",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "copy_selector",
-        title: "📋 Dev: Copy Selector",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "nuke_element",
-        title: "💀 Dev: Nuke Element",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "css_roulette",
-        title: "🎲 Chaos: CSS Roulette",
+        title: "🎨 DEV: Visual Edit Mode",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "color_tweak",
-        title: "🎨 Design: Tweak Colors",
+        title: "🌈 DEV: Tweak Colors",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "vibe_recorder",
-        title: "🎬 Macro: Vibe Recorder",
+        title: "🎬 DEV: Vibe Recorder",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "inspect_style",
+        title: "🔍 DEV: Inspect Style",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "copy_selector",
+        title: "📋 DEV: Copy Selector",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "nuke_element",
+        title: "💀 DEV: Nuke Element",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "css_roulette",
+        title: "🎲 DEV: CSS Roulette",
         contexts: ["all"]
     });
 });
@@ -334,7 +330,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 const handler = (e) => {
                     e.preventDefault();
                     const style = window.getComputedStyle(e.target);
-                    console.log(`%c [VAULT INSPECT] ${e.target.tagName} `, 'background: #6366f1; color: white; font-weight: bold;');
+                    console.log(`%c [TOOLBOX INSPECT] ${e.target.tagName} `, 'background: #6366f1; color: white; font-weight: bold;');
                     console.log('Font:', style.fontFamily, style.fontSize, style.fontWeight);
                     console.log('Colors:', { color: style.color, background: style.backgroundColor });
                     console.log('Spacing:', { margin: style.margin, padding: style.padding });

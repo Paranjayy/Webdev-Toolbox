@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault — Dashboard</title>
+    <title>DEV TOOLBOX — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -197,6 +197,8 @@
         }
         .btn-primary { background: var(--primary); border: none; color: white; }
         .btn:hover { filter: brightness(1.2); }
+        .btn:active { transform: scale(0.98); }
+        .btn.active { background: var(--primary); color: white; border: none; box-shadow: 0 0 15px var(--primary-glow); }
 
         /* Shortcuts Table */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -225,7 +227,7 @@
 </head>
 <body>
     <aside>
-        <div class="brand">⚡ The <span>Vault</span></div>
+        <div class="brand">⚡ DEV <span>TOOLBOX</span></div>
         <nav>
             <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
             <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
@@ -244,7 +246,7 @@
             <div class="view-title" id="active-view-title">Extensions</div>
             <div class="search-bar">
                 <span>🔍</span>
-                <input type="text" id="global-search" placeholder="Search across the vault...">
+                <input type="text" id="global-search" placeholder="Search across the toolbox...">
             </div>
             <div style="display:flex; gap:12px;">
                 <button class="btn" style="width:auto;" id="btn-refresh">↻ Refresh All</button>
@@ -269,7 +271,7 @@
                     <!-- Terminal -->
                     <div class="card" style="padding:0; overflow:hidden; display:flex; flex-direction:column; background: #000; border: 1px solid var(--primary);">
                         <div style="background: var(--panel); padding: 8px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border);">
-                            <div style="font-family:'Fira Code', monospace; font-size:0.75rem; color:var(--primary);">vault-terminal — zsh</div>
+                            <div style="font-family:'Fira Code', monospace; font-size:0.75rem; color:var(--primary);">toolbox-terminal — zsh</div>
                             <div style="display:flex; gap:6px;">
                                 <div style="width:10px; height:10px; border-radius:50%; background:var(--success);"></div>
                                 <div style="width:10px; height:10px; border-radius:50%; background:var(--warning);"></div>
@@ -277,13 +279,13 @@
                             </div>
                         </div>
                         <div id="terminal-output" style="flex:1; padding:20px; font-family:'Fira Code', monospace; font-size:0.85rem; line-height:1.6; overflow-y:auto; color: #39ff14; text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);">
-                            <div>[VAULT-INFO] Initializing Command Center...</div>
-                            <div>[VAULT-INFO] Syncing with local orchestration layer...</div>
-                            <div>[VAULT-SUCCESS] Core modules loaded. Ready for input.</div>
-                            <div style="margin-top:10px;">vault@paranjayy ~ % <span class="cursor">_</span></div>
+                            <div>[TOOLBOX-INFO] Initializing Command Center...</div>
+                            <div>[TOOLBOX-INFO] Syncing with local orchestration layer...</div>
+                            <div>[TOOLBOX-SUCCESS] Core modules loaded. Ready for input.</div>
+                            <div style="margin-top:10px;">toolbox@paranjayy ~ % <span class="cursor">_</span></div>
                         </div>
                         <div style="padding:12px; background: #0a0a0a; border-top: 1px solid var(--border);">
-                            <input type="text" id="terminal-input" placeholder="Enter vault command..." style="width:100%; background:transparent; border:none; color:#39ff14; font-family:'Fira Code', monospace; outline:none;">
+                            <input type="text" id="terminal-input" placeholder="Enter toolbox command..." style="width:100%; background:transparent; border:none; color:#39ff14; font-family:'Fira Code', monospace; outline:none;">
                         </div>
                     </div>
 
@@ -294,7 +296,7 @@
                             <div style="display:flex; flex-direction:column; gap:10px;">
                                 <button class="btn btn-primary ops-btn" data-cmd="git sync">🔄 Sync All Git Repos</button>
                                 <button class="btn ops-btn" data-cmd="ray publish">📦 Publish 7TV to Store</button>
-                                <button class="btn ops-btn" data-cmd="vault audit">🔍 Run Security Audit</button>
+                                <button class="btn ops-btn" data-cmd="toolbox audit">🔍 Run Security Audit</button>
                                 <button class="btn ops-btn" data-cmd="clean temp">🧹 Clear Temp Artifacts</button>
                             </div>
                         </div>
@@ -352,13 +354,12 @@
 
             <div class="view" id="view-settings">
                 <div style="max-width: 800px; margin: 0 auto;">
-                    <h2 style="margin-bottom:10px;">Vault Configuration</h2>
+                    <h2 style="margin-bottom:10px;">Toolbox Configuration</h2>
                     <p style="color:var(--text-dim); margin-bottom:40px;">Manage your orchestration environment and design preferences.</p>
                     
                     <div class="card" style="margin-bottom:24px;">
                         <h4 style="margin-bottom:20px;">System Preferences</h4>
-                        <div style="display:flex; flex-direction:column; gap:16px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
                                     <div style="font-weight:600;">Auto-Refresh Extensions</div>
                                     <div style="font-size:0.8rem; color:var(--text-dim);">Automatically reload dashboard on extension state change.</div>
@@ -384,8 +385,8 @@
 
                     <div class="card">
                         <h4 style="margin-bottom:20px; color:var(--danger);">Danger Zone</h4>
-                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and vault metadata.</p>
-                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Vault Data</button>
+                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and toolbox metadata.</p>
+                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Toolbox Data</button>
                     </div>
                 </div>
             </div>

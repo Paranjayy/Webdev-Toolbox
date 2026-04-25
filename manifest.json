@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "The Vault",
-  "version": "1.3",
-  "description": "Unified high-fidelity dashboard for extension orchestration and reverse ops.",
+  "name": "DEV TOOLBOX",
+  "version": "1.3.1",
+  "description": "High-fidelity intelligence & design toolkit for elite development.",
   "permissions": [
     "management",
     "tabs",

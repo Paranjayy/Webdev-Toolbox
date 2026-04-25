@@ -23,8 +23,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function renderSettings() {
-        console.log("Settings view rendered.");
+        const settingsView = document.getElementById('view-settings');
+        if (!settingsView) return;
+
+        // Hook up toggle buttons
+        settingsView.querySelectorAll('.btn').forEach(btn => {
+            if (btn.textContent === 'ON' || btn.textContent === 'OFF') {
+                btn.onclick = () => {
+                    const isOff = btn.textContent === 'OFF';
+                    btn.textContent = isOff ? 'ON' : 'OFF';
+                    btn.className = isOff ? 'btn btn-primary' : 'btn';
+                    appendToTerminal(`Setting updated: ${btn.previousElementSibling?.firstElementChild?.textContent} is now ${btn.textContent}`, 'system');
+                };
+            }
+            if (btn.textContent === 'ACTIVE') {
+                btn.onclick = () => {
+                    btn.textContent = 'INACTIVE';
+                    btn.className = 'btn';
+                    appendToTerminal("AI Context Sync: INACTIVE", 'warning');
+                };
+            }
+            if (btn.textContent === 'INACTIVE') {
+                btn.onclick = () => {
+                    btn.textContent = 'ACTIVE';
+                    btn.className = 'btn btn-primary';
+                    appendToTerminal("AI Context Sync: ACTIVE", 'success');
+                };
+            }
+            if (btn.textContent === 'Reset Vault Data') {
+                btn.onclick = () => {
+                    if (confirm("Are you sure? This will wipe all extension metadata and custom redactions.")) {
+                        chrome.storage.local.clear(() => {
+                            appendToTerminal("SYSTEM WIPE COMPLETE.", 'error');
+                            location.reload();
+                        });
+                    }
+                };
+            }
+        });
     }
+
+    // Call it initially
+    renderSettings();
 
     // ── Operations / Command Center Logic ────────────────────────────────
     const terminalOutput = document.getElementById('terminal-output');
@@ -47,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executeCommand(cmd) {
-        appendToTerminal(`vault@paranjayy ~ % ${cmd}`, 'system');
+        appendToTerminal(`toolbox@paranjayy ~ % ${cmd}`, 'system');
         const command = cmd.toLowerCase().trim();
 
         if (command === 'git sync') {
@@ -64,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appendToTerminal("Running linter...");
             await new Promise(r => setTimeout(r, 1500));
             appendToTerminal("[ERROR] Metadata screenshots missing. Please add them to /metadata.", 'error');
-        } else if (command === 'vault audit') {
+        } else if (command === 'toolbox audit') {
             appendToTerminal("Starting security audit...");
             await new Promise(r => setTimeout(r, 1000));
             appendToTerminal("Checking for leaked credentials...");
@@ -76,9 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
             await new Promise(r => setTimeout(r, 800));
             appendToTerminal("[SUCCESS] 42MB cleared.", 'success');
         } else if (command === 'help') {
-            appendToTerminal("Available commands: git sync, ray publish, vault audit, clean temp, clear, help");
+            appendToTerminal("Available commands: git sync, ray publish, toolbox audit, clean temp, clear, help");
         } else if (command === 'clear') {
-            terminalOutput.innerHTML = '<div>[VAULT-INFO] Terminal cleared.</div>';
+            terminalOutput.innerHTML = '<div>[TOOLBOX-INFO] Terminal cleared.</div>';
         } else {
             appendToTerminal(`Command not found: ${cmd}`, 'error');
         }
@@ -160,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const myShortcuts = await chrome.commands.getAll();
         body.innerHTML = myShortcuts.map(cmd => `
             <tr>
-                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> The Vault</div></td>
+                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> DEV TOOLBOX</div></td>
                 <td>${cmd.name}</td>
                 <td><span class="key-badge">${cmd.shortcut || 'Not Set'}</span></td>
                 <td>Global</td>
