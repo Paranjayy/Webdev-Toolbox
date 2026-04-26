@@ -397,6 +397,156 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.runtime.sendMessage({ action: 'RUN_DOMAIN_WIPE', tabId: tab.id });
     });
 
+    // ── Labs / Experimental ───────────────────────────────────────────────
+    safeListen('btn-lab-cloner', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                if (window.__UI_CLONER_ACTIVE) return;
+                window.__UI_CLONER_ACTIVE = true;
+                
+                const mask = document.createElement('div');
+                mask.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:transparent;z-index:9999999;cursor:crosshair;';
+                document.body.appendChild(mask);
+                
+                const highlight = document.createElement('div');
+                highlight.style = 'position:fixed;background:rgba(217,70,239,0.1);border:2px dashed #d946ef;z-index:9999998;pointer-events:none;transition:all 0.05s;';
+                document.body.appendChild(highlight);
+                
+                let targetEl = null;
+                const onMove = (e) => {
+                    targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    if (!targetEl || targetEl === mask || targetEl === highlight) return;
+                    const r = targetEl.getBoundingClientRect();
+                    highlight.style.top = r.top + 'px';
+                    highlight.style.left = r.left + 'px';
+                    highlight.style.width = r.width + 'px';
+                    highlight.style.height = r.height + 'px';
+                };
+                
+                const onClick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    if (!targetEl) return;
+                    
+                    const clone = targetEl.cloneNode(true);
+                    ['script','noscript','iframe','img','video','canvas'].forEach(s => clone.querySelectorAll(s).forEach(el => el.remove()));
+                    clone.querySelectorAll('svg').forEach(s => { s.innerHTML = '<!-- SVG stripped -->'; });
+                    clone.querySelectorAll('*').forEach(el => {
+                        for (let i = el.attributes.length - 1; i >= 0; i--) {
+                            const n = el.attributes[i].name;
+                            if (!/^(class|id|href|src|type|name|placeholder)/.test(n)) el.removeAttribute(n);
+                        }
+                    });
+                    
+                    const html = clone.outerHTML;
+                    const tmp = document.createElement('textarea'); document.body.appendChild(tmp);
+                    tmp.value = html; tmp.select(); document.execCommand('copy'); tmp.remove();
+                    
+                    const t = document.createElement('div');
+                    t.style = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border-left:4px solid #d946ef;color:#fdf4ff;padding:11px 22px;border-radius:12px;font-family:system-ui;font-size:13px;font-weight:600;z-index:2147483647;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);';
+                    t.textContent = '🧬 UI Cloned for Design Palace!'; document.body.appendChild(t);
+                    setTimeout(() => t.remove(), 2500);
+                    
+                    mask.remove(); highlight.remove();
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('click', onClick, true);
+                    window.__UI_CLONER_ACTIVE = false;
+                };
+                
+                document.addEventListener('mousemove', onMove, { passive: true });
+                document.addEventListener('click', onClick, true);
+                
+                const t = document.createElement('div');
+                t.style = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border-left:4px solid #d946ef;color:#fdf4ff;padding:11px 22px;border-radius:12px;font-family:system-ui;font-size:13px;font-weight:600;z-index:2147483647;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);';
+                t.textContent = 'Hover and click a component to clone...'; document.body.appendChild(t);
+                setTimeout(() => t.remove(), 2500);
+            }
+        });
+    });
+
+    safeListen('btn-lab-roulette', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const sheets = Array.from(document.styleSheets);
+                sheets.forEach(sheet => {
+                    try {
+                        const rules = Array.from(sheet.cssRules || []);
+                        rules.forEach(rule => {
+                            if (rule.style) {
+                                Array.from(rule.style).forEach(prop => {
+                                    if (prop.startsWith('--color') || prop.startsWith('--bg')) {
+                                        rule.style.setProperty(prop, '#' + Math.floor(Math.random()*16777215).toString(16));
+                                    }
+                                });
+                            }
+                        });
+                    } catch (e) {}
+                });
+                const t = document.createElement('div');
+                t.style = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border-left:4px solid #3b82f6;color:#fdf4ff;padding:11px 22px;border-radius:12px;font-family:system-ui;font-size:13px;font-weight:600;z-index:2147483647;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);';
+                t.textContent = '🎲 CSS Roulette Spun!'; document.body.appendChild(t);
+                setTimeout(() => t.remove(), 2500);
+            }
+        });
+    });
+
+    safeListen('btn-lab-knip', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                let count = 0;
+                document.querySelectorAll('div, section, span, p').forEach(el => {
+                    if (!el.textContent.trim() && !el.children.length && getComputedStyle(el).backgroundImage === 'none') {
+                        el.style.border = '2px dashed #ef4444';
+                        el.style.background = 'rgba(239,68,68,0.1)';
+                        el.style.minHeight = '10px';
+                        count++;
+                    }
+                });
+                const t = document.createElement('div');
+                t.style = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border-left:4px solid #ef4444;color:#fdf4ff;padding:11px 22px;border-radius:12px;font-family:system-ui;font-size:13px;font-weight:600;z-index:2147483647;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);';
+                t.textContent = `💀 Knip Vis: Found ${count} dead/empty elements!`; document.body.appendChild(t);
+                setTimeout(() => t.remove(), 3500);
+            }
+        });
+    });
+
+    safeListen('btn-lab-tracker', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                if (document.getElementById('__mtype_tracker')) {
+                    document.getElementById('__mtype_tracker').remove();
+                    return;
+                }
+                const widget = document.createElement('div');
+                widget.id = '__mtype_tracker';
+                widget.style = 'position:fixed;bottom:20px;right:20px;background:rgba(15,23,42,0.9);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:white;padding:12px 20px;font-family:monospace;font-size:14px;z-index:9999999;box-shadow:0 10px 25px rgba(0,0,0,0.5);pointer-events:none;display:flex;gap:16px;';
+                widget.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;"><span style="color:#10b981;font-weight:bold;font-size:18px;" id="__wpm">0</span><span style="font-size:9px;color:#94a3b8;text-transform:uppercase;">WPM</span></div><div style="display:flex;flex-direction:column;align-items:center;"><span style="color:#6366f1;font-weight:bold;font-size:18px;" id="__keys">0</span><span style="font-size:9px;color:#94a3b8;text-transform:uppercase;">Keys</span></div>`;
+                document.body.appendChild(widget);
+                
+                let keys = 0, startTime = 0;
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.length === 1 || e.key === 'Backspace') {
+                        if (keys === 0) startTime = Date.now();
+                        keys++;
+                        document.getElementById('__keys').textContent = keys;
+                        const mins = (Date.now() - startTime) / 60000;
+                        if (mins > 0) {
+                            const wpm = Math.round((keys / 5) / mins);
+                            document.getElementById('__wpm').textContent = wpm;
+                        }
+                    }
+                }, { passive: true });
+            }
+        });
+    });
+
     // ── Boot ──────────────────────────────────────────────────────────────
     renderExtensions();
     renderErrors();

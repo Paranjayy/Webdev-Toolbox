@@ -345,7 +345,17 @@
         <!-- 🎯 Core Intelligence -->
         <div class="section-label" style="margin-top:4px">🎯 Core Intelligence</div>
         <div class="toolkit-grid">
-            <div class="ext-card">
+    
+            <div class="ext-card" style="display:flex; flex-direction:column; justify-content:center;">
+                <div class="btn-row">
+                    <button class="btn btn-secondary" id="btn-pagespeed" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/pagespeed_64dp.png" style="width:12px;height:12px;"> PageSpeed
+                    </button>
+                    <button class="btn btn-secondary" id="btn-wappalyzer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <img src="https://www.wappalyzer.com/apple-touch-icon.png" style="width:12px;height:12px;"> Wappalyzer
+                    </button>
+                </div>
+            </div>        <div class="ext-card">
                 <div class="ext-header">
                     <div class="ext-name">GigaSnap</div>
                     <div class="ext-sub">Tokens.</div>
@@ -430,15 +440,43 @@
                 <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Clears LocalStorage, SessionStorage, and all Cookies.</div>
                 <button class="btn btn-red" id="btn-wipe-domain" style="margin-top:auto;">Wipe Data</button>
             </div>
-            <div class="ext-card" style="display:flex; flex-direction:column; justify-content:center;">
-                <div class="btn-row">
-                    <button class="btn btn-secondary" id="btn-pagespeed" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <img src="https://www.gstatic.com/images/branding/product/1x/pagespeed_64dp.png" style="width:12px;height:12px;"> PageSpeed
-                    </button>
-                    <button class="btn btn-secondary" id="btn-wappalyzer" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <img src="https://www.wappalyzer.com/apple-touch-icon.png" style="width:12px;height:12px;"> Wappalyzer
-                    </button>
+
+        </div>
+
+        <!-- 🧪 Labs / Experimental -->
+        <div class="section-label" style="margin-top:12px; color:#d946ef;">🧪 Labs / Experimental</div>
+        <div class="toolkit-grid">
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name" style="color:#d946ef">UI Cloner</div>
+                    <div class="ext-sub">Design Replica.</div>
                 </div>
+                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Click any component to rip its structure and tokens for Design Palace.</div>
+                <button class="btn btn-primary" id="btn-lab-cloner" style="margin-top:auto; background:rgba(217,70,239,0.2); border:1px solid #d946ef; color:#fdf4ff;">Start Cloner</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">CSS Roulette</div>
+                    <div class="ext-sub">Chaos Mode.</div>
+                </div>
+                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Randomizes all CSS variables to test contrast resilience.</div>
+                <button class="btn btn-secondary" id="btn-lab-roulette" style="margin-top:auto;">Randomize</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Knip Vis</div>
+                    <div class="ext-sub">Dead Code.</div>
+                </div>
+                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Injects glowing red borders around empty or orphaned DOM elements.</div>
+                <button class="btn btn-secondary" id="btn-lab-knip" style="margin-top:auto;">Find Dead Nodes</button>
+            </div>
+            <div class="ext-card">
+                <div class="ext-header">
+                    <div class="ext-name">Tracker</div>
+                    <div class="ext-sub">MonkeyType.</div>
+                </div>
+                <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:4px; line-height:1.2;">Injects a floating widget to track WPM and keystrokes locally.</div>
+                <button class="btn btn-primary" id="btn-lab-tracker" style="margin-top:auto;">Toggle Tracker</button>
             </div>
         </div>
     </div>
