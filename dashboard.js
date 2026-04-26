@@ -16,138 +16,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (target === 'extensions') renderExtensions();
             if (target === 'shortcuts') renderShortcuts();
-            if (target === 'operations') renderOperations();
             if (target === 'privacy') renderPrivacy();
             if (target === 'settings') renderSettings();
         });
     });
 
     function renderSettings() {
-        const settingsView = document.getElementById('view-settings');
-        if (!settingsView) return;
-
-        // Hook up toggle buttons
-        settingsView.querySelectorAll('.btn').forEach(btn => {
-            if (btn.textContent === 'ON' || btn.textContent === 'OFF') {
-                btn.onclick = () => {
-                    const isOff = btn.textContent === 'OFF';
-                    btn.textContent = isOff ? 'ON' : 'OFF';
-                    btn.className = isOff ? 'btn btn-primary' : 'btn';
-                    appendToTerminal(`Setting updated: ${btn.previousElementSibling?.firstElementChild?.textContent} is now ${btn.textContent}`, 'system');
-                };
-            }
-            if (btn.textContent === 'ACTIVE') {
-                btn.onclick = () => {
-                    btn.textContent = 'INACTIVE';
-                    btn.className = 'btn';
-                    appendToTerminal("AI Context Sync: INACTIVE", 'warning');
-                };
-            }
-            if (btn.textContent === 'INACTIVE') {
-                btn.onclick = () => {
-                    btn.textContent = 'ACTIVE';
-                    btn.className = 'btn btn-primary';
-                    appendToTerminal("AI Context Sync: ACTIVE", 'success');
-                };
-            }
-            if (btn.textContent === 'Reset Vault Data') {
-                btn.onclick = () => {
-                    if (confirm("Are you sure? This will wipe all extension metadata and custom redactions.")) {
-                        chrome.storage.local.clear(() => {
-                            appendToTerminal("SYSTEM WIPE COMPLETE.", 'error');
-                            location.reload();
-                        });
-                    }
-                };
-            }
-        });
-    }
-
-    // Call it initially
-    renderSettings();
-
-    // ── Operations / Command Center Logic ────────────────────────────────
-    const terminalOutput = document.getElementById('terminal-output');
-    const terminalInput = document.getElementById('terminal-input');
-
-    function appendToTerminal(text, type = 'info') {
-        if (!terminalOutput) return;
-        const div = document.createElement('div');
-        const timestamp = new Date().toLocaleTimeString([], { hour12: false });
-        let color = '#39ff14';
-        if (type === 'error') color = 'var(--danger)';
-        if (type === 'success') color = 'var(--success)';
-        if (type === 'warning') color = 'var(--warning)';
-        if (type === 'system') color = 'var(--primary)';
-
-        div.style.color = color;
-        div.innerHTML = `<span style="color:var(--text-dim); font-size:0.7rem;">[${timestamp}]</span> ${text}`;
-        terminalOutput.appendChild(div);
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
-    }
-
-    async function executeCommand(cmd) {
-        appendToTerminal(`webdev@paranjayy ~ % ${cmd}`, 'system');
-        const command = cmd.toLowerCase().trim();
-
-        if (command === 'git sync') {
-            appendToTerminal("Scanning local repositories...");
-            await new Promise(r => setTimeout(r, 800));
-            appendToTerminal("Found 3 repositories: 7tv-raycast, Antigravity-Dev-Vault, ipl-engine");
-            appendToTerminal("Pushing 7tv-raycast changes to origin...");
-            await new Promise(r => setTimeout(r, 1200));
-            appendToTerminal("[SUCCESS] 7tv-raycast synced.", 'success');
-        } else if (command === 'ray publish') {
-            appendToTerminal("Initiating Raycast Store publishing flow...");
-            await new Promise(r => setTimeout(r, 500));
-            appendToTerminal("Validating package.json...");
-            appendToTerminal("Running linter...");
-            await new Promise(r => setTimeout(r, 1500));
-            appendToTerminal("[ERROR] Metadata screenshots missing. Please add them to /metadata.", 'error');
-        } else if (command === 'toolbox audit') {
-            appendToTerminal("Starting security audit...");
-            await new Promise(r => setTimeout(r, 1000));
-            appendToTerminal("Checking for leaked credentials...");
-            appendToTerminal("Verifying 'Privacy Shield' redaction rules...");
-            await new Promise(r => setTimeout(r, 1000));
-            appendToTerminal("[SUCCESS] Audit complete. 0 vulnerabilities found.", 'success');
-        } else if (command === 'clean temp') {
-            appendToTerminal("Wiping temp artifacts from scratch directory...");
-            await new Promise(r => setTimeout(r, 800));
-            appendToTerminal("[SUCCESS] 42MB cleared.", 'success');
-        } else if (command === 'help') {
-            appendToTerminal("Available commands: git sync, ray publish, toolbox audit, clean temp, clear, help");
-        } else if (command === 'clear') {
-            terminalOutput.innerHTML = '<div>[TOOLBOX-INFO] Terminal cleared.</div>';
-        } else {
-            appendToTerminal(`Command not found: ${cmd}`, 'error');
-        }
-    }
-
-    terminalInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const cmd = terminalInput.value;
-            if (cmd) executeCommand(cmd);
-            terminalInput.value = '';
-        }
-    });
-
-    document.querySelectorAll('.ops-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const cmd = btn.dataset.cmd;
-            executeCommand(cmd);
-        });
-    });
-
-    function renderOperations() {
-        terminalInput?.focus();
+        // Settings are mostly static for now, but we could load state here
+        console.log("Settings view rendered.");
     }
 
     // ── Extensions Logic ──────────────────────────────────────────────────
     let currentFilter = 'all';
     function renderExtensions() {
         const grid = document.getElementById('extensions-grid');
-        if (!grid) return;
         chrome.management.getAll((extensions) => {
             const list = extensions.filter(e => e.id !== chrome.runtime.id);
             const filtered = list.filter(ext => {
@@ -196,17 +78,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Shortcuts Logic ───────────────────────────────────────────────────
     async function renderShortcuts() {
         const body = document.getElementById('shortcuts-body');
-        if (!body) return;
+        
+        // 1. Get our own shortcuts
         const myShortcuts = await chrome.commands.getAll();
+        
+        // 2. We simulate getting others by showing known ones or instructions
+        // In a real extension, we can't query other extensions' shortcuts via API.
+        // We show a premium guide on how to manage them.
+        
         body.innerHTML = myShortcuts.map(cmd => `
             <tr>
-                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> DEV TOOLBOX</div></td>
+                <td><div style="display:flex; align-items:center; gap:8px;"><span style="color:var(--primary)">⚡</span> The Vault</div></td>
                 <td>${cmd.name}</td>
                 <td><span class="key-badge">${cmd.shortcut || 'Not Set'}</span></td>
                 <td>Global</td>
             </tr>
         `).join('');
 
+        // Add instructions for other extensions
         const instructionRow = `
             <tr style="background: rgba(255,255,255,0.02);">
                 <td colspan="4" style="text-align:center; padding: 30px; color:var(--text-dim);">
@@ -227,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const redactTags = document.getElementById('dash-redact-tags');
 
     function renderPrivacy() {
-        if (!redactTags) return;
         chrome.storage.local.get(['customRedactions'], (data) => {
             const list = data.customRedactions || [];
             redactTags.innerHTML = list.map((item, i) => `
@@ -262,6 +150,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ── Reverse Ops Logic ────────────────────────────────────────────────
+    function renderReverse() {
+        const grid = document.getElementById('reverse-grid');
+        // We simulate this by checking consolidated folders if we had a backend, 
+        // but for now we'll show the ones we know about.
+        grid.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <div class="ext-icon" style="background:rgba(139, 92, 246, 0.1); color:var(--accent);">🧪</div>
+                    <span class="status-pill on">Consolidated</span>
+                </div>
+                <div class="card-title">7TV (ammjkodg...)</div>
+                <div class="card-id">Path: ~/Developer/7TV-Reverse</div>
+                <div class="card-desc">Source code for 7TV v3.1.20. Includes emote injection logic and cosmetics engine.</div>
+                <div class="card-actions">
+                    <button class="btn btn-primary" onclick="alert('Analyze feature coming soon!')">Analyze Logic</button>
+                    <button class="btn" onclick="alert('Path copied: /Users/paranjay/Developer/7TV-Reverse')">Copy Path</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // ── Goated Features: Keyboard Shortcuts ────────────────────────────────
+    window.addEventListener('keydown', (e) => {
+        if ((e.cmdKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('global-search')?.focus();
+        }
+    });
+
     // ── Goated Features: Theme Toggle ──────────────────────────────────────
     let isCyberMode = false;
     function toggleTheme() {
@@ -279,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Boot ──────────────────────────────────────────────────────────────
     renderExtensions();
+    renderReverse();
     
+    // Add theme toggle button to header
     const headerBtns = document.querySelector('header div:last-child');
     if (headerBtns) {
         const themeBtn = document.createElement('button');
@@ -292,19 +212,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-refresh')?.addEventListener('click', () => {
         renderExtensions();
         renderShortcuts();
-        appendToTerminal("Dashboard manually refreshed.", "system");
     });
-
-    // Auto-Refresh Logic: Trigger a refresh after successful commands
-    const originalExecute = executeCommand;
-    executeCommand = async (cmd) => {
-        await originalExecute(cmd);
-        if (document.querySelector('[data-view="settings"] button.btn-primary')?.textContent === 'ON') {
-            setTimeout(() => {
-                renderExtensions();
-                renderShortcuts();
-                appendToTerminal("Auto-refreshing dashboard registry...", "system");
-            }, 500);
-        }
-    };
 });

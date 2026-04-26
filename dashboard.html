@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEV TOOLBOX — Dashboard</title>
+    <title>The Vault — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -197,8 +197,6 @@
         }
         .btn-primary { background: var(--primary); border: none; color: white; }
         .btn:hover { filter: brightness(1.2); }
-        .btn:active { transform: scale(0.98); }
-        .btn.active { background: var(--primary); color: white; border: none; box-shadow: 0 0 15px var(--primary-glow); }
 
         /* Shortcuts Table */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -227,16 +225,16 @@
 </head>
 <body>
     <aside>
-        <div class="brand">⚡ WEBDEV <span>TOOLBOX</span></div>
+        <div class="brand">⚡ The <span>Vault</span></div>
         <nav>
             <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
             <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
-            <div class="nav-item" data-view="operations">⚡ Operations</div>
+            <div class="nav-item" data-view="reverse">🧪 Reverse Ops</div>
             <div class="nav-item" data-view="privacy">🛡️ Privacy Shield</div>
             <div class="nav-item" data-view="settings">⚙️ Settings</div>
         </nav>
         <div style="padding: 24px; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border);">
-            v1.4 Enterprise Build<br>
+            v1.3 Enterprise Build<br>
             Authorized Access Only
         </div>
     </aside>
@@ -246,7 +244,7 @@
             <div class="view-title" id="active-view-title">Extensions</div>
             <div class="search-bar">
                 <span>🔍</span>
-                <input type="text" id="global-search" placeholder="Search across the toolbox...">
+                <input type="text" id="global-search" placeholder="Search across the vault...">
             </div>
             <div style="display:flex; gap:12px;">
                 <button class="btn" style="width:auto;" id="btn-refresh">↻ Refresh All</button>
@@ -262,69 +260,6 @@
                 </div>
                 <div class="grid" id="extensions-grid">
                     <!-- Cards injected by JS -->
-                </div>
-            </div>
-
-            <!-- Operations / Command Center -->
-            <div class="view" id="view-operations">
-                <div style="display:grid; grid-template-columns: 1fr 350px; gap:24px; height: calc(100vh - 200px);">
-                    <!-- Terminal -->
-                    <div class="card" style="padding:0; overflow:hidden; display:flex; flex-direction:column; background: #000; border: 1px solid var(--primary);">
-                        <div style="background: var(--panel); padding: 8px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border);">
-                            <div style="font-family:'Fira Code', monospace; font-size:0.75rem; color:var(--primary);">webdev-terminal — zsh</div>
-                            <div style="display:flex; gap:6px;">
-                                <div style="width:10px; height:10px; border-radius:50%; background:var(--success);"></div>
-                                <div style="width:10px; height:10px; border-radius:50%; background:var(--warning);"></div>
-                                <div style="width:10px; height:10px; border-radius:50%; background:var(--danger);"></div>
-                            </div>
-                        </div>
-                        <div id="terminal-output" style="flex:1; padding:20px; font-family:'Fira Code', monospace; font-size:0.85rem; line-height:1.6; overflow-y:auto; color: #39ff14; text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);">
-                            <div>[TOOLBOX-INFO] Initializing Command Center...</div>
-                            <div>[TOOLBOX-INFO] Syncing with local orchestration layer...</div>
-                            <div>[TOOLBOX-SUCCESS] Core modules loaded. Ready for input.</div>
-                            <div style="margin-top:10px;">webdev@paranjayy ~ % <span class="cursor">_</span></div>
-                        </div>
-                        <div style="padding:12px; background: #0a0a0a; border-top: 1px solid var(--border);">
-                            <input type="text" id="terminal-input" placeholder="Enter toolbox command..." style="width:100%; background:transparent; border:none; color:#39ff14; font-family:'Fira Code', monospace; outline:none;">
-                        </div>
-                    </div>
-
-                    <!-- Side Panel Controls -->
-                    <div style="display:flex; flex-direction:column; gap:20px;">
-                        <div class="card">
-                            <h4 style="margin-bottom:16px;">Quick Actions</h4>
-                            <div style="display:flex; flex-direction:column; gap:10px;">
-                                <button class="btn btn-primary ops-btn" data-cmd="git sync">🔄 Sync All Git Repos</button>
-                                <button class="btn ops-btn" data-cmd="ray publish">📦 Publish 7TV to Store</button>
-                                <button class="btn ops-btn" data-cmd="toolbox audit">🔍 Run Security Audit</button>
-                                <button class="btn ops-btn" data-cmd="clean temp">🧹 Clear Temp Artifacts</button>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <h4 style="margin-bottom:12px;">Active Sessions</h4>
-                            <div id="active-sessions" style="font-size:0.85rem; color:var(--text-dim);">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                    <span>7tv-raycast</span>
-                                    <span style="color:var(--success);">RUNNING</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                    <span>ipl-engine</span>
-                                    <span style="color:var(--text-dim);">IDLE</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span>webdev-toolbox</span>
-                                    <span style="color:var(--danger);">STOPPED</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card" style="background: rgba(59, 130, 246, 0.05);">
-                            <h4 style="margin-bottom:8px;">Stats</h4>
-                            <div style="font-size:0.75rem; color:var(--text-dim);">
-                                CPU Usage: <span style="color:var(--text);">12%</span><br>
-                                Active Ports: <span style="color:var(--text);">8080, 3000</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -352,14 +287,22 @@
                 </div>
             </div>
 
+            <!-- Reverse Ops View -->
+            <div class="view" id="view-reverse">
+                <div class="grid" id="reverse-grid">
+                    <!-- Cards for reverse engineering targets -->
+                </div>
+            </div>
+
             <div class="view" id="view-settings">
                 <div style="max-width: 800px; margin: 0 auto;">
-                    <h2 style="margin-bottom:10px;">Toolbox Configuration</h2>
+                    <h2 style="margin-bottom:10px;">Vault Configuration</h2>
                     <p style="color:var(--text-dim); margin-bottom:40px;">Manage your orchestration environment and design preferences.</p>
                     
                     <div class="card" style="margin-bottom:24px;">
                         <h4 style="margin-bottom:20px;">System Preferences</h4>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
                                     <div style="font-weight:600;">Auto-Refresh Extensions</div>
                                     <div style="font-size:0.8rem; color:var(--text-dim);">Automatically reload dashboard on extension state change.</div>
@@ -385,8 +328,8 @@
 
                     <div class="card">
                         <h4 style="margin-bottom:20px; color:var(--danger);">Danger Zone</h4>
-                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and toolbox metadata.</p>
-                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Toolbox Data</button>
+                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and vault metadata.</p>
+                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Vault Data</button>
                     </div>
                 </div>
             </div>
@@ -394,20 +337,5 @@
     </main>
 
     <script src="dashboard.js"></script>
-    <style>
-        .cursor {
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            from, to { color: transparent; }
-            50% { color: #39ff14; }
-        }
-        #terminal-output::-webkit-scrollbar {
-            width: 4px;
-        }
-        #terminal-output::-webkit-scrollbar-thumb {
-            background: #39ff1433;
-        }
-    </style>
 </body>
 </html>
