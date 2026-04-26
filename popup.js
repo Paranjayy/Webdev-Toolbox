@@ -275,11 +275,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Toolkit Listeners ─────────────────────────────────────────────────
-    safeListen('btn-gigasnap', 'click', () => runSnap(false));
-    safeListen('btn-gigaraw', 'click', () => runSnap(true));
+    safeListen('btn-copy-dom', 'click', () => runSnap(false));
+    safeListen('btn-copy-raw', 'click', () => runSnap(true));
 
     async function runSnap(raw) {
-        const btn = document.getElementById(raw ? 'btn-gigaraw' : 'btn-gigasnap');
+        const btn = document.getElementById(raw ? 'btn-copy-raw' : 'btn-copy-dom');
         const originalText = btn.textContent;
         btn.textContent = '...';
         try {
