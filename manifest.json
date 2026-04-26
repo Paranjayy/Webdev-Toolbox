@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "WEBDEV TOOLBOX",
-  "version": "1.3.2",
-  "description": "High-fidelity intelligence & design toolkit for elite web development.",
+  "name": "The Vault",
+  "version": "1.3",
+  "description": "Unified high-fidelity dashboard for extension orchestration and reverse ops.",
   "permissions": [
     "management",
     "tabs",
@@ -23,7 +23,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Open WEBDEV TOOLBOX",
+    "default_title": "Open Dev Vault",
     "default_icon": "icon.png"
   },
   "background": {
