@@ -2,26 +2,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let tab;
 
     // ── Unified in-page toast (no focus loss) ─────────────────────────────
-    const TOAST_FN = "(function(){"+
-        "let c=document.getElementById('wdt-toasts');"+
-        "if(!c){c=document.createElement('div');c.id='wdt-toasts';"+
-        "c.style='position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;flex-direction:column;gap:8px;pointer-events:none;';"+
-        "document.body.appendChild(c);}"+
-        "const t=document.createElement('div');"+
-        "const clr={info:'#6366f1',success:'#10b981',error:'#ef4444',warning:'#f59e0b'};"+
-        "const col=clr[__WDT_TYPE__]||clr.info;"+
-        "t.style='background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border:1px solid '+col+'33;border-left:4px solid '+col+';color:#f9fafb;padding:11px 22px;border-radius:12px;font-family:system-ui,sans-serif;font-size:13px;font-weight:600;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);opacity:0;transform:translateY(-16px);transition:all .35s cubic-bezier(.175,.885,.32,1.275);pointer-events:none;white-space:nowrap;';"+
-        "t.textContent=__WDT_MSG__;"+
-        "c.appendChild(t);"+
-        "setTimeout(()=>{t.style.opacity='1';t.style.transform='translateY(0)';},10);"+
-        "setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-16px)';setTimeout(()=>t.remove(),350);},3500);"+
-        "})();";
-
     async function pageToast(msg, type = 'info') {
         const t = await getActiveTab();
         if (!t || t.restricted) return;
-        const code = TOAST_FN.replace('__WDT_MSG__', JSON.stringify(msg)).replace('__WDT_TYPE__', JSON.stringify(type));
-        chrome.scripting.executeScript({ target: { tabId: t.id }, func: new Function(code) }).catch(() => {});
+        const colors = { info: '#6366f1', success: '#10b981', error: '#ef4444', warning: '#f59e0b' };
+        const col = colors[type] || colors.info;
+        chrome.scripting.executeScript({
+            target: { tabId: t.id },
+            func: (m, c) => {
+                let container = document.getElementById('wdt-toasts');
+                if (!container) {
+                    container = document.createElement('div'); container.id = 'wdt-toasts';
+                    container.style = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+                    document.body.appendChild(container);
+                }
+                const tEl = document.createElement('div');
+                tEl.style = `background:rgba(15,23,42,0.97);backdrop-filter:blur(14px);border:1px solid ${c}33;border-left:4px solid ${c};color:#f9fafb;padding:11px 22px;border-radius:12px;font-family:system-ui,sans-serif;font-size:13px;font-weight:600;box-shadow:0 20px 25px -5px rgba(0,0,0,.6);opacity:0;transform:translateY(-16px);transition:all .35s cubic-bezier(.175,.885,.32,1.275);pointer-events:none;white-space:nowrap;`;
+                tEl.textContent = m;
+                container.appendChild(tEl);
+                setTimeout(() => { tEl.style.opacity = '1'; tEl.style.transform = 'translateY(0)'; }, 10);
+                setTimeout(() => { tEl.style.opacity = '0'; tEl.style.transform = 'translateY(-16px)'; setTimeout(() => tEl.remove(), 350); }, 3500);
+            },
+            args: [msg, col]
+        }).catch(() => {});
     }
 
     // ── Navigation ────────────────────────────────────────────────────────
