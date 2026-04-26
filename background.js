@@ -112,6 +112,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         handleGigaSnap(request.tabId, request.raw || false, sendResponse);
         return true;
     }
+    // ── Toolkit from popup ────────────────────────────────────────────────
+    if (request.action === 'RUN_ANNOTATOR') { injectAnnotator(request.tabId); return true; }
+    if (request.action === 'RUN_VISUAL_EDIT') { injectVisualEdit(request.tabId); return true; }
+    if (request.action === 'RUN_SPOTLIGHT') { injectSpotlight(request.tabId); return true; }
+    if (request.action === 'RUN_COPY_SELECTOR') { injectCopySelector(request.tabId); return true; }
+    if (request.action === 'RUN_NUKE_MODALS') { injectNukeModals(request.tabId); return true; }
+    if (request.action === 'RUN_DOMAIN_WIPE') { injectDomainWipe(request.tabId); return true; }
 });
 
 // ── Context Menu Setup ────────────────────────────────────────────────

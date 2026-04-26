@@ -371,6 +371,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+
+    safeListen('btn-start-annotator', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_ANNOTATOR', tabId: tab.id });
+    });
+    safeListen('btn-toggle-edit', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_VISUAL_EDIT', tabId: tab.id });
+    });
+    safeListen('btn-toggle-spotlight', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_SPOTLIGHT', tabId: tab.id });
+    });
+    safeListen('btn-pick-selector', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_COPY_SELECTOR', tabId: tab.id });
+    });
+    safeListen('btn-nuke-overlays', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_NUKE_MODALS', tabId: tab.id });
+    });
+    safeListen('btn-wipe-domain', 'click', async () => {
+        const tab = await getActiveTab();
+        chrome.runtime.sendMessage({ action: 'RUN_DOMAIN_WIPE', tabId: tab.id });
+    });
+
     // ── Boot ──────────────────────────────────────────────────────────────
     renderExtensions();
     renderErrors();
