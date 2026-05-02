@@ -73,28 +73,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── INTELLIGENCE: Snapshots & Audits ─────────────────────────────────
     
-    // Professional Context Capture (AI Optimized)
-    safeListen('btn-context-snap', 'click', () => {
+    // AI Context Capture
+    safeListen('btn-capture-ai', 'click', () => {
         getActiveTab().then(tab => {
             if (tab.restricted) return;
             chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: false, tabId: tab.id }, (res) => {
-                if (res?.success) alert("AI Context Snapshot copied to clipboard!");
+                if (res?.success) alert("AI Context Capture copied to clipboard!");
             });
         });
     });
 
-    // Environment Dump (Full Export)
-    safeListen('btn-env-dump', 'click', () => {
+    // Raw Environment Dump
+    safeListen('btn-export-raw', 'click', () => {
         getActiveTab().then(tab => {
             if (tab.restricted) return;
             chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: true, tabId: tab.id }, (res) => {
-                if (res?.success) alert("Full Environment Dump copied to clipboard!");
+                if (res?.success) alert("Raw Environment Dump copied to clipboard!");
             });
         });
     });
 
-    // Element Metadata Inspector (X-Ray)
-    safeListen('btn-xray', 'click', () => {
+    // Metadata Inspector (X-Ray)
+    safeListen('btn-inspect-metadata', 'click', () => {
         safeExecute(() => {
             if (window.__TOOLBOX_XRAY_ACTIVE) {
                 window.__TOOLBOX_XRAY_ACTIVE = false;
@@ -117,19 +117,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     aria: Array.from(el.attributes).filter(a => a.name.startsWith('aria-')).map(a => `${a.name}=${a.value}`),
                     size: `${el.offsetWidth}x${el.offsetHeight}`
                 };
-                box.innerText = `[ELEMENT INSPECTOR]\n\nTAG: ${data.tag}\nID: ${data.id || 'N/A'}\nCLASSES: ${data.classes || 'N/A'}\nSIZE: ${data.size}\n\nARIA:\n${data.aria.join('\n') || 'None'}`;
+                box.innerText = `[METADATA INSPECTOR]\n\nTAG: ${data.tag}\nID: ${data.id || 'N/A'}\nCLASSES: ${data.classes || 'N/A'}\nSIZE: ${data.size}\n\nARIA:\n${data.aria.join('\n') || 'None'}`;
             });
         });
     });
 
-    // Application State Inspector (JSON Hunter)
-    safeListen('btn-state-inspect', 'click', () => {
+    // State Scanner (JSON Hunter)
+    safeListen('btn-scan-state', 'click', () => {
         safeExecute(() => {
             const data = Array.from(document.querySelectorAll('script[type="application/json"], script[type="application/ld+json"]'))
                 .map(s => {
                     try { return JSON.parse(s.textContent); } catch(e) { return s.textContent; }
                 });
-            console.log('%c [STATE INSPECTOR] Found Data Blobs: ', 'background:#d29922; color:white; font-weight:bold;', data);
+            console.log('%c [STATE SCANNER] Found Data Blobs: ', 'background:#d29922; color:white; font-weight:bold;', data);
             alert(`Detected ${data.length} Application State Blobs. Check Console.`);
         });
     });
@@ -141,27 +141,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Stack Deep-Dive (Wappalyzer)
-    safeListen('btn-wappalyzer', 'click', () => {
+    safeListen('btn-stack-dive', 'click', () => {
         safeExecute(() => {
             const stack = [];
             if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
-            if (window.next) stack.push('Next.js');
+            if (window.next || window.__NEXT_DATA__) stack.push('Next.js');
             if (window.jQuery) stack.push('jQuery');
-            if (window.Vue) stack.push('Vue');
+            if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
+            if (window.Angular || document.querySelector('[ng-version]')) stack.push('Angular');
             if (document.querySelector('script[src*="tailwind"]')) stack.push('Tailwind');
             alert(`Technology Stack Analysis: ${stack.join(', ') || 'Vanilla / Proprietary'}`);
         });
     });
 
     // AI Architecture Roast
-    safeListen('btn-audit-ai', 'click', () => {
+    safeListen('btn-audit-arch', 'click', () => {
         safeExecute(() => {
             const divCount = document.querySelectorAll('div').length;
             const styleCount = document.querySelectorAll('style').length;
             const roasts = [];
-            if (divCount > 1000) roasts.push(`Div overload detected (${divCount}). This DOM tree is a nightmare.`);
-            if (styleCount > 20) roasts.push(`${styleCount} inline styles? Your architecture is basically held together by duct tape.`);
+            if (divCount > 1500) roasts.push(`Div overload detected (${divCount}). This DOM tree is a nightmare.`);
+            if (styleCount > 30) roasts.push(`${styleCount} inline styles? Your architecture is basically held together by duct tape.`);
             if (window.jQuery) roasts.push("jQuery detected. Legacy debt is real.");
+            if (document.querySelectorAll('[style*="important"]').length > 20) roasts.push("Overuse of !important detected. You are fighting yourself.");
             
             if (roasts.length === 0) {
                 alert("AI Architecture Audit: No critical inefficiencies found. Professional build.");
@@ -261,25 +263,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── DESIGN: Extractions & Editors ────────────────────────────────────
     
-    // React Component Extraction
-    safeListen('btn-react-rip', 'click', () => {
+    // Component Extractor
+    safeListen('btn-extract-component', 'click', () => {
         safeExecute(() => {
-            alert("Component Extraction Ready. Click any element to wrap into a React component.");
+            alert("Component Extraction Ready. Click any element to replicate with full aesthetics.");
             const handler = (e) => {
                 e.preventDefault(); e.stopPropagation();
                 const el = e.target;
+                const style = window.getComputedStyle(el);
+                const aesthetics = {
+                    color: style.color,
+                    background: style.backgroundColor,
+                    padding: style.padding,
+                    margin: style.margin,
+                    font: style.fontFamily,
+                    shadow: style.boxShadow,
+                    radius: style.borderRadius
+                };
+
                 const componentName = (el.id || el.className?.split(' ')[0] || 'ExtractedComponent').replace(/[^a-zA-Z]/g, '');
                 const capitalized = componentName.charAt(0).toUpperCase() + componentName.slice(1);
-                const code = `import React from 'react';\n\nexport const ${capitalized} = () => {\n  return (\n    <div dangerouslySetInnerHTML={{ __html: \`${el.outerHTML.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }} />\n  );\n};`;
+                
+                const code = `import React from 'react';\n\n// Aesthetic Metadata: ${JSON.stringify(aesthetics)}\nexport const ${capitalized} = () => {\n  return (\n    <div style={{ \n      color: '${aesthetics.color}', \n      backgroundColor: '${aesthetics.background}',\n      padding: '${aesthetics.padding}',\n      borderRadius: '${aesthetics.radius}',\n      boxShadow: '${aesthetics.shadow}',\n      fontFamily: '${aesthetics.font}'\n    }} dangerouslySetInnerHTML={{ __html: \`${el.innerHTML.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }} />\n  );\n};`;
                 
                 const tmp = document.createElement('textarea');
                 tmp.value = code; document.body.appendChild(tmp);
                 tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-                alert(`React Component <${capitalized} /> copied to clipboard!`);
+                alert(`Professional React Component <${capitalized} /> with captured aesthetics copied to clipboard!`);
                 document.removeEventListener('click', handler, true);
             };
             document.addEventListener('click', handler, true);
         });
+    });
+
+    // Vault Migration (Import/Export)
+    safeListen('btn-export-vault', 'click', () => {
+        chrome.storage.local.get(null, (data) => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vault-state-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            showToast("Vault UI state exported successfully.", 'success');
+        });
+    });
+
+    safeListen('btn-import-vault', 'click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    chrome.storage.local.set(data, () => {
+                        alert("Vault UI State Imported! Reloading...");
+                        location.reload();
+                    });
+                } catch (err) {
+                    showToast("Invalid vault state file.", 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
     });
 
     // CSS Token Exporter
@@ -497,6 +547,122 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.style.transition = 'transform 2s cubic-bezier(0.47, 0, 0.745, 0.715)';
                 el.style.transform = `translateY(${window.innerHeight}px) rotate(${Math.random() * 20 - 10}deg)`;
             });
+        });
+    });
+
+    // Layout Stability Pulse (Mutation Pulse)
+    safeListen('btn-mutation-pulse', 'click', () => {
+        safeExecute(() => {
+            if (window.__TOOLBOX_PULSE_ACTIVE) {
+                window.__TOOLBOX_PULSE_ACTIVE = false;
+                window.__TOOLBOX_OBSERVER?.disconnect();
+                return alert("Mutation Pulse Disabled.");
+            }
+            window.__TOOLBOX_PULSE_ACTIVE = true;
+            window.__TOOLBOX_OBSERVER = new MutationObserver((mutations) => {
+                mutations.forEach(m => {
+                    const el = m.target;
+                    if (el.style) {
+                        const original = el.style.boxShadow;
+                        el.style.boxShadow = '0 0 10px #3b82f6';
+                        setTimeout(() => el.style.boxShadow = original, 500);
+                    }
+                });
+            });
+            window.__TOOLBOX_OBSERVER.observe(document.body, { attributes: true, childList: true, subtree: true });
+            alert("Mutation Pulse Active. DOM changes will flash blue.");
+        });
+    });
+
+    // Style Randomizer (CSS Roulette)
+    safeListen('btn-style-roulette', 'click', () => {
+        safeExecute(() => {
+            const root = document.documentElement;
+            const variables = [];
+            for (let i = 0; i < document.styleSheets.length; i++) {
+                try {
+                    const rules = document.styleSheets[i].cssRules;
+                    for (let j = 0; j < rules.length; j++) {
+                        if (rules[j].style) {
+                            for (let k = 0; k < rules[j].style.length; k++) {
+                                const name = rules[j].style[k];
+                                if (name.startsWith('--')) variables.push(name);
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            const unique = [...new Set(variables)];
+            unique.forEach(v => root.style.setProperty(v, `hsl(${Math.random() * 360}, 70%, 50%)`));
+            alert(`Chaos! Shuffled ${unique.length} variables.`);
+        });
+    });
+
+    // UI Spotlight
+    safeListen('btn-spotlight', 'click', () => {
+        safeExecute(() => {
+            const id = 'toolbox-spotlight';
+            if (document.getElementById(id)) return document.getElementById(id).remove();
+            const overlay = document.createElement('div');
+            overlay.id = id;
+            overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000000; pointer-events:none; mask-image:radial-gradient(circle 150px at 50% 50%, transparent 100%, black 100%); -webkit-mask-image:radial-gradient(circle 150px at 50% 50%, transparent 0%, black 100%);';
+            document.body.appendChild(overlay);
+            document.addEventListener('mousemove', (e) => {
+                overlay.style.webkitMaskImage = `radial-gradient(circle 150px at ${e.clientX}px ${e.clientY}px, transparent 0%, black 100%)`;
+            });
+        });
+    });
+
+    // Element Isolation (Ghost)
+    safeListen('btn-isolation', 'click', () => {
+        safeExecute(() => {
+            alert("Isolation Mode: Click an element to isolate it (dim everything else).");
+            const handler = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                document.querySelectorAll('*').forEach(node => {
+                    if (node !== el && !el.contains(node)) node.style.opacity = '0.1';
+                });
+                el.style.opacity = '1';
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
+        });
+    });
+
+    // Performance Stress Timer (Speedrun)
+    safeListen('btn-speedrun', 'click', () => {
+        safeExecute(() => {
+            const start = performance.now();
+            const id = 'toolbox-speedrun-overlay';
+            if (document.getElementById(id)) document.getElementById(id).remove();
+            const overlay = document.createElement('div');
+            overlay.id = id;
+            overlay.style = 'position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ea043; color:white; padding:5px 15px; border-radius:20px; z-index:1000000; font-family:monospace; font-weight:bold;';
+            document.body.appendChild(overlay);
+            const tick = () => {
+                overlay.innerText = `RENDER TIME: ${(performance.now() - start).toFixed(2)}ms`;
+                requestAnimationFrame(tick);
+            };
+            tick();
+        });
+    });
+
+    // Structure Replicator (UI Cloner)
+    safeListen('btn-ui-cloner', 'click', () => {
+        safeExecute(() => {
+            alert("UI Cloner: Click an element to clone its structure and styles.");
+            const handler = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                const clone = el.cloneNode(true);
+                const style = window.getComputedStyle(el);
+                Array.from(style).forEach(key => clone.style.setProperty(key, style.getPropertyValue(key), style.getPropertyPriority(key)));
+                console.log("Cloned Element:", clone);
+                alert("Element structure and computed styles cloned to console.");
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
         });
     });
 
