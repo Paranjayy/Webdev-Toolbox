@@ -148,35 +148,36 @@
     <main>
         <!-- INTELLIGENCE TAB -->
         <div id="tab-intelligence" class="tab-content active">
+            <div class="section-title">Core Audits</div>
+            <div class="grid">
+                <button class="btn btn-primary" id="btn-stack-dive">🛠 Stack Deep-Dive</button>
+                <button class="btn btn-primary" id="btn-pagespeed">🚀 PageSpeed Report</button>
+                <button class="btn" id="btn-audit-arch">🔥 AI Architecture Roast</button>
+                <button class="btn" id="btn-audit-contrast">👁️ Contrast Audit</button>
+            </div>
+
             <div class="section-title">Context Analysis</div>
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">AI Context Snapshot</div>
+                    <div class="card-title">AI Context Capture</div>
                     <div class="card-desc">Capture token-optimized DOM structure for AI analysis.</div>
-                    <button class="btn btn-primary" id="btn-context-snap">Capture Snapshot</button>
+                    <button class="btn btn-primary" id="btn-capture-ai">Capture Snapshot</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Environment Dump</div>
+                    <div class="card-title">Raw Env Dump</div>
                     <div class="card-desc">Full raw capture of DOM, Storage, and System state.</div>
-                    <button class="btn" id="btn-env-dump">Export Full Dump</button>
+                    <button class="btn" id="btn-export-raw">Export Full Dump</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Element Inspector</div>
+                    <div class="card-title">Metadata Inspector</div>
                     <div class="card-desc">Real-time metadata and attribute scanner on hover.</div>
-                    <button class="btn" id="btn-xray">Toggle Inspector</button>
+                    <button class="btn" id="btn-inspect-metadata">Toggle Inspector</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Application State</div>
+                    <div class="card-title">State Scanner</div>
                     <div class="card-desc">Extract and inspect JSON state blobs and data-props.</div>
-                    <button class="btn" id="btn-state-inspect">Scan State</button>
+                    <button class="btn" id="btn-scan-state">Scan State</button>
                 </div>
-            </div>
-            <div class="section-title">Audits</div>
-            <div class="grid">
-                <button class="btn" id="btn-pagespeed">🚀 PageSpeed Report</button>
-                <button class="btn" id="btn-wappalyzer">🛠 Stack Deep-Dive</button>
-                <button class="btn" id="btn-audit-ai">🔥 AI Architecture Roast</button>
-                <button class="btn" id="btn-audit-contrast">👁️ Contrast Audit</button>
             </div>
         </div>
 
@@ -212,9 +213,9 @@
             <div class="section-title">Extraction Tools</div>
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">React Component Rip</div>
+                    <div class="card-title">Component Extractor</div>
                     <div class="card-desc">Convert any DOM node into a React component.</div>
-                    <button class="btn btn-primary" id="btn-react-rip">Extract Component</button>
+                    <button class="btn btn-primary" id="btn-extract-component">Extract Component</button>
                 </div>
                 <div class="card">
                     <div class="card-title">CSS Token Exporter</div>
@@ -237,8 +238,8 @@
             </div>
             <div class="section-title">Visual Overlays</div>
             <div class="grid">
-                <button class="btn" id="btn-toggle-grid">Toggle 12-Col Grid</button>
-                <button class="btn" id="btn-toggle-guides">Toggle Guides</button>
+                <button class="btn" id="btn-toggle-grid">Toggle Layout Grid</button>
+                <button class="btn" id="btn-toggle-guides">Toggle Visual Guides</button>
             </div>
         </div>
 
@@ -265,8 +266,13 @@
 
         <!-- EXTENSIONS TAB -->
         <div id="tab-extensions" class="tab-content">
-            <div class="search-bar" style="padding: 0 0 10px 0; background: none; border: none;">
-                <input type="text" id="ext-search" class="search-input" placeholder="Filter extensions by name or ID...">
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <input type="text" id="ext-search" class="search-input" placeholder="Filter by name or ID..." style="flex:1;">
+                <select id="ext-sort" style="background:var(--panel-header); border:1px solid var(--border); color:var(--text); padding:0 8px; border-radius:6px; font-size:0.75rem; cursor:pointer; outline:none;">
+                    <option value="name">Sort: Name</option>
+                    <option value="status">Sort: Status</option>
+                    <option value="type">Sort: Type</option>
+                </select>
             </div>
             <div class="section-title">Development Workspace</div>
             <div id="ext-list-unpacked" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -297,14 +303,26 @@
 
         <!-- EXPERIMENTAL TAB -->
         <div id="tab-experimental" class="tab-content">
-            <div class="section-title">Vibe & Chaos</div>
+            <div class="section-title">Visual Debugging</div>
             <div class="grid">
+                <button class="btn" id="btn-visual-debugger">Box Model Debugger</button>
+                <button class="btn" id="btn-color-palette">Extract Color Palette</button>
                 <button class="btn" id="btn-neon-profile">Neon Interface Profile</button>
                 <button class="btn" id="btn-crt-sim">CRT Display Simulation</button>
-                <button class="btn" id="btn-mutation-pulse">Layout Stability Pulse</button>
+            </div>
+            
+            <div class="section-title">Runtime Manipulation</div>
+            <div class="grid">
                 <button class="btn" id="btn-gravity">Physics Engine (Gravity)</button>
-                <button class="btn" id="btn-ui-cloner">Structure Replicator</button>
                 <button class="btn" id="btn-style-roulette">Style Randomizer</button>
+                <button class="btn" id="btn-tab-solo">Tab Solo (Kill Others)</button>
+                <button class="btn" id="btn-auto-fill">Mock Form Filler</button>
+            </div>
+
+            <div class="section-title">Observation & Flow</div>
+            <div class="grid">
+                <button class="btn" id="btn-mutation-pulse">Layout Stability Pulse</button>
+                <button class="btn" id="btn-ui-cloner">Structure Replicator</button>
                 <button class="btn" id="btn-spotlight">UI Spotlight</button>
                 <button class="btn" id="btn-isolation">Element Isolation (Ghost)</button>
                 <button class="btn" id="btn-speedrun">Performance Stress Timer</button>
@@ -319,6 +337,11 @@
             <div style="display:flex; gap:8px;">
                 <button class="btn" id="btn-refresh-logs" style="flex:1">Refresh Logs</button>
                 <button class="btn btn-danger" id="btn-clear-logs" style="flex:1">Clear All</button>
+            </div>
+            <div class="section-title">Vault Migration</div>
+            <div class="grid">
+                <button class="btn" id="btn-export-vault">Export UI State</button>
+                <button class="btn" id="btn-import-vault">Import UI State</button>
             </div>
             <div class="section-title">Global Actions</div>
             <div class="grid">

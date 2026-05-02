@@ -9,25 +9,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #030712;
-            --surface: #0f172a;
-            --panel: #1e293b;
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-header: #21262d;
             --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.5);
+            --primary-hover: #2563eb;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-header: #f0f6fc;
+            --emerald: #2ea043;
+            --danger: #f85149;
             --accent: #8b5cf6;
-            --text: #f8fafc;
-            --text-dim: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --danger: #ef4444;
-            --success: #10b981;
-            --warning: #f59e0b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: var(--bg);
             color: var(--text);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             overflow: hidden;
             height: 100vh;
             display: flex;
@@ -35,50 +35,48 @@
 
         /* Sidebar */
         aside {
-            width: 260px;
-            background: rgba(15, 23, 42, 0.8);
+            width: 280px;
+            background: var(--panel);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            backdrop-filter: blur(20px);
             z-index: 10;
         }
 
         .brand {
-            padding: 32px 24px;
-            font-weight: 800;
-            font-size: 1.2rem;
-            letter-spacing: -0.02em;
+            padding: 24px;
+            font-weight: 700;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 12px;
-            color: var(--primary);
+            color: var(--text-header);
+            border-bottom: 1px solid var(--border);
         }
+        .brand span { color: var(--primary); }
 
-        .brand span { color: var(--text); }
-
-        nav { padding: 0 12px; flex: 1; }
+        nav { padding: 16px 8px; flex: 1; }
         .nav-item {
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 10px 16px;
+            border-radius: 6px;
             cursor: pointer;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
+            margin-bottom: 2px;
+            font-size: 0.85rem;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.2s ease;
-            color: var(--text-dim);
+            gap: 10px;
+            transition: all 0.15s ease;
+            color: var(--text);
         }
         .nav-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: var(--text);
+            background: rgba(139, 148, 158, 0.1);
         }
         .nav-item.active {
             background: rgba(59, 130, 246, 0.1);
-            color: var(--primary);
-            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+            color: var(--text-header);
+            border-left: 3px solid var(--primary);
+            border-radius: 0 6px 6px 0;
         }
 
         /* Main Content */
@@ -87,129 +85,129 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            overflow-y: auto;
+            background: var(--bg);
         }
 
         header {
-            height: 80px;
+            height: 64px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 40px;
-            background: rgba(3, 7, 18, 0.5);
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            z-index: 5;
+            padding: 0 24px;
+            background: var(--panel);
         }
 
-        .view-title { font-size: 1.5rem; font-weight: 700; }
+        .view-title { font-size: 1.1rem; font-weight: 600; color: var(--text-header); }
 
         .search-bar {
-            background: var(--surface);
+            background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 99px;
-            padding: 8px 20px;
-            width: 400px;
+            border-radius: 6px;
+            padding: 6px 12px;
+            width: 320px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .search-bar input {
             background: none;
             border: none;
-            color: white;
-            font-size: 0.9rem;
+            color: var(--text);
+            font-size: 0.85rem;
             width: 100%;
             outline: none;
         }
 
-        .content-area { padding: 40px; }
+        .content-area { 
+            padding: 24px; 
+            flex: 1; 
+            overflow-y: auto; 
+        }
 
         /* Dashboard Grid */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
         }
 
         .card {
-            background: var(--surface);
+            background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            border-radius: 8px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
+            transition: border-color 0.2s;
         }
         .card:hover {
-            border-color: var(--primary);
-            transform: translateY(-2px);
+            border-color: var(--text-muted);
         }
 
         .card-header {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .ext-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: var(--panel);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--panel-header);
         }
         .status-pill {
-            padding: 4px 10px;
-            border-radius: 99px;
-            font-size: 0.7rem;
-            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
             text-transform: uppercase;
         }
-        .status-pill.on { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .status-pill.off { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .status-pill.on { background: rgba(46, 160, 67, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+        .status-pill.off { background: rgba(248, 81, 73, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
-        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
-        .card-id { font-family: 'Fira Code', monospace; font-size: 0.75rem; color: var(--text-dim); }
-        .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 16px 0; flex: 1; }
+        .card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-header); }
+        .card-id { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+        .card-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 12px 0; flex: 1; }
 
         .card-actions {
             display: flex;
-            gap: 12px;
-            margin-top: auto;
+            gap: 8px;
+            margin-top: 12px;
         }
         .btn {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
             border: 1px solid var(--border);
-            background: var(--panel);
+            background: var(--panel-header);
             color: var(--text);
-            transition: all 0.2s;
-            flex: 1;
+            transition: all 0.1s;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
-        .btn-primary { background: var(--primary); border: none; color: white; }
-        .btn:hover { filter: brightness(1.2); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn:hover { background: var(--border); }
 
         /* Shortcuts Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { text-align: left; padding: 16px; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
         .key-badge {
-            background: #334155;
-            padding: 4px 8px;
+            background: var(--panel-header);
+            padding: 2px 6px;
             border-radius: 4px;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            box-shadow: 0 2px 0 0 #0f172a;
-            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+            color: var(--text-header);
         }
 
         /* Views */
@@ -217,10 +215,11 @@
         .view.active { display: block; }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--panel); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+        ::-webkit-scrollbar-thumb { background: var(--panel-header); border: 2px solid var(--bg); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+    </style>
     </style>
 </head>
 <body>
@@ -253,10 +252,17 @@
 
         <div class="content-area">
             <div class="view active" id="view-extensions">
-                <div style="display:flex; gap:10px; margin-bottom:30px;">
-                    <button class="btn ext-filter active" data-filter="all" style="width:auto; padding: 8px 24px; border-radius: 99px;">All</button>
-                    <button class="btn ext-filter" data-filter="development" style="width:auto; padding: 8px 24px; border-radius: 99px;">Development</button>
-                    <button class="btn ext-filter" data-filter="store" style="width:auto; padding: 8px 24px; border-radius: 99px;">Store</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn ext-filter active" data-filter="all">All</button>
+                        <button class="btn ext-filter" data-filter="development">Development</button>
+                        <button class="btn ext-filter" data-filter="store">Store</button>
+                    </div>
+                    <select id="ext-sort" style="background:var(--panel-header); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer; outline:none;">
+                        <option value="name">Sort by Name</option>
+                        <option value="status">Sort by Status</option>
+                        <option value="type">Sort by Type</option>
+                    </select>
                 </div>
                 <div class="grid" id="extensions-grid">
                     <!-- Cards injected by JS -->

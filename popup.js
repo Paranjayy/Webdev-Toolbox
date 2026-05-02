@@ -73,28 +73,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── INTELLIGENCE: Snapshots & Audits ─────────────────────────────────
     
-    // Professional Context Capture (AI Optimized)
-    safeListen('btn-context-snap', 'click', () => {
+    // AI Context Capture
+    safeListen('btn-capture-ai', 'click', () => {
         getActiveTab().then(tab => {
             if (tab.restricted) return;
             chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: false, tabId: tab.id }, (res) => {
-                if (res?.success) alert("AI Context Snapshot copied to clipboard!");
+                if (res?.success) alert("AI Context Capture copied to clipboard!");
             });
         });
     });
 
-    // Environment Dump (Full Export)
-    safeListen('btn-env-dump', 'click', () => {
+    // Raw Environment Dump
+    safeListen('btn-export-raw', 'click', () => {
         getActiveTab().then(tab => {
             if (tab.restricted) return;
             chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: true, tabId: tab.id }, (res) => {
-                if (res?.success) alert("Full Environment Dump copied to clipboard!");
+                if (res?.success) alert("Raw Environment Dump copied to clipboard!");
             });
         });
     });
 
-    // Element Metadata Inspector (X-Ray)
-    safeListen('btn-xray', 'click', () => {
+    // Metadata Inspector (X-Ray)
+    safeListen('btn-inspect-metadata', 'click', () => {
         safeExecute(() => {
             if (window.__TOOLBOX_XRAY_ACTIVE) {
                 window.__TOOLBOX_XRAY_ACTIVE = false;
@@ -117,19 +117,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     aria: Array.from(el.attributes).filter(a => a.name.startsWith('aria-')).map(a => `${a.name}=${a.value}`),
                     size: `${el.offsetWidth}x${el.offsetHeight}`
                 };
-                box.innerText = `[ELEMENT INSPECTOR]\n\nTAG: ${data.tag}\nID: ${data.id || 'N/A'}\nCLASSES: ${data.classes || 'N/A'}\nSIZE: ${data.size}\n\nARIA:\n${data.aria.join('\n') || 'None'}`;
+                box.innerText = `[METADATA INSPECTOR]\n\nTAG: ${data.tag}\nID: ${data.id || 'N/A'}\nCLASSES: ${data.classes || 'N/A'}\nSIZE: ${data.size}\n\nARIA:\n${data.aria.join('\n') || 'None'}`;
             });
         });
     });
 
-    // Application State Inspector (JSON Hunter)
-    safeListen('btn-state-inspect', 'click', () => {
+    // State Scanner (JSON Hunter)
+    safeListen('btn-scan-state', 'click', () => {
         safeExecute(() => {
             const data = Array.from(document.querySelectorAll('script[type="application/json"], script[type="application/ld+json"]'))
                 .map(s => {
                     try { return JSON.parse(s.textContent); } catch(e) { return s.textContent; }
                 });
-            console.log('%c [STATE INSPECTOR] Found Data Blobs: ', 'background:#d29922; color:white; font-weight:bold;', data);
+            console.log('%c [STATE SCANNER] Found Data Blobs: ', 'background:#d29922; color:white; font-weight:bold;', data);
             alert(`Detected ${data.length} Application State Blobs. Check Console.`);
         });
     });
@@ -141,27 +141,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Stack Deep-Dive (Wappalyzer)
-    safeListen('btn-wappalyzer', 'click', () => {
+    safeListen('btn-stack-dive', 'click', () => {
         safeExecute(() => {
             const stack = [];
             if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
-            if (window.next) stack.push('Next.js');
+            if (window.next || window.__NEXT_DATA__) stack.push('Next.js');
             if (window.jQuery) stack.push('jQuery');
-            if (window.Vue) stack.push('Vue');
+            if (window.Vue || document.querySelector('[data-v-root]')) stack.push('Vue.js');
+            if (window.Angular || document.querySelector('[ng-version]')) stack.push('Angular');
             if (document.querySelector('script[src*="tailwind"]')) stack.push('Tailwind');
             alert(`Technology Stack Analysis: ${stack.join(', ') || 'Vanilla / Proprietary'}`);
         });
     });
 
     // AI Architecture Roast
-    safeListen('btn-audit-ai', 'click', () => {
+    safeListen('btn-audit-arch', 'click', () => {
         safeExecute(() => {
             const divCount = document.querySelectorAll('div').length;
             const styleCount = document.querySelectorAll('style').length;
             const roasts = [];
-            if (divCount > 1000) roasts.push(`Div overload detected (${divCount}). This DOM tree is a nightmare.`);
-            if (styleCount > 20) roasts.push(`${styleCount} inline styles? Your architecture is basically held together by duct tape.`);
+            if (divCount > 1500) roasts.push(`Div overload detected (${divCount}). This DOM tree is a nightmare.`);
+            if (styleCount > 30) roasts.push(`${styleCount} inline styles? Your architecture is basically held together by duct tape.`);
             if (window.jQuery) roasts.push("jQuery detected. Legacy debt is real.");
+            if (document.querySelectorAll('[style*="important"]').length > 20) roasts.push("Overuse of !important detected. You are fighting yourself.");
             
             if (roasts.length === 0) {
                 alert("AI Architecture Audit: No critical inefficiencies found. Professional build.");
@@ -261,25 +263,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── DESIGN: Extractions & Editors ────────────────────────────────────
     
-    // React Component Extraction
-    safeListen('btn-react-rip', 'click', () => {
+    // Component Extractor
+    safeListen('btn-extract-component', 'click', () => {
         safeExecute(() => {
-            alert("Component Extraction Ready. Click any element to wrap into a React component.");
+            alert("Component Extraction Ready. Click any element to replicate with full aesthetics.");
             const handler = (e) => {
                 e.preventDefault(); e.stopPropagation();
                 const el = e.target;
+                const style = window.getComputedStyle(el);
+                const aesthetics = {
+                    color: style.color,
+                    background: style.backgroundColor,
+                    padding: style.padding,
+                    margin: style.margin,
+                    font: style.fontFamily,
+                    shadow: style.boxShadow,
+                    radius: style.borderRadius
+                };
+
                 const componentName = (el.id || el.className?.split(' ')[0] || 'ExtractedComponent').replace(/[^a-zA-Z]/g, '');
                 const capitalized = componentName.charAt(0).toUpperCase() + componentName.slice(1);
-                const code = `import React from 'react';\n\nexport const ${capitalized} = () => {\n  return (\n    <div dangerouslySetInnerHTML={{ __html: \`${el.outerHTML.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }} />\n  );\n};`;
+                
+                const code = `import React from 'react';\n\n// Aesthetic Metadata: ${JSON.stringify(aesthetics)}\nexport const ${capitalized} = () => {\n  return (\n    <div style={{ \n      color: '${aesthetics.color}', \n      backgroundColor: '${aesthetics.background}',\n      padding: '${aesthetics.padding}',\n      borderRadius: '${aesthetics.radius}',\n      boxShadow: '${aesthetics.shadow}',\n      fontFamily: '${aesthetics.font}'\n    }} dangerouslySetInnerHTML={{ __html: \`${el.innerHTML.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }} />\n  );\n};`;
                 
                 const tmp = document.createElement('textarea');
                 tmp.value = code; document.body.appendChild(tmp);
                 tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-                alert(`React Component <${capitalized} /> copied to clipboard!`);
+                alert(`Professional React Component <${capitalized} /> with captured aesthetics copied to clipboard!`);
                 document.removeEventListener('click', handler, true);
             };
             document.addEventListener('click', handler, true);
         });
+    });
+
+    // Vault Migration (Import/Export)
+    safeListen('btn-export-vault', 'click', () => {
+        chrome.storage.local.get(null, (data) => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vault-state-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            showToast("Vault UI state exported successfully.", 'success');
+        });
+    });
+
+    safeListen('btn-import-vault', 'click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    chrome.storage.local.set(data, () => {
+                        alert("Vault UI State Imported! Reloading...");
+                        location.reload();
+                    });
+                } catch (err) {
+                    showToast("Invalid vault state file.", 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
     });
 
     // CSS Token Exporter
@@ -411,6 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── EXTENSIONS ────────────────────────────────────────────────────────
     let searchFilter = '';
+    let sortType = 'name';
+
     function renderExtensions() {
         const unpackedList = document.getElementById('ext-list-unpacked');
         const storeList = document.getElementById('ext-list-store');
@@ -418,49 +470,121 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chrome.management.getAll((extensions) => {
             const list = extensions.filter(e => e.id !== chrome.runtime.id);
-            const filtered = list.filter(e => e.name.toLowerCase().includes(searchFilter.toLowerCase()) || e.id.includes(searchFilter));
+            let filtered = list.filter(e => e.name.toLowerCase().includes(searchFilter.toLowerCase()) || e.id.includes(searchFilter));
             
+            // Apply Sorting
+            filtered.sort((a, b) => {
+                if (sortType === 'name') return a.name.localeCompare(b.name);
+                if (sortType === 'status') return (b.enabled ? 1 : 0) - (a.enabled ? 1 : 0);
+                if (sortType === 'type') return a.installType.localeCompare(b.installType);
+                return 0;
+            });
+
             const unpacked = filtered.filter(e => e.installType === 'development');
             const store = filtered.filter(e => e.installType !== 'development');
 
-            const renderCard = (ext) => `
-                <div class="card" style="padding: 10px; flex-direction: row; align-items: center; justify-content: space-between;">
-                    <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
-                        <img src="${ext.icons?.[0]?.url || 'icon.png'}" style="width:28px; height:28px; border-radius:4px; background:var(--panel-header);">
-                        <div style="min-width:0;">
-                            <div class="card-title truncate">${ext.name}</div>
-                            <div class="mono" style="font-size:0.55rem; opacity:0.6;">${ext.id}</div>
+            const renderCard = (ext) => {
+                const note = extNotes[ext.id] || '';
+                return `
+                    <div class="card" style="padding: 10px; flex-direction: column; border-color: ${ext.enabled ? 'var(--border)' : 'rgba(239, 68, 68, 0.2)'};">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                                <img src="${ext.icons?.[0]?.url || 'icon.png'}" style="width:24px; height:24px; border-radius:4px; opacity: ${ext.enabled ? 1 : 0.5};">
+                                <div style="min-width:0;">
+                                    <div class="card-title truncate" style="font-size:0.75rem; color: ${ext.enabled ? 'var(--text-header)' : 'var(--text-muted)'};">${ext.name}</div>
+                                    <div class="mono" style="font-size:0.5rem; opacity:0.5;">${ext.id}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem; border-color:${ext.enabled ? 'var(--emerald)' : 'var(--border)'}; color: ${ext.enabled ? 'var(--emerald)' : 'var(--text-muted)'};" id="toggle-${ext.id}">
+                                    ${ext.enabled ? 'ON' : 'OFF'}
+                                </button>
+                                <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" id="rip-${ext.id}" title="Rip Blueprint">🧬</button>
+                            </div>
+                        </div>
+                        
+                        <div id="note-container-${ext.id}" style="display: ${note ? 'block' : 'none'}; margin-bottom: 8px;">
+                            <textarea id="note-input-${ext.id}" placeholder="Issues or notes for this tool..." style="width:100%; height:40px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.65rem; padding:4px; border-radius:4px; resize:none;">${note}</textarea>
+                        </div>
+                        
+                        <div style="display:flex; gap:6px; justify-content: flex-end;">
+                            <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="btn-note-${ext.id}">${note ? 'EDIT NOTE' : '+ NOTE'}</button>
+                            ${ext.installType === 'development' ? `
+                                <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="reload-${ext.id}">RELOAD</button>
+                            ` : ''}
                         </div>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn" style="width:auto; padding:4px 8px; font-size:0.65rem; border-color:${ext.enabled ? 'var(--emerald)' : 'var(--border)'};" id="toggle-${ext.id}">
-                            ${ext.enabled ? 'ACTIVE' : 'OFF'}
-                        </button>
-                        ${ext.installType === 'development' ? `
-                            <button class="btn" style="width:auto; padding:4px 8px;" id="reload-${ext.id}">↻</button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
+                `;
+            };
 
-            unpackedList.innerHTML = unpacked.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
-            storeList.innerHTML = store.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No production extensions.</div>';
+            chrome.storage.local.get(['ext_notes'], (res) => {
+                const extNotes = res.ext_notes || {};
+                unpackedList.innerHTML = unpacked.map(ext => renderCard(ext, extNotes)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
+                storeList.innerHTML = store.map(ext => renderCard(ext, extNotes)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
 
-            [...unpacked, ...store].forEach(ext => {
-                safeListen(`toggle-${ext.id}`, 'click', () => {
-                    chrome.management.setEnabled(ext.id, !ext.enabled, () => renderExtensions());
-                });
-                if (ext.installType === 'development') {
-                    safeListen(`reload-${ext.id}`, 'click', () => {
-                        chrome.runtime.sendMessage({ action: 'RELOAD_EXT_AND_TAB', id: ext.id });
+                [...unpacked, ...store].forEach(ext => {
+                    // Toggle
+                    document.getElementById(`toggle-${ext.id}`)?.addEventListener('click', () => {
+                        chrome.management.setEnabled(ext.id, !ext.enabled, () => renderExtensions());
                     });
-                }
+                    
+                    // Note Toggle
+                    document.getElementById(`btn-note-${ext.id}`)?.addEventListener('click', () => {
+                        const container = document.getElementById(`note-container-${ext.id}`);
+                        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+                    });
+                    
+                    // Note Save (on blur)
+                    document.getElementById(`note-input-${ext.id}`)?.addEventListener('blur', (e) => {
+                        const val = e.target.value.trim();
+                        chrome.storage.local.get(['ext_notes'], (res) => {
+                            const notes = res.ext_notes || {};
+                            if (val) notes[ext.id] = val;
+                            else delete notes[ext.id];
+                            chrome.storage.local.set({ ext_notes: notes });
+                        });
+                    });
+
+                    // Rip Blueprint
+                    document.getElementById(`rip-${ext.id}`)?.addEventListener('click', () => {
+                        const blueprint = {
+                            metadata: {
+                                name: ext.name,
+                                description: ext.description,
+                                version: ext.version,
+                                type: ext.installType,
+                                id: ext.id
+                            },
+                            permissions: ext.permissions,
+                            hostPermissions: ext.hostPermissions,
+                            blueprint_type: "Extension Replication Manifest"
+                        };
+                        const tmp = document.createElement('textarea');
+                        tmp.value = JSON.stringify(blueprint, null, 2);
+                        document.body.appendChild(tmp);
+                        tmp.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tmp);
+                        alert('Extension Blueprint copied! Use this to replicate the tool with AI.');
+                    });
+
+                    if (ext.installType === 'development') {
+                        document.getElementById(`reload-${ext.id}`)?.addEventListener('click', () => {
+                            chrome.runtime.sendMessage({ action: 'RELOAD_EXT_AND_TAB', id: ext.id });
+                        });
+                    }
+                });
             });
         });
     }
 
     safeListen('ext-search', 'input', (e) => {
         searchFilter = e.target.value;
+        renderExtensions();
+    });
+
+    safeListen('ext-sort', 'change', (e) => {
+        sortType = e.target.value;
         renderExtensions();
     });
 
@@ -497,6 +621,122 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.style.transition = 'transform 2s cubic-bezier(0.47, 0, 0.745, 0.715)';
                 el.style.transform = `translateY(${window.innerHeight}px) rotate(${Math.random() * 20 - 10}deg)`;
             });
+        });
+    });
+
+    // Layout Stability Pulse (Mutation Pulse)
+    safeListen('btn-mutation-pulse', 'click', () => {
+        safeExecute(() => {
+            if (window.__TOOLBOX_PULSE_ACTIVE) {
+                window.__TOOLBOX_PULSE_ACTIVE = false;
+                window.__TOOLBOX_OBSERVER?.disconnect();
+                return alert("Mutation Pulse Disabled.");
+            }
+            window.__TOOLBOX_PULSE_ACTIVE = true;
+            window.__TOOLBOX_OBSERVER = new MutationObserver((mutations) => {
+                mutations.forEach(m => {
+                    const el = m.target;
+                    if (el.style) {
+                        const original = el.style.boxShadow;
+                        el.style.boxShadow = '0 0 10px #3b82f6';
+                        setTimeout(() => el.style.boxShadow = original, 500);
+                    }
+                });
+            });
+            window.__TOOLBOX_OBSERVER.observe(document.body, { attributes: true, childList: true, subtree: true });
+            alert("Mutation Pulse Active. DOM changes will flash blue.");
+        });
+    });
+
+    // Style Randomizer (CSS Roulette)
+    safeListen('btn-style-roulette', 'click', () => {
+        safeExecute(() => {
+            const root = document.documentElement;
+            const variables = [];
+            for (let i = 0; i < document.styleSheets.length; i++) {
+                try {
+                    const rules = document.styleSheets[i].cssRules;
+                    for (let j = 0; j < rules.length; j++) {
+                        if (rules[j].style) {
+                            for (let k = 0; k < rules[j].style.length; k++) {
+                                const name = rules[j].style[k];
+                                if (name.startsWith('--')) variables.push(name);
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            const unique = [...new Set(variables)];
+            unique.forEach(v => root.style.setProperty(v, `hsl(${Math.random() * 360}, 70%, 50%)`));
+            alert(`Chaos! Shuffled ${unique.length} variables.`);
+        });
+    });
+
+    // UI Spotlight
+    safeListen('btn-spotlight', 'click', () => {
+        safeExecute(() => {
+            const id = 'toolbox-spotlight';
+            if (document.getElementById(id)) return document.getElementById(id).remove();
+            const overlay = document.createElement('div');
+            overlay.id = id;
+            overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000000; pointer-events:none; mask-image:radial-gradient(circle 150px at 50% 50%, transparent 100%, black 100%); -webkit-mask-image:radial-gradient(circle 150px at 50% 50%, transparent 0%, black 100%);';
+            document.body.appendChild(overlay);
+            document.addEventListener('mousemove', (e) => {
+                overlay.style.webkitMaskImage = `radial-gradient(circle 150px at ${e.clientX}px ${e.clientY}px, transparent 0%, black 100%)`;
+            });
+        });
+    });
+
+    // Element Isolation (Ghost)
+    safeListen('btn-isolation', 'click', () => {
+        safeExecute(() => {
+            alert("Isolation Mode: Click an element to isolate it (dim everything else).");
+            const handler = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                document.querySelectorAll('*').forEach(node => {
+                    if (node !== el && !el.contains(node)) node.style.opacity = '0.1';
+                });
+                el.style.opacity = '1';
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
+        });
+    });
+
+    // Performance Stress Timer (Speedrun)
+    safeListen('btn-speedrun', 'click', () => {
+        safeExecute(() => {
+            const start = performance.now();
+            const id = 'toolbox-speedrun-overlay';
+            if (document.getElementById(id)) document.getElementById(id).remove();
+            const overlay = document.createElement('div');
+            overlay.id = id;
+            overlay.style = 'position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#2ea043; color:white; padding:5px 15px; border-radius:20px; z-index:1000000; font-family:monospace; font-weight:bold;';
+            document.body.appendChild(overlay);
+            const tick = () => {
+                overlay.innerText = `RENDER TIME: ${(performance.now() - start).toFixed(2)}ms`;
+                requestAnimationFrame(tick);
+            };
+            tick();
+        });
+    });
+
+    // Structure Replicator (UI Cloner)
+    safeListen('btn-ui-cloner', 'click', () => {
+        safeExecute(() => {
+            alert("UI Cloner: Click an element to clone its structure and styles.");
+            const handler = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                const clone = el.cloneNode(true);
+                const style = window.getComputedStyle(el);
+                Array.from(style).forEach(key => clone.style.setProperty(key, style.getPropertyValue(key), style.getPropertyPriority(key)));
+                console.log("Cloned Element:", clone);
+                alert("Element structure and computed styles cloned to console.");
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
         });
     });
 
@@ -609,6 +849,83 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Agent logs cleared.", 'info');
             });
         }
+    });
+
+    // Box Model Debugger
+    safeListen('btn-visual-debugger', 'click', () => {
+        safeExecute(() => {
+            const id = 'toolbox-visual-debugger';
+            if (document.getElementById(id)) return document.getElementById(id).remove();
+            const style = document.createElement('style');
+            style.id = id;
+            style.innerHTML = `* { outline: 1px solid rgba(255, 0, 0, 0.3) !important; outline-offset: -1px !important; }`;
+            document.head.appendChild(style);
+        });
+    });
+
+    // Color Palette Extractor
+    safeListen('btn-color-palette', 'click', () => {
+        safeExecute(() => {
+            const colors = new Set();
+            document.querySelectorAll('*').forEach(el => {
+                const s = getComputedStyle(el);
+                if (s.color) colors.add(s.color);
+                if (s.backgroundColor && s.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(s.backgroundColor);
+            });
+            const list = [...colors].slice(0, 50);
+            console.log('%c [COLOR PALETTE] ', 'background:#3b82f6; color:white; font-weight:bold;', list);
+            
+            const overlay = document.createElement('div');
+            overlay.style = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#161b22; padding:20px; border-radius:12px; z-index:1000000; border:1px solid #30363d; display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; box-shadow:0 20px 50px rgba(0,0,0,0.8);';
+            list.forEach(c => {
+                const swatch = document.createElement('div');
+                swatch.style = `width:40px; height:40px; background:${c}; border-radius:4px; border:1px solid #30363d; cursor:pointer;`;
+                swatch.title = c;
+                swatch.onclick = () => { navigator.clipboard.writeText(c); alert(`Copied: ${c}`); };
+                overlay.appendChild(swatch);
+            });
+            const close = document.createElement('button');
+            close.innerText = 'Close';
+            close.style = 'grid-column:span 5; margin-top:10px; background:#3b82f6; color:white; border:none; padding:8px; border-radius:6px; cursor:pointer;';
+            close.onclick = () => overlay.remove();
+            overlay.appendChild(close);
+            document.body.appendChild(overlay);
+        });
+    });
+
+    // Tab Solo
+    safeListen('btn-tab-solo', 'click', () => {
+        if (confirm("Close all other tabs in this window?")) {
+            chrome.tabs.query({ currentWindow: true, active: false }, (tabs) => {
+                const ids = tabs.map(t => t.id);
+                chrome.tabs.remove(ids);
+            });
+        }
+    });
+
+    // Mock Form Filler
+    safeListen('btn-auto-fill', 'click', () => {
+        safeExecute(() => {
+            const mocks = {
+                email: 'tester@vault.dev',
+                name: 'Vault User',
+                phone: '+1 555-0199',
+                address: '123 Enterprise Way, Silicon Valley',
+                city: 'Palo Alto',
+                zip: '94301'
+            };
+            document.querySelectorAll('input, textarea').forEach(el => {
+                if (el.type === 'email') el.value = mocks.email;
+                else if (el.type === 'tel') el.value = mocks.phone;
+                else if (el.name?.includes('name') || el.id?.includes('name')) el.value = mocks.name;
+                else if (el.name?.includes('addr') || el.id?.includes('addr')) el.value = mocks.address;
+                else el.value = 'Mock Data';
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            return 'Form fields populated with mock data.';
+        }).then(res => {
+            if (res?.[0]?.result) alert(res[0].result);
+        });
     });
 
     // ── Boot ──────────────────────────────────────────────────────────────

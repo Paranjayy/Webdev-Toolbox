@@ -108,7 +108,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'PERFORM_SNAPSHOT') {
-        handleGigaSnap(sender.tab?.id || request.tabId, request.raw || false);
+        handleDOMCleaner(sender.tab?.id || request.tabId, request.raw || false);
         sendResponse({ success: true });
     } else if (request.action === 'PERFORM_MACRO') {
         handleVibeRecorder(sender.tab?.id || request.tabId);
@@ -117,7 +117,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
 });
 
-async function handleGigaSnap(tabId, raw = false) {
+async function handleDOMCleaner(tabId, raw = false) {
     const results = await chrome.scripting.executeScript({
         target: { tabId },
         func: (isRaw) => {
@@ -174,22 +174,32 @@ async function handleGigaSnap(tabId, raw = false) {
                 return stack;
             };
 
-            const megasnapshot = {
+            const agent_intel = {
+                ua: navigator.userAgent,
+                lang: navigator.language,
+                screen: `${window.innerWidth}x${window.innerHeight}`,
+                cookies_enabled: navigator.cookieEnabled,
+                do_not_track: navigator.doNotTrack
+            };
+
+            const snapshot = {
                 metadata: { 
                     timestamp: new Date().toISOString(), 
                     url: window.location.href, 
                     title: document.title,
-                    type: isRaw ? 'Raw' : 'Token-Optimized'
+                    type: isRaw ? 'Raw-DOM' : 'Clean-DOM',
+                    agent_intel,
+                    performance: performance.getEntriesByType('navigation')[0] || {}
                 },
                 stack: detectStack(),
-                clean_dom: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)
+                dom_content: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)
             };
 
-            const prompt = `### AI SNAPSHOT CONTEXT\n${JSON.stringify(megasnapshot, null, 2)}`;
+            const prompt = `### DOM CLEANER SNAPSHOT\n${JSON.stringify(snapshot, null, 2)}`;
             const tmp = document.createElement('textarea');
             tmp.value = prompt; document.body.appendChild(tmp);
             tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-            return megasnapshot;
+            return snapshot;
         },
         args: [raw]
     });
@@ -201,6 +211,7 @@ async function handleGigaSnap(tabId, raw = false) {
             history.unshift(snap);
             chrome.storage.local.set({ snap_history: history.slice(0, 5) });
         });
+        showContentToast(tabId, `${snap.metadata.type} copied to clipboard!`, 'success');
     }
 }
 
@@ -220,14 +231,13 @@ async function handleVibeRecorder(tabId) {
                 tmp.value = script; document.body.appendChild(tmp);
                 tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
                 
-                alert(`Macro Exported! Copied ${events.length} steps as Playwright script.`);
                 window.__MACRO_ACTIVE = false;
                 document.getElementById('macro-indicator')?.remove();
                 
                 // Cleanup listeners
                 document.removeEventListener('click', window.__MACRO_CLICK, true);
                 document.removeEventListener('input', window.__MACRO_INPUT, true);
-                return;
+                return `Macro Exported! Copied ${events.length} steps.`;
             }
 
             window.__MACRO_ACTIVE = true;
@@ -256,8 +266,36 @@ async function handleVibeRecorder(tabId) {
 
             document.addEventListener('click', window.__MACRO_CLICK, true);
             document.addEventListener('input', window.__MACRO_INPUT, true);
+            return 'Macro recording started...';
         }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
     });
+}
+
+async function showContentToast(tabId, message, type = 'success') {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: (msg, t) => {
+            const id = '__toolbox_toast';
+            if (document.getElementById(id)) document.getElementById(id).remove();
+            const toast = document.createElement('div');
+            toast.id = id;
+            const colors = { success: '#2ea043', error: '#f85149', info: '#3b82f6' };
+            toast.style = `position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#161b22; color:white; padding:12px 24px; border-radius:12px; z-index:10000000; font-family:sans-serif; font-size:14px; font-weight:600; border:1px solid ${colors[t] || colors.info}; box-shadow:0 10px 40px rgba(0,0,0,0.8); animation: toastIn 0.3s ease forwards;`;
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`;
+            document.head.appendChild(style);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = '0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        },
+        args: [message, type]
+    }).catch(() => {});
 }
 
 // ── Context Menu Setup ───────────────────────────────────────────────────────
@@ -270,15 +308,15 @@ chrome.runtime.onInstalled.addListener(() => {
     });
 
     chrome.contextMenus.create({
-        id: "gigasnap",
+        id: "ai_context_capture",
         parentId: "webdev_toolbox",
-        title: "⚡ Snapshot: Capture Context",
+        title: "🧹 AI: Context Capture",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
-        id: "annotator",
+        id: "element_tagger",
         parentId: "webdev_toolbox",
-        title: "📝 Snapshot: Annotator Mode",
+        title: "📝 AI: Element Tagger",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
@@ -312,12 +350,6 @@ chrome.runtime.onInstalled.addListener(() => {
         contexts: ["all"]
     });
     chrome.contextMenus.create({
-        id: "color_tweak",
-        parentId: "webdev_toolbox",
-        title: "🎨 Design: Tweak Colors",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
         id: "vibe_recorder",
         parentId: "webdev_toolbox",
         title: "🎬 Macro: Vibe Recorder",
@@ -326,8 +358,8 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "gigasnap") {
-        handleGigaSnap(tab.id, false);
+    if (info.menuItemId === "ai_context_capture") {
+        handleDOMCleaner(tab.id, false);
     } else if (info.menuItemId === "vibe_recorder") {
         handleVibeRecorder(tab.id);
     } else if (info.menuItemId === "visual_edit") {
@@ -335,8 +367,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             target: { tabId: tab.id },
             func: () => {
                 document.designMode = document.designMode === 'on' ? 'off' : 'on';
-                alert(`Design Mode: ${document.designMode.toUpperCase()}`);
+                return `Design Mode: ${document.designMode.toUpperCase()}`;
             }
+        }, (res) => {
+            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
         });
     } else if (info.menuItemId === "inspect_style") {
         chrome.scripting.executeScript({
@@ -346,7 +380,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 // since 'all' context doesn't pass the element directly in MV3 background script
                 // we'll use the last right-clicked element if we tracked it, 
                 // or just ask the user to click again for simplicity in this lab tool.
-                alert('Click an element to see its core styles in the console.');
+                return 'Click an element to see its core styles in the console.';
                 const handler = (e) => {
                     e.preventDefault();
                     const style = window.getComputedStyle(e.target);
@@ -364,7 +398,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                alert('Click an element to copy its unique CSS selector.');
+                return 'Click an element to copy its unique CSS selector.';
                 const handler = (e) => {
                     e.preventDefault();
                     const getSelector = (el) => {
@@ -403,7 +437,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                alert('Click any element to delete it from the DOM.');
+                return 'Click any element to delete it from the DOM.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -438,14 +472,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
                     root.style.setProperty(v, randomColor);
                 });
-                alert(`Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`);
+                return `Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`;
             }
+        }, (res) => {
+            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
         });
     } else if (info.menuItemId === "color_tweak") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                alert('Click an element to cycle its colors.');
+                return 'Click an element to cycle its colors.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -469,16 +505,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 document.addEventListener('click', handler, true);
             }
         });
-    } else if (info.menuItemId === "annotator") {
+    } else if (info.menuItemId === "element_tagger") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                if (window.__ANNOTATOR_ACTIVE) return;
-                window.__ANNOTATOR_ACTIVE = true;
+                if (window.__TAGGER_ACTIVE) return;
+                window.__TAGGER_ACTIVE = true;
                 const selections = [];
 
                 const container = document.createElement('div');
-                container.id = '__vibe_annotator_ui';
+                container.id = '__toolbox_tagger_ui';
                 container.style = `
                     position: fixed; top: 10px; right: 10px; width: 320px; max-height: 80vh;
                     background: #0f172a; border: 1px solid #334155; border-radius: 12px;
@@ -488,21 +524,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 `;
                 container.innerHTML = `
                     <div style="padding:12px; background:#1e293b; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:700; font-size:13px; color:#6366f1;">AI TASK ANNOTATOR</span>
-                        <button id="__annotator_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
+                        <span style="font-weight:700; font-size:13px; color:#6366f1;">AI ELEMENT TAGGER</span>
+                        <button id="__tagger_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
                     </div>
-                    <div id="__annotator_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
-                        <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>
+                    <div id="__tagger_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to tag them for the AI...</div>
                     </div>
                     <div style="padding:12px; border-top:1px solid #334155; background:#0f172a;">
-                        <button id="__annotator_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
+                        <button id="__tagger_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
                     </div>
                 `;
                 document.body.appendChild(container);
 
-                const list = container.querySelector('#__annotator_list');
-                const copyBtn = container.querySelector('#__annotator_copy');
-                const closeBtn = container.querySelector('#__annotator_close');
+                const list = container.querySelector('#__tagger_list');
+                const copyBtn = container.querySelector('#__tagger_copy');
+                const closeBtn = container.querySelector('#__tagger_close');
 
                 const highlight = document.createElement('div');
                 highlight.style = 'position:fixed; background:rgba(99,102,241,0.1); border:2px dashed #6366f1; z-index:9999998; pointer-events:none; transition: all 0.05s;';
@@ -524,7 +560,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
                 const refreshList = () => {
                     if (selections.length === 0) {
-                        list.innerHTML = '<div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to annotate them for the AI...</div>';
+                        list.innerHTML = '<div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to tag them for the AI...</div>';
                         return;
                     }
                     list.innerHTML = selections.map((s, i) => `
@@ -560,7 +596,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', onClick, true);
                     container.remove();
                     highlight.remove();
-                    window.__ANNOTATOR_ACTIVE = false;
+                    window.__TAGGER_ACTIVE = false;
                 };
 
                 closeBtn.onclick = cleanup;

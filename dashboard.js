@@ -28,34 +28,112 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Extensions Logic ──────────────────────────────────────────────────
     let currentFilter = 'all';
+    let currentSort = 'name';
+    let searchQuery = '';
+
     function renderExtensions() {
         const grid = document.getElementById('extensions-grid');
+        if (!grid) return;
+        
         chrome.management.getAll((extensions) => {
-            const list = extensions.filter(e => e.id !== chrome.runtime.id);
-            const filtered = list.filter(ext => {
-                if (currentFilter === 'all') return true;
-                if (currentFilter === 'development') return ext.installType === 'development';
-                if (currentFilter === 'store') return ext.installType !== 'development';
-                return true;
-            });
+            chrome.storage.local.get(['ext_notes'], (res) => {
+                const extNotes = res.ext_notes || {};
+                const list = extensions.filter(e => e.id !== chrome.runtime.id);
+                let filtered = list.filter(ext => {
+                    const matchesSearch = ext.name.toLowerCase().includes(searchQuery.toLowerCase()) || ext.id.includes(searchQuery);
+                    if (!matchesSearch) return false;
+                    
+                    if (currentFilter === 'all') return true;
+                    if (currentFilter === 'development') return ext.installType === 'development';
+                    if (currentFilter === 'store') return ext.installType !== 'development';
+                    return true;
+                });
 
-            grid.innerHTML = filtered.map(ext => `
-                <div class="card">
-                    <div class="card-header">
-                        <img class="ext-icon" src="${ext.icons?.[ext.icons.length-1]?.url || 'icon/icon-48.png'}">
-                        <span class="status-pill ${ext.enabled ? 'on' : 'off'}">${ext.enabled ? 'Active' : 'Disabled'}</span>
-                    </div>
-                    <div class="card-title">${ext.name}</div>
-                    <div class="card-id">ID: ${ext.id}</div>
-                    <div class="card-desc">${ext.description || 'No description provided.'}</div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary" onclick="toggleExt('${ext.id}', ${ext.enabled})">${ext.enabled ? 'Disable' : 'Enable'}</button>
-                        <button class="btn" onclick="openOptions('${ext.id}')">Options</button>
-                    </div>
-                </div>
-            `).join('');
+                // Sort logic
+                filtered.sort((a, b) => {
+                    if (currentSort === 'name') return a.name.localeCompare(b.name);
+                    if (currentSort === 'status') return (b.enabled ? 1 : 0) - (a.enabled ? 1 : 0);
+                    if (currentSort === 'type') return a.installType.localeCompare(b.installType);
+                    return 0;
+                });
+
+                grid.innerHTML = filtered.map(ext => {
+                    const note = extNotes[ext.id] || '';
+                    return `
+                        <div class="card" style="border-color: ${ext.enabled ? 'var(--border)' : 'rgba(248, 81, 73, 0.2)'}">
+                            <div class="card-header">
+                                <img class="ext-icon" src="${ext.icons?.[ext.icons.length-1]?.url || 'icon.png'}" style="opacity: ${ext.enabled ? 1 : 0.5}">
+                                <div style="display:flex; gap:8px;">
+                                    <button class="btn" style="padding:2px 6px;" onclick="ripExt('${ext.id}')" title="Rip Blueprint">🧬 Rip</button>
+                                    <span class="status-pill ${ext.enabled ? 'on' : 'off'}">${ext.enabled ? 'Active' : 'Disabled'}</span>
+                                </div>
+                            </div>
+                            <div class="card-title">${ext.name}</div>
+                            <div class="card-id">ID: ${ext.id}</div>
+                            <div class="card-desc">${ext.description || 'No description provided.'}</div>
+                            
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>NOTES & ISSUES</span>
+                                    <button class="btn" style="padding:2px 6px; font-size:0.6rem;" onclick="toggleNote('${ext.id}')">${note ? 'EDIT' : '+ ADD'}</button>
+                                </div>
+                                <textarea id="dash-note-${ext.id}" 
+                                    style="display: ${note ? 'block' : 'none'}; width:100%; height:60px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.75rem; padding:8px; border-radius:6px; resize:none;"
+                                    placeholder="Enter issues or notes for future resolving..."
+                                    onblur="saveNote('${ext.id}', this.value)"
+                                >${note}</textarea>
+                                ${!note ? '<div style="font-size:0.7rem; color:var(--text-muted); opacity:0.5; font-style:italic;">No notes logged.</div>' : ''}
+                            </div>
+
+                            <div class="card-actions">
+                                <button class="btn ${ext.enabled ? '' : 'btn-primary'}" onclick="toggleExt('${ext.id}', ${ext.enabled})">${ext.enabled ? 'Disable' : 'Enable'}</button>
+                                <button class="btn" onclick="openOptions('${ext.id}')">Configure</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
         });
     }
+
+    window.toggleNote = (id) => {
+        const el = document.getElementById(`dash-note-${id}`);
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        if (el.style.display === 'block') el.focus();
+    };
+
+    window.saveNote = (id, val) => {
+        chrome.storage.local.get(['ext_notes'], (res) => {
+            const notes = res.ext_notes || {};
+            if (val.trim()) notes[id] = val.trim();
+            else delete notes[id];
+            chrome.storage.local.set({ ext_notes: notes }, () => renderExtensions());
+        });
+    };
+
+    window.ripExt = (id) => {
+        chrome.management.get(id, (ext) => {
+            const blueprint = {
+                metadata: {
+                    name: ext.name,
+                    description: ext.description,
+                    version: ext.version,
+                    type: ext.installType,
+                    id: ext.id
+                },
+                permissions: ext.permissions,
+                hostPermissions: ext.hostPermissions,
+                blueprint_type: "Extension Replication Manifest"
+            };
+            const tmp = document.createElement('textarea');
+            tmp.value = JSON.stringify(blueprint, null, 2);
+            document.body.appendChild(tmp);
+            tmp.select();
+            document.execCommand('copy');
+            document.body.removeChild(tmp);
+            alert('Extension Blueprint copied to clipboard!');
+        });
+    };
 
     // Hook up extension filters
     document.querySelectorAll('.ext-filter').forEach(btn => {
@@ -65,6 +143,18 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFilter = btn.dataset.filter;
             renderExtensions();
         });
+    });
+
+    // Hook up sort
+    document.getElementById('ext-sort')?.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderExtensions();
+    });
+
+    // Hook up global search
+    document.getElementById('global-search')?.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderExtensions();
     });
 
     window.toggleExt = (id, current) => {
