@@ -9,7 +9,7 @@ const INTERCEPTOR_SCRIPT = `
     window.fetch = async (...args) => {
         try {
             const response = await originalFetch(...args);
-            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: args[0], status: response.status, method: 'FETCH' } }));
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: args[0], status: response.status, method: 'FETCH', time: new Date().toISOString() } }));
             if (response.status >= 500) {
                 window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: args[0], status: response.status } }));
             }
@@ -28,7 +28,7 @@ const INTERCEPTOR_SCRIPT = `
 
     window.XMLHttpRequest.prototype.send = function() {
         this.addEventListener('load', function() {
-            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: this._url, status: this.status, method: this._method } }));
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: this._url, status: this.status, method: this._method, time: new Date().toISOString() } }));
             if (this.status >= 500) {
                 window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: this._url, status: this.status } }));
             }
@@ -40,11 +40,10 @@ const INTERCEPTOR_SCRIPT = `
     const originalWS = window.WebSocket;
     window.WebSocket = function(url, protocols) {
         const ws = new originalWS(url, protocols);
-        window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url, status: 'OPENING', method: 'WS' } }));
+        window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url, status: 'OPENING', method: 'WS', time: new Date().toISOString() } }));
         ws.addEventListener('message', (e) => {
-            // Log a snippet of the traffic
-            const data = typeof e.data === 'string' ? e.data.slice(0, 50) : '[Binary]';
-            console.log('%c [WS RECV] ', 'background:#10b981; color:black; font-size:10px;', url, data);
+            const data = typeof e.data === 'string' ? e.data.slice(0, 100) : '[Binary]';
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url, status: 'MESSAGE', method: 'WS_DATA', payload: data, time: new Date().toISOString() } }));
         });
         return ws;
     };
@@ -57,6 +56,9 @@ const INTERCEPTOR_SCRIPT = `
     };
 })();
 `;
+
+// Global log buffer
+let vaultTrafficBuffer = [];
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
@@ -204,9 +206,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleDOMCleaner(tabId, raw = false) {
+    const traffic = [...vaultTrafficBuffer];
     const results = await chrome.scripting.executeScript({
         target: { tabId },
-        func: (isRaw) => {
+        func: (isRaw, netBuffer) => {
             const cleanDomForTokens = (docEl) => {
                 const traverse = (node) => {
                     if (node instanceof ShadowRoot) {
@@ -296,6 +299,7 @@ async function handleDOMCleaner(tabId, raw = false) {
                     agent_intel,
                     performance: performance.getEntriesByType('navigation')[0] || {},
                     network_recent: getNetworkSummary(),
+                    network_vault: netBuffer,
                     storage_keys: getStorageSummary(),
                     referrer: document.referrer
                 },
@@ -309,7 +313,7 @@ async function handleDOMCleaner(tabId, raw = false) {
             tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
             return snapshot;
         },
-        args: [raw]
+        args: [raw, traffic]
     });
 
     if (results?.[0]?.result) {
