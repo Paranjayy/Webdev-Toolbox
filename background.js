@@ -262,48 +262,64 @@ async function handleVibeRecorder(tabId) {
 
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
+    // Parent Menu
+    chrome.contextMenus.create({
+        id: "webdev_toolbox",
+        title: "🛠 Webdev Toolbox",
+        contexts: ["all"]
+    });
+
     chrome.contextMenus.create({
         id: "gigasnap",
+        parentId: "webdev_toolbox",
         title: "⚡ Snapshot: Capture Context",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "annotator",
+        parentId: "webdev_toolbox",
         title: "📝 Snapshot: Annotator Mode",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "visual_edit",
+        parentId: "webdev_toolbox",
         title: "🎨 Design: Toggle Edit Mode",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "inspect_style",
+        parentId: "webdev_toolbox",
         title: "🔍 Design: Inspect Style",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "copy_selector",
+        parentId: "webdev_toolbox",
         title: "📋 Dev: Copy Selector",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "nuke_element",
+        parentId: "webdev_toolbox",
         title: "💀 Dev: Nuke Element",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "css_roulette",
+        parentId: "webdev_toolbox",
         title: "🎲 Chaos: CSS Roulette",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "color_tweak",
+        parentId: "webdev_toolbox",
         title: "🎨 Design: Tweak Colors",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
         id: "vibe_recorder",
+        parentId: "webdev_toolbox",
         title: "🎬 Macro: Vibe Recorder",
         contexts: ["all"]
     });
