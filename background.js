@@ -1,5 +1,91 @@
 // ── Auto-poll active tabs for DOM errors every 8s ───────────────────────────
-let lastErrorCount = 0;
+// ── Network & Error Interceptor (MAIN WORLD) ──────────────────────────────────
+const INTERCEPTOR_SCRIPT = `
+(function() {
+    const originalFetch = window.fetch;
+    const originalXHR = window.XMLHttpRequest.prototype.open;
+    const originalSend = window.XMLHttpRequest.prototype.send;
+
+    window.fetch = async (...args) => {
+        try {
+            const response = await originalFetch(...args);
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: args[0], status: response.status, method: 'FETCH' } }));
+            if (response.status >= 500) {
+                window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: args[0], status: response.status } }));
+            }
+            return response;
+        } catch (error) {
+            window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: args[0], status: 'FAILED' } }));
+            throw error;
+        }
+    };
+
+    window.XMLHttpRequest.prototype.open = function(method, url) {
+        this._url = url;
+        this._method = method;
+        return originalXHR.apply(this, arguments);
+    };
+
+    window.XMLHttpRequest.prototype.send = function() {
+        this.addEventListener('load', function() {
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: this._url, status: this.status, method: this._method } }));
+            if (this.status >= 500) {
+                window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: this._url, status: this.status } }));
+            }
+        });
+        return originalSend.apply(this, arguments);
+    };
+
+    // WebSocket Sniffer
+    const originalWS = window.WebSocket;
+    window.WebSocket = function(url, protocols) {
+        const ws = new originalWS(url, protocols);
+        window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url, status: 'OPENING', method: 'WS' } }));
+        ws.addEventListener('message', (e) => {
+            // Log a snippet of the traffic
+            const data = typeof e.data === 'string' ? e.data.slice(0, 50) : '[Binary]';
+            console.log('%c [WS RECV] ', 'background:#10b981; color:black; font-size:10px;', url, data);
+        });
+        return ws;
+    };
+
+    // Global variable hijacking for debugging
+    window.$v = {
+        scan: () => console.log('Vault Debugger Active'),
+        rip: (el) => console.log('Element Ripped:', el),
+        help: () => console.log('$v.scan(), $v.rip(el), $v.help()')
+    };
+})();
+`;
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
+        chrome.scripting.executeScript({
+            target: { tabId },
+            world: 'MAIN',
+            func: (code) => {
+                const script = document.createElement('script');
+                script.textContent = code;
+                (document.head || document.documentElement).appendChild(script);
+                script.remove();
+            },
+            args: [INTERCEPTOR_SCRIPT]
+        }).catch(e => {});
+
+        // Relay events from page to background
+        chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => {
+                window.addEventListener('VAULT_TRAFFIC_LOG', (e) => {
+                    chrome.runtime.sendMessage({ type: 'VAULT_TRAFFIC_LOG', ...e.detail });
+                });
+                window.addEventListener('VAULT_NETWORK_ERROR', (e) => {
+                    chrome.runtime.sendMessage({ type: 'VAULT_NETWORK_ERROR', ...e.detail });
+                });
+            }
+        }).catch(e => {});
+    }
+});
 
 async function pollActiveTabErrors() {
     try {
@@ -182,6 +268,25 @@ async function handleDOMCleaner(tabId, raw = false) {
                 do_not_track: navigator.doNotTrack
             };
 
+            const getNetworkSummary = () => {
+                const resources = performance.getEntriesByType('resource');
+                return resources.map(r => ({
+                    name: r.name,
+                    type: r.initiatorType,
+                    size: r.transferSize,
+                    duration: Math.round(r.duration) + 'ms'
+                })).slice(-20); // Last 20 requests for context
+            };
+
+            const getStorageSummary = () => {
+                try {
+                    return {
+                        local: Object.keys(localStorage).slice(0, 10),
+                        session: Object.keys(sessionStorage).slice(0, 10)
+                    };
+                } catch(e) { return 'Storage Access Denied'; }
+            };
+
             const snapshot = {
                 metadata: { 
                     timestamp: new Date().toISOString(), 
@@ -189,7 +294,10 @@ async function handleDOMCleaner(tabId, raw = false) {
                     title: document.title,
                     type: isRaw ? 'Raw-DOM' : 'Clean-DOM',
                     agent_intel,
-                    performance: performance.getEntriesByType('navigation')[0] || {}
+                    performance: performance.getEntriesByType('navigation')[0] || {},
+                    network_recent: getNetworkSummary(),
+                    storage_keys: getStorageSummary(),
+                    referrer: document.referrer
                 },
                 stack: detectStack(),
                 dom_content: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)

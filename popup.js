@@ -547,25 +547,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Rip Blueprint
                     document.getElementById(`rip-${ext.id}`)?.addEventListener('click', () => {
-                        const blueprint = {
-                            metadata: {
-                                name: ext.name,
-                                description: ext.description,
-                                version: ext.version,
-                                type: ext.installType,
-                                id: ext.id
-                            },
-                            permissions: ext.permissions,
-                            hostPermissions: ext.hostPermissions,
-                            blueprint_type: "Extension Replication Manifest"
-                        };
-                        const tmp = document.createElement('textarea');
-                        tmp.value = JSON.stringify(blueprint, null, 2);
-                        document.body.appendChild(tmp);
-                        tmp.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tmp);
-                        alert('Extension Blueprint copied! Use this to replicate the tool with AI.');
+                        chrome.commands.getAll((cmds) => {
+                            const blueprint = {
+                                metadata: {
+                                    name: ext.name,
+                                    shortName: ext.shortName,
+                                    description: ext.description,
+                                    version: ext.version,
+                                    type: ext.installType,
+                                    id: ext.id,
+                                    enabled: ext.enabled,
+                                    homepage: ext.homepageUrl,
+                                    icons: ext.icons
+                                },
+                                architecture: {
+                                    permissions: ext.permissions,
+                                    hostPermissions: ext.hostPermissions,
+                                    contentScripts: ext.contentScripts || 'Dynamic/Hidden',
+                                    commands: cmds.filter(c => c.name !== '_execute_action'),
+                                    offlineEnabled: ext.offlineEnabled,
+                                    updateUrl: ext.updateUrl
+                                },
+                                blueprint_type: "Extension Replication Manifest (Deep Rip)",
+                                extraction_date: new Date().toISOString()
+                            };
+                            const tmp = document.createElement('textarea');
+                            tmp.value = JSON.stringify(blueprint, null, 2);
+                            document.body.appendChild(tmp);
+                            tmp.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tmp);
+                            alert('Deep Extension Blueprint copied! (Manifest + Commands)');
+                        });
                     });
 
                     if (ext.installType === 'development') {
@@ -928,7 +941,93 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ── SNAPSHOT HISTORY ────────────────────────────────────────────────
+    function renderSnapHistory() {
+        const list = document.getElementById('snap-history-list');
+        if (!list) return;
+        chrome.storage.local.get(['snap_history'], (res) => {
+            const history = res.snap_history || [];
+            if (history.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px; font-size:0.75rem;">No snapshots in vault.</div>';
+                return;
+            }
+            list.innerHTML = history.map((snap, i) => `
+                <div class="card" style="padding:10px; flex-direction:row; justify-content:space-between; align-items:center;">
+                    <div style="min-width:0;">
+                        <div class="card-title truncate" style="font-size:0.75rem;">${snap.metadata.title || 'Untitled'}</div>
+                        <div style="font-size:0.6rem; color:var(--text-muted);">${new Date(snap.metadata.timestamp).toLocaleTimeString()} — ${snap.metadata.type}</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" onclick="copySnap(${i})">COPY</button>
+                        <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" onclick="diffSnap(${i})">DIFF</button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    window.copySnap = (idx) => {
+        chrome.storage.local.get(['snap_history'], (res) => {
+            const snap = res.snap_history[idx];
+            const tmp = document.createElement('textarea');
+            tmp.value = JSON.stringify(snap, null, 2);
+            document.body.appendChild(tmp);
+            tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+            alert('Snapshot copied to clipboard!');
+        });
+    };
+
+    window.diffSnap = (idx) => {
+        chrome.storage.local.get(['snap_history'], (res) => {
+            const history = res.snap_history;
+            if (history.length < 2) return alert('Need at least 2 snapshots to compare.');
+            const current = history[idx];
+            const previous = history[idx + 1] || history[0]; // Compare with next in list or first
+            
+            // Simple visual diff (in console for now, or a popup)
+            console.log('%c [VAULT DIFF] ', 'background:#f59e0b; color:black; font-weight:bold;', {
+                target: current.metadata.timestamp,
+                base: previous.metadata.timestamp,
+                url_changed: current.metadata.url !== previous.metadata.url,
+                stack_changed: JSON.stringify(current.stack) !== JSON.stringify(previous.stack),
+                dom_length_diff: current.dom_content.length - previous.dom_content.length
+            });
+            alert(`Diff calculated. Check console for structural breakdown between ${current.metadata.timestamp} and ${previous.metadata.timestamp}.`);
+        });
+    };
+
+    safeListen('btn-clear-history', 'click', () => {
+        if (confirm('Wipe all snapshots?')) {
+            chrome.storage.local.set({ snap_history: [] }, renderSnapHistory);
+        }
+    });
+
+    // ── NETWORK MONITOR ──────────────────────────────────────────────────
+    safeListen('btn-hook-network', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'ENABLE_NETWORK_MONITOR' });
+        alert('Network Interceptor Active. Future errors and traffic will be logged.');
+    });
+
+    safeListen('btn-hook-ws', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'ENABLE_WS_MONITOR' });
+        alert('WebSocket Sniffer Active.');
+    });
+
+    // Listen for network logs from background
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.type === 'VAULT_TRAFFIC_LOG') {
+            const console = document.getElementById('network-console');
+            if (console) {
+                const line = document.createElement('div');
+                line.style = 'border-bottom:1px solid #30363d; padding:4px 0; font-size:10px;';
+                line.innerHTML = `<span style="color:#8b5cf6;">[${msg.method}]</span> <span style="color:#c9d1d9;">${msg.url}</span> <span style="color:${msg.status >= 400 ? '#ef4444' : '#10b981'};">(${msg.status})</span>`;
+                console.prepend(line);
+            }
+        }
+    });
+
     // ── Boot ──────────────────────────────────────────────────────────────
     renderExtensions();
     renderAgentLogs();
+    renderSnapHistory();
 });

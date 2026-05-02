@@ -178,7 +178,11 @@
                     <div class="card-desc">Extract and inspect JSON state blobs and data-props.</div>
                     <button class="btn" id="btn-scan-state">Scan State</button>
                 </div>
+            <div class="section-title">Snapshot Vault</div>
+            <div id="snap-history-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <div style="color:var(--text-muted); text-align:center; padding:10px; font-size:0.75rem;">No snapshots in vault.</div>
             </div>
+            <button class="btn" id="btn-clear-history" style="font-size:0.7rem; width:auto;">Wipe History</button>
         </div>
 
         <!-- NETWORK TAB -->
@@ -188,16 +192,17 @@
                 <div class="card">
                     <div class="card-title">Fetch/XHR Monitor</div>
                     <div class="card-desc">Inject hooks to monitor and log network responses.</div>
-                    <button class="btn" id="btn-hook-network">Enable Monitor</button>
+                    <button class="btn btn-primary" id="btn-hook-network">Enable Monitor</button>
                 </div>
                 <div class="card">
                     <div class="card-title">Socket Traffic</div>
                     <div class="card-desc">Sniff and log active WebSocket communication.</div>
-                    <button class="btn" id="btn-hook-ws">Enable Sniffer</button>
+                    <button class="btn btn-primary" id="btn-hook-ws">Enable Sniffer</button>
                 </div>
             </div>
-            <div class="section-title">Performance Simulation</div>
-            <div class="grid">
+            <div class="section-title">Traffic Log</div>
+            <div class="console" id="network-console" style="max-height: 250px;"></div>
+        </div>
                 <div class="card" style="grid-column: span 2;">
                     <div class="card-title">Network Latency Delay</div>
                     <div class="card-desc">Artificially delay all network requests by 2 seconds.</div>
