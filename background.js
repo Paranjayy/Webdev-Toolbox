@@ -59,6 +59,7 @@ const INTERCEPTOR_SCRIPT = `
 
 // Global log buffer
 let vaultTrafficBuffer = [];
+let lastErrorCount = 0;
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
