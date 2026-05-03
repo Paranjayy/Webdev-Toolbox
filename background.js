@@ -994,6 +994,19 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     highlight.style.left = `${rect.left}px`;
                     highlight.style.width = `${rect.width}px`;
                     highlight.style.height = `${rect.height}px`;
+
+                    // Color Palette Sniffer
+                    const cs = window.getComputedStyle(e.target);
+                    const colors = [cs.backgroundColor, cs.color];
+                    const paletteHtml = colors.filter(c => c !== 'rgba(0, 0, 0, 0)').map(c => `
+                        <div style="width:10px; height:10px; background:${c}; border:1px solid rgba(255,255,255,0.2); border-radius:50%;"></div>
+                    `).join('');
+                    
+                    highlight.innerHTML = `
+                        <div style="position:absolute; bottom:100%; left:0; background:#ff00ff; color:white; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px 4px 0 0; display:flex; align-items:center; gap:4px; transform:translateY(-2px); white-space:nowrap;">
+                            ${e.target.tagName} ${paletteHtml}
+                        </div>
+                    `;
                 };
 
                 const onClick = (e) => {
@@ -1255,6 +1268,30 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 bar.id = '__nexus_bar';
                 bar.style = `position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:4px; padding:8px 12px; background:rgba(13,17,23,0.95); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:50px; z-index:10000000; box-shadow:0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(99,102,241,0.2); font-family:sans-serif;`;
                 
+                // High-fidelity selector engine (same as recorder/lab)
+                const getSelector = (el) => {
+                    if (!el || el.nodeType !== 1) return '';
+                    if (el.id) return `#${el.id}`;
+                    const name = el.getAttribute('name');
+                    if (name) return `${el.tagName.toLowerCase()}[name="${name}"]`;
+                    const placeholder = el.getAttribute('placeholder');
+                    if (placeholder) return `${el.tagName.toLowerCase()}[placeholder="${placeholder}"]`;
+                    let path = [];
+                    let curr = el;
+                    while (curr && curr.parentElement) {
+                        let nth = 1, sib = curr;
+                        while (sib.previousElementSibling) { 
+                            sib = sib.previousElementSibling; 
+                            if (sib.tagName === curr.tagName) nth++; 
+                        }
+                        path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
+                        curr = curr.parentElement;
+                        if (curr.id) { path.unshift(`#${curr.id}`); break; }
+                        if (curr === document.body) break;
+                    }
+                    return path.join(' > ');
+                };
+
                 const tools = [
                     { label: '🧹', title: 'AI Context Capture', fn: () => { document.getElementById('__nexus_bar')?.remove(); chrome.runtime.sendMessage({ action: 'TRIGGER_DOM_CLEAN' }); } },
                     { label: '✏️', title: 'Edit Mode', fn: () => { document.designMode = document.designMode === 'on' ? 'off' : 'on'; } },
@@ -1273,9 +1310,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     { label: '📋', title: 'Copy Selector', fn: () => {
                         document.addEventListener('click', (e) => {
                             e.preventDefault();
-                            const sel = e.target.id ? '#'+e.target.id : e.target.tagName.toLowerCase();
+                            const sel = getSelector(e.target);
                             navigator.clipboard.writeText(sel);
-                            alert('Selector: ' + sel);
+                            alert('Copied Robust Selector: ' + sel);
                         }, { once: true, capture: true });
                     }},
                     { label: '🎬', title: 'Vibe Recorder', fn: () => { chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' }); } },
@@ -1283,7 +1320,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     { label: '🧬', title: 'Rip Master Blueprint', fn: () => {
                         chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: false }, (res) => {
                             if (res?.success) {
-                                // Simple replication prompt for quick use
                                 const blueprint = `# REPLICATION BLUEPRINT\nTarget: ${window.location.href}\n\n## DOM\n${res.snapshot}`;
                                 navigator.clipboard.writeText(blueprint);
                                 alert("Master Blueprint ripped to clipboard!");
@@ -1326,6 +1362,30 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     btn.onmouseout = () => btn.style.background = t.danger ? 'rgba(239,68,68,0.15)' : 'transparent';
                     btn.onclick = t.fn;
                     bar.appendChild(btn);
+                });
+
+                // Drag Logic
+                let isDragging = false;
+                let offsetX, offsetY;
+                bar.onmousedown = (e) => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    isDragging = true;
+                    const r = bar.getBoundingClientRect();
+                    offsetX = e.clientX - r.left;
+                    offsetY = e.clientY - r.top;
+                    bar.style.transition = 'none';
+                    bar.style.cursor = 'grabbing';
+                };
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    bar.style.left = (e.clientX - offsetX + bar.offsetWidth/2) + 'px';
+                    bar.style.top = (e.clientY - offsetY) + 'px';
+                    bar.style.bottom = 'auto';
+                });
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    bar.style.transition = '0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    bar.style.cursor = 'default';
                 });
 
                 document.body.appendChild(bar);
