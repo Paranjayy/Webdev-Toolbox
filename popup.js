@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target === 'extensions') renderExtensions();
             if (target === 'system') renderLogs();
             if (target === 'agent') renderAgentLogs();
+            if (target === 'network') renderNetworkLog();
         });
     });
 
@@ -420,6 +421,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             alert(`Pierced and Highlighted ${roots.length} Shadow DOM boundaries.`);
         });
+    });
+
+    // Pause/Toggle Pick Mode
+    safeListen('btn-toggle-pick', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'TOGGLE_PICK_MODE' });
+    });
+
+    // Asset DNA Sniffer
+    safeListen('btn-asset-sniffer', 'click', () => {
+        const btn = document.getElementById('btn-scan-resources');
+        if (btn) {
+            const navBtn = document.querySelector('[data-tab="resources"]');
+            if (navBtn) navBtn.click();
+            btn.click();
+        }
     });
 
     // Toggle 12-Col Grid
@@ -1016,6 +1032,11 @@ ${dom}
         });
     }
 
+    // Visual DOM Diff (Active Tab)
+    safeListen('btn-visual-diff', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'visual_diff' });
+    });
+
     window.copySnap = (idx) => {
         chrome.storage.local.get(['snap_history'], (res) => {
             const snap = res.snap_history[idx];
@@ -1052,27 +1073,40 @@ ${dom}
         }
     });
 
-    // ── NETWORK MONITOR ──────────────────────────────────────────────────
-    safeListen('btn-hook-network', 'click', () => {
-        chrome.runtime.sendMessage({ action: 'ENABLE_NETWORK_MONITOR' });
-        alert('Network Interceptor Active. Future errors and traffic will be logged.');
-    });
+    // ── NETWORK MONITOR: Forensics ───────────────────────────────────────
+    function renderNetworkLog() {
+        const consoleEl = document.getElementById('network-console');
+        if (!consoleEl) return;
 
-    safeListen('btn-hook-ws', 'click', () => {
-        chrome.runtime.sendMessage({ action: 'ENABLE_WS_MONITOR' });
-        alert('WebSocket Sniffer Active.');
-    });
-
-    // Listen for network logs from background
-    chrome.runtime.onMessage.addListener((msg) => {
-        if (msg.type === 'VAULT_TRAFFIC_LOG') {
-            const console = document.getElementById('network-console');
-            if (console) {
-                const line = document.createElement('div');
-                line.style = 'border-bottom:1px solid #30363d; padding:4px 0; font-size:10px;';
-                line.innerHTML = `<span style="color:#8b5cf6;">[${msg.method}]</span> <span style="color:#c9d1d9;">${msg.url}</span> <span style="color:${msg.status >= 400 ? '#ef4444' : '#10b981'};">(${msg.status})</span>`;
-                console.prepend(line);
+        chrome.runtime.sendMessage({ action: 'GET_TRAFFIC_BUFFER' }, (res) => {
+            const buffer = res?.buffer || [];
+            if (buffer.length === 0) {
+                consoleEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">No traffic captured yet.</div>';
+                return;
             }
+            consoleEl.innerHTML = buffer.reverse().map(l => `
+                <div class="log-item ${l.status >= 400 ? 'log-error' : 'log-info'}" style="margin-bottom:4px; padding:4px 8px; border-bottom: 1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <span style="font-weight:700; color:${l.status >= 400 ? 'var(--red)' : 'var(--emerald)'};">[${l.status || '???'}] ${l.type || 'REQ'}</span>
+                        <span style="opacity:0.5; font-size:0.55rem;">${l.method} • ${l.time ? new Date(l.time).toLocaleTimeString() : 'NOW'}</span>
+                    </div>
+                    <div class="truncate mono" style="font-size:0.6rem; opacity:0.8;">${l.url}</div>
+                </div>
+            `).join('');
+        });
+    }
+
+    safeListen('btn-refresh-network', 'click', renderNetworkLog);
+
+    safeListen('btn-toggle-latency', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'TOGGLE_LATENCY' });
+        showToast("Latency Simulator Toggled (2s delay).", 'info');
+    });
+
+    // Listen for real-time updates while popup is open
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.type === 'VAULT_TRAFFIC_LOG' || msg.fromBackground) {
+            renderNetworkLog();
         }
     });
 

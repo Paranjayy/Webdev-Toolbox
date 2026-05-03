@@ -174,10 +174,16 @@
                     <button class="btn" id="btn-inspect-metadata">Toggle Inspector</button>
                 </div>
                 <div class="card">
+                    <div class="card-title">Visual DOM Diff</div>
+                    <div class="card-desc">Compare the last 2 snapshots to see what changed in the DOM.</div>
+                    <button class="btn" id="btn-visual-diff">Compare Last 2 Snaps</button>
+                </div>
+                <div class="card">
                     <div class="card-title">State Scanner</div>
                     <div class="card-desc">Extract and inspect JSON state blobs and data-props.</div>
                     <button class="btn" id="btn-scan-state">Scan State</button>
                 </div>
+            </div>
             <div class="section-title">Snapshot Vault</div>
             <div id="snap-history-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
                 <div style="color:var(--text-muted); text-align:center; padding:10px; font-size:0.75rem;">No snapshots in vault.</div>
@@ -187,28 +193,25 @@
 
         <!-- NETWORK TAB -->
         <div id="tab-network" class="tab-content">
-            <div class="section-title">Runtime Interceptors</div>
+            <div class="section-title">Network Forensics</div>
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">Fetch/XHR Monitor</div>
-                    <div class="card-desc">Inject hooks to monitor and log network responses.</div>
-                    <button class="btn btn-primary" id="btn-hook-network">Enable Monitor</button>
+                    <div class="card-title">Global Resource Sniffer</div>
+                    <div class="card-desc">Capturing metadata for ALL resource types (Images, Scripts, CSS).</div>
+                    <button class="btn btn-primary" id="btn-refresh-network">Refresh Forensic Log</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Socket Traffic</div>
-                    <div class="card-desc">Sniff and log active WebSocket communication.</div>
-                    <button class="btn btn-primary" id="btn-hook-ws">Enable Sniffer</button>
-                </div>
-            </div>
-            <div class="section-title">Traffic Log</div>
-            <div class="console" id="network-console" style="max-height: 250px;"></div>
-        </div>
-                <div class="card" style="grid-column: span 2;">
-                    <div class="card-title">Network Latency Delay</div>
-                    <div class="card-desc">Artificially delay all network requests by 2 seconds.</div>
+                    <div class="card-title">Latency Simulator</div>
+                    <div class="card-desc">Delay all requests by 2s to test loading states.</div>
                     <button class="btn" id="btn-toggle-latency">Toggle Delay (2s)</button>
                 </div>
             </div>
+            
+            <div class="section-title">Forensic Traffic Log (ALL Types)</div>
+            <div class="console" id="network-console" style="max-height: 350px; font-size: 0.65rem;">
+                <div style="color:var(--text-muted); text-align:center; padding:20px;">No traffic captured yet.</div>
+            </div>
+        </div>
             <div class="section-title">Console Hook</div>
             <button class="btn" id="btn-console-overlay">Inject Professional Console Overlay</button>
         </div>
@@ -243,6 +246,8 @@
             </div>
             <div class="section-title">Visual Overlays</div>
             <div class="grid">
+                <button class="btn btn-primary" id="btn-toggle-pick">⏸ Toggle/Pause Pick Mode</button>
+                <button class="btn" id="btn-asset-sniffer">🧬 Asset DNA Sniffer</button>
                 <button class="btn" id="btn-toggle-grid">Toggle Layout Grid</button>
                 <button class="btn" id="btn-toggle-guides">Toggle Visual Guides</button>
             </div>

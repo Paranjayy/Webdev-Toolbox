@@ -101,6 +101,27 @@ const INTERCEPTOR_SCRIPT = `
 let vaultTrafficBuffer = [];
 let lastErrorCount = 0;
 
+// Global Traffic Capture (Everything: Scripts, Styles, Images, etc.)
+chrome.webRequest.onCompleted.addListener(
+    (details) => {
+        // Avoid internal browser requests
+        if (!details.url.startsWith('http')) return;
+        
+        const log = {
+            url: details.url,
+            status: details.statusCode,
+            method: details.method,
+            type: details.type.toUpperCase(),
+            time: new Date().toISOString(),
+            fromBackground: true
+        };
+        
+        vaultTrafficBuffer.push(log);
+        if (vaultTrafficBuffer.length > 200) vaultTrafficBuffer.shift();
+    },
+    { urls: ["<all_urls>"] }
+);
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
         chrome.scripting.executeScript({
@@ -261,8 +282,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.action === 'TRIGGER_DOM_CLEAN') {
         handleDOMCleaner(sender.tab?.id || request.tabId, false);
         sendResponse({ success: true });
-    } else if (request.action === 'TRIGGER_SLOP_DETECT') {
-        // Handled in contextMenus.onClicked directly but added here for Nexus relay
+    } else if (request.action === 'TOGGLE_PICK_MODE') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: 'TOGGLE_PICK_MODE' });
+        });
         sendResponse({ success: true });
     } else if (request.action === 'SAVE_DEV_NOTE') {
         chrome.storage.local.get(['dev_notes'], (res) => {
@@ -279,6 +302,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
         });
         return true;
+    } else if (request.action === 'GET_TRAFFIC_BUFFER') {
+        sendResponse({ buffer: vaultTrafficBuffer });
     }
     return true;
 });
@@ -939,6 +964,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 const cleanup = () => {
                     document.removeEventListener('mouseover', onMouseOver);
                     document.removeEventListener('click', onClick, true);
+                    chrome.runtime.onMessage.removeListener(messageHandler);
                     container.remove();
                     highlight.remove();
                     document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
@@ -968,9 +994,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     }
                 };
 
+                // Remote Control
+                const messageHandler = (req) => {
+                    if (req.action === 'TOGGLE_PICK_MODE') pickToggle.click();
+                };
+                chrome.runtime.onMessage.addListener(messageHandler);
+
                 // Keyboard Shortcuts
                 window.addEventListener('keydown', (e) => {
-                    if (e.key === 'p' && (e.ctrlKey || e.metaKey)) {
+                    if (e.key === 'p' && e.altKey && e.shiftKey) {
                         e.preventDefault();
                         pickToggle.click();
                     }
