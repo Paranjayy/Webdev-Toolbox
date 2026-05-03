@@ -71,6 +71,28 @@ const INTERCEPTOR_SCRIPT = `
         return ws;
     };
 
+    // Console Sniffer
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    window.__VAULT_CONSOLE_LOGS = [];
+    const hookConsole = (type, original) => {
+        return (...args) => {
+            try {
+                const msg = args.map(a => {
+                    if (typeof a === 'object') return '[Object]';
+                    return String(a);
+                }).join(' ');
+                window.__VAULT_CONSOLE_LOGS.push({ type, msg, time: new Date().toISOString() });
+                if (window.__VAULT_CONSOLE_LOGS.length > 50) window.__VAULT_CONSOLE_LOGS.shift();
+            } catch(e) {}
+            return original.apply(console, args);
+        };
+    };
+    console.log = hookConsole('LOG', originalLog);
+    console.warn = hookConsole('WARN', originalWarn);
+    console.error = hookConsole('ERROR', originalError);
+
     // Global variable hijacking for debugging
     window.$v = {
         scan: () => console.log('Vault Debugger Active'),
@@ -403,6 +425,7 @@ async function handleDOMCleaner(tabId, raw = false) {
                     performance: performance.getEntriesByType('navigation')[0] || {},
                     network_recent: getNetworkSummary(),
                     network_vault: netBuffer,
+                    console_logs: window.__VAULT_CONSOLE_LOGS || [],
                     storage_keys: getStorageSummary(),
                     referrer: document.referrer
                 },
@@ -439,6 +462,11 @@ async function handleVibeRecorder(tabId) {
                 const script = `const { test, expect } = require('@playwright/test');\n\ntest('recorded session', async ({ page }) => {\n  await page.goto('${window.location.href}');\n  ${events.map(e => {
                     if (e.type === 'click') return `  await page.click('${e.selector}');`;
                     if (e.type === 'input') return `  await page.fill('${e.selector}', '${e.value}');`;
+                    if (e.type === 'press') return `  await page.press('${e.selector}', '${e.key}');`;
+                    if (e.type === 'change') {
+                        if (e.checked !== undefined) return `  await page.setChecked('${e.selector}', ${e.checked});`;
+                        return `  await page.selectOption('${e.selector}', '${e.value}');`;
+                    }
                     return '';
                 }).filter(Boolean).join('\n')}\n});`;
                 
@@ -452,7 +480,9 @@ async function handleVibeRecorder(tabId) {
                 // Cleanup listeners
                 document.removeEventListener('click', window.__MACRO_CLICK, true);
                 document.removeEventListener('input', window.__MACRO_INPUT, true);
-                return `Macro Exported! Copied ${events.length} steps.`;
+                document.removeEventListener('keydown', window.__MACRO_KEYDOWN, true);
+                document.removeEventListener('change', window.__MACRO_CHANGE, true);
+                return `Macro Exported! Copied ${events.length} steps to clipboard.`;
             }
 
             window.__MACRO_ACTIVE = true;
@@ -464,24 +494,69 @@ async function handleVibeRecorder(tabId) {
             document.body.appendChild(indicator);
 
             const getSelector = (el) => {
+                if (!el || el.nodeType !== 1) return '';
                 if (el.id) return `#${el.id}`;
-                if (el.className && typeof el.className === 'string') return `.${el.className.split(' ')[0]}`;
-                return el.tagName.toLowerCase();
+                
+                // Prioritize stable attributes
+                const name = el.getAttribute('name');
+                if (name) return `${el.tagName.toLowerCase()}[name="${name}"]`;
+                
+                const placeholder = el.getAttribute('placeholder');
+                if (placeholder) return `${el.tagName.toLowerCase()}[placeholder="${placeholder}"]`;
+                
+                const ariaLabel = el.getAttribute('aria-label');
+                if (ariaLabel) return `${el.tagName.toLowerCase()}[aria-label="${ariaLabel}"]`;
+
+                // Robust pathing fallback
+                let path = [];
+                let curr = el;
+                while (curr && curr.parentElement) {
+                    let nth = 1, sib = curr;
+                    while (sib.previousElementSibling) { 
+                        sib = sib.previousElementSibling; 
+                        if (sib.tagName === curr.tagName) nth++; 
+                    }
+                    path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
+                    curr = curr.parentElement;
+                    if (curr.id) { path.unshift(`#${curr.id}`); break; }
+                    if (curr === document.body) break;
+                }
+                return path.join(' > ');
             };
 
             window.__MACRO_CLICK = (e) => {
                 if (!window.__MACRO_ACTIVE) return;
-                window.__MACRO_EVENTS.push({ type: 'click', selector: getSelector(e.target) });
+                const selector = getSelector(e.target);
+                if (selector) window.__MACRO_EVENTS.push({ type: 'click', selector });
             };
 
             window.__MACRO_INPUT = (e) => {
                 if (!window.__MACRO_ACTIVE) return;
-                window.__MACRO_EVENTS.push({ type: 'input', selector: getSelector(e.target), value: e.target.value });
+                const selector = getSelector(e.target);
+                if (selector) window.__MACRO_EVENTS.push({ type: 'input', selector, value: e.target.value });
+            };
+
+            window.__MACRO_KEYDOWN = (e) => {
+                if (!window.__MACRO_ACTIVE) return;
+                if (e.key === 'Enter') {
+                    const selector = getSelector(e.target);
+                    if (selector) window.__MACRO_EVENTS.push({ type: 'press', selector, key: 'Enter' });
+                }
+            };
+
+            window.__MACRO_CHANGE = (e) => {
+                if (!window.__MACRO_ACTIVE) return;
+                const selector = getSelector(e.target);
+                if (selector && (e.target.tagName === 'SELECT' || e.target.type === 'checkbox' || e.target.type === 'radio')) {
+                    window.__MACRO_EVENTS.push({ type: 'change', selector, value: e.target.value, checked: e.target.checked });
+                }
             };
 
             document.addEventListener('click', window.__MACRO_CLICK, true);
             document.addEventListener('input', window.__MACRO_INPUT, true);
-            return 'Macro recording started...';
+            document.addEventListener('keydown', window.__MACRO_KEYDOWN, true);
+            document.addEventListener('change', window.__MACRO_CHANGE, true);
+            return 'Macro recording started... (Capturing clicks, inputs, enters, and changes)';
         }
     }, (res) => {
         if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');

@@ -438,6 +438,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Playwright Vibe Recorder
+    safeListen('btn-toggle-macro', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' });
+        window.close(); // Close popup to allow interaction
+    });
+
     // Toggle 12-Col Grid
     safeListen('btn-toggle-grid', 'click', () => {
         safeExecute(() => {
