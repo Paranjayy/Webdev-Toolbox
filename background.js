@@ -1173,6 +1173,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     }},
                     { label: '🎬', title: 'Vibe Recorder', fn: () => { chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' }); } },
                     { label: '🚫', title: 'AI Slop Detect', fn: () => { chrome.runtime.sendMessage({ action: 'TRIGGER_SLOP_DETECT' }); } },
+                    { label: '🧬', title: 'Rip Master Blueprint', fn: () => {
+                        chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: false }, (res) => {
+                            if (res?.success) {
+                                // Simple replication prompt for quick use
+                                const blueprint = `# REPLICATION BLUEPRINT\nTarget: ${window.location.href}\n\n## DOM\n${res.snapshot}`;
+                                navigator.clipboard.writeText(blueprint);
+                                alert("Master Blueprint ripped to clipboard!");
+                            }
+                        });
+                    }},
                     { label: '📝', title: 'Dev Log / Issue Note', fn: () => {
                         const noteId = '__nexus_note_input';
                         if (document.getElementById(noteId)) return;
