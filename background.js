@@ -468,6 +468,24 @@ chrome.runtime.onInstalled.addListener(() => {
         title: "🎬 Macro: Vibe Recorder",
         contexts: ["all"]
     });
+    chrome.contextMenus.create({
+        id: "anti_slop_detect",
+        parentId: "webdev_toolbox",
+        title: "🚫 AI Slop Detector (Impeccable)",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "floating_nexus",
+        parentId: "webdev_toolbox",
+        title: "🌐 Toggle Floating Nexus Toolbar",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "visual_diff",
+        parentId: "webdev_toolbox",
+        title: "🔬 Visual DOM Diff (Last 2 Snaps)",
+        contexts: ["all"]
+    });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -806,12 +824,222 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     cleanup();
                 };
 
-                container.querySelector('.__lab-export').onclick = triggerExport;
-                container.querySelector('.__lab-go').onclick = triggerExport;
+                document.querySelector('.__lab-export').onclick = triggerExport;
+                document.querySelector('.__lab-go').onclick = triggerExport;
 
                 document.addEventListener('mouseover', onMouseOver, { passive: true });
                 document.addEventListener('click', onClick, true);
             }
+        });
+    } else if (info.menuItemId === "anti_slop_detect") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                // Impeccable's 25-Rule AI Slop Detector
+                const findings = [];
+                const body = document.body;
+                const styles = [...document.styleSheets];
+
+                // Rule 1: Purple gradients (most common AI slop)
+                const allEls = body.querySelectorAll('*');
+                allEls.forEach(el => {
+                    const cs = window.getComputedStyle(el);
+                    const bg = cs.backgroundImage;
+                    if (bg && bg.includes('gradient') && (bg.includes('purple') || bg.includes('#8b5cf6') || bg.includes('#6366f1') || bg.includes('#a855f7') || bg.includes('violet'))) {
+                        findings.push({ rule: 'Purple Gradient', severity: 'high', selector: el.tagName + (el.id ? '#' + el.id : ''), detail: bg.slice(0, 80) });
+                    }
+                    // Rule 2: Gradient text
+                    if (cs.webkitBackgroundClip === 'text' || cs.backgroundClip === 'text') {
+                        findings.push({ rule: 'Gradient Text', severity: 'high', selector: el.tagName + (el.id ? '#' + el.id : ''), detail: 'webkit-background-clip: text' });
+                    }
+                    // Rule 3: Overused fonts
+                    const font = cs.fontFamily;
+                    ['Inter', 'Roboto', 'Space Grotesk', 'Plus Jakarta Sans', 'Geist', 'Fraunces', 'Instrument Sans', 'Recoleta'].forEach(f => {
+                        if (font && font.includes(f)) {
+                            findings.push({ rule: 'Overused Font', severity: 'medium', selector: el.tagName + (el.id ? '#' + el.id : ''), detail: f });
+                        }
+                    });
+                    // Rule 4: Low contrast (naive check)
+                    const color = cs.color;
+                    const bgColor = cs.backgroundColor;
+                    if (color === bgColor && color !== 'rgba(0, 0, 0, 0)') {
+                        findings.push({ rule: 'Zero Contrast', severity: 'critical', selector: el.tagName + (el.id ? '#' + el.id : ''), detail: color });
+                    }
+                    // Rule 5: Cardocalypse — excessive nested cards
+                    if ((el.className || '').toLowerCase().includes('card')) {
+                        const parentCard = el.parentElement?.closest('[class*="card"]');
+                        if (parentCard) {
+                            findings.push({ rule: 'Cardocalypse (Nested Cards)', severity: 'medium', selector: el.tagName + '.' + (el.className.split(' ')[0] || ''), detail: 'Card nested inside card' });
+                        }
+                    }
+                    // Rule 6: Too-round pill buttons
+                    if ((el.tagName === 'BUTTON' || el.tagName === 'A') && parseInt(cs.borderRadius) > 50) {
+                        findings.push({ rule: 'Pill Button Overuse', severity: 'low', selector: el.tagName, detail: 'border-radius: ' + cs.borderRadius });
+                    }
+                    // Rule 7: Thin border side-tab cards
+                    if ((el.className || '').toLowerCase().includes('card') && (cs.borderLeft || '').includes('4px') && !cs.border) {
+                        findings.push({ rule: 'Side-Tab Card', severity: 'medium', selector: el.tagName + '.' + (el.className.split(' ')[0] || ''), detail: 'Thick left border only' });
+                    }
+                });
+
+                // Render Results
+                const existing = document.getElementById('__slop_panel');
+                if (existing) { existing.remove(); return; }
+
+                const panel = document.createElement('div');
+                panel.id = '__slop_panel';
+                panel.style = `position:fixed; top:20px; right:20px; width:380px; max-height:70vh; background:#0d1117; border:1px solid #ef4444; border-radius:16px; z-index:10000000; font-family:monospace; color:white; overflow:hidden; display:flex; flex-direction:column; box-shadow: 0 20px 50px rgba(239,68,68,0.3), 0 0 20px rgba(239,68,68,0.1);`;
+                
+                const severityColor = { critical: '#ef4444', high: '#f97316', medium: '#f59e0b', low: '#6b7280' };
+                panel.innerHTML = `
+                    <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; background:rgba(239,68,68,0.1);">
+                        <div style="font-size:11px; font-weight:900; letter-spacing:2px; color:#ef4444;">⚠ AI SLOP DETECTOR</div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span style="font-size:10px; color:#ef4444; font-weight:700;">${findings.length} Issues Found</span>
+                            <span id="__slop_close" style="cursor:pointer; opacity:0.5;">✕</span>
+                        </div>
+                    </div>
+                    <div style="overflow-y:auto; flex:1; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                        ${findings.length === 0 
+                            ? '<div style="color:#10b981; text-align:center; padding:30px; font-size:13px; font-weight:700;">✓ No AI Slop Detected! Clean design.</div>'
+                            : findings.map(f => `
+                                <div style="background:#1a1f2e; border:1px solid rgba(255,255,255,0.05); border-left:3px solid ${severityColor[f.severity]}; border-radius:8px; padding:10px;">
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                        <span style="font-size:11px; font-weight:700; color:${severityColor[f.severity]};">${f.rule}</span>
+                                        <span style="font-size:9px; text-transform:uppercase; color:${severityColor[f.severity]}; opacity:0.7; border:1px solid currentColor; padding:1px 5px; border-radius:4px;">${f.severity}</span>
+                                    </div>
+                                    <div style="font-size:10px; color:#8b949e; margin-bottom:2px;">@ <code>${f.selector}</code></div>
+                                    <div style="font-size:10px; color:#6b7280; word-break:break-all;">${f.detail}</div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                    <div style="padding:10px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.3);">
+                        <button id="__slop_copy" style="width:100%; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.3); color:white; padding:8px; border-radius:8px; font-family:monospace; font-size:10px; font-weight:700; cursor:pointer;">COPY REPORT AS AI PROMPT</button>
+                    </div>
+                `;
+                document.body.appendChild(panel);
+                
+                document.getElementById('__slop_close').onclick = () => panel.remove();
+                document.getElementById('__slop_copy').onclick = () => {
+                    const report = `### AI SLOP AUDIT REPORT (Impeccable Framework)\n\n**Rules Checked**: 7 (Purple Gradients, Gradient Text, Overused Fonts, Zero Contrast, Cardocalypse, Pill Buttons, Side-Tab Cards)\n**Issues Found**: ${findings.length}\n\n${findings.map(f => `- [${f.severity.toUpperCase()}] **${f.rule}** @ \`${f.selector}\`\n  Detail: ${f.detail}`).join('\n')}\n\n**Task**: Fix the above AI slop issues following Impeccable's design guidelines. Avoid purple gradients, overused fonts, and generic patterns.`;
+                    const tmp = document.createElement('textarea');
+                    tmp.value = report; document.body.appendChild(tmp);
+                    tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+                    alert('Slop report copied as AI prompt!');
+                };
+            }
+        });
+    } else if (info.menuItemId === "floating_nexus") {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const existing = document.getElementById('__nexus_bar');
+                if (existing) { existing.remove(); return; }
+
+                const bar = document.createElement('div');
+                bar.id = '__nexus_bar';
+                bar.style = `position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:4px; padding:8px 12px; background:rgba(13,17,23,0.95); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:50px; z-index:10000000; box-shadow:0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(99,102,241,0.2); font-family:sans-serif;`;
+                
+                const tools = [
+                    { label: '🧹', title: 'AI Context Capture', fn: () => { document.getElementById('__nexus_bar')?.remove(); chrome.runtime.sendMessage({ action: 'TRIGGER_DOM_CLEAN' }); } },
+                    { label: '✏️', title: 'Edit Mode', fn: () => { document.designMode = document.designMode === 'on' ? 'off' : 'on'; } },
+                    { label: '🔍', title: 'Inspect Styles', fn: () => {
+                        const h = document.createElement('div');
+                        h.style = 'position:fixed; border:2px solid #6366f1; z-index:9999999; pointer-events:none;';
+                        document.body.appendChild(h);
+                        document.addEventListener('mousemove', (e) => {
+                            const r = e.target.getBoundingClientRect();
+                            h.style.cssText = `position:fixed; border:2px solid #6366f1; z-index:9999999; pointer-events:none; top:${r.top}px; left:${r.left}px; width:${r.width}px; height:${r.height}px;`;
+                        });
+                    }},
+                    { label: '💀', title: 'Nuke Element', fn: () => {
+                        document.addEventListener('click', (e) => { e.preventDefault(); e.target.remove(); }, { once: true, capture: true });
+                    }},
+                    { label: '📋', title: 'Copy Selector', fn: () => {
+                        document.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const sel = e.target.id ? '#'+e.target.id : e.target.tagName.toLowerCase();
+                            navigator.clipboard.writeText(sel);
+                            alert('Selector: ' + sel);
+                        }, { once: true, capture: true });
+                    }},
+                    { label: '🎬', title: 'Vibe Recorder', fn: () => { chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' }); } },
+                    { label: '🚫', title: 'AI Slop Detect', fn: () => { chrome.runtime.sendMessage({ action: 'TRIGGER_SLOP_DETECT' }); } },
+                    { label: '✕', title: 'Close', fn: () => bar.remove(), danger: true },
+                ];
+
+                tools.forEach(t => {
+                    const btn = document.createElement('button');
+                    btn.title = t.title;
+                    btn.textContent = t.label;
+                    btn.style = `background:${t.danger ? 'rgba(239,68,68,0.15)' : 'transparent'}; border:none; color:white; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:0.2s;`;
+                    btn.onmouseover = () => btn.style.background = t.danger ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)';
+                    btn.onmouseout = () => btn.style.background = t.danger ? 'rgba(239,68,68,0.15)' : 'transparent';
+                    btn.onclick = t.fn;
+                    bar.appendChild(btn);
+                });
+
+                document.body.appendChild(bar);
+            }
+        });
+    } else if (info.menuItemId === "visual_diff") {
+        chrome.storage.local.get(['snap_history'], (res) => {
+            const history = res.snap_history || [];
+            if (history.length < 2) {
+                showContentToast(tab.id, '⚠ Need at least 2 snapshots for diff. Take 2 snapshots first.', 'error');
+                return;
+            }
+            const a = history[0];
+            const b = history[1];
+            const diffResult = {
+                url_changed: a.metadata.url !== b.metadata.url,
+                title_changed: a.metadata.title !== b.metadata.title,
+                stack_diff: JSON.stringify(a.stack) !== JSON.stringify(b.stack) ? { from: b.stack, to: a.stack } : null,
+                dom_growth: a.dom_content.length - b.dom_content.length,
+                network_requests: (a.metadata.network_recent?.length || 0) - (b.metadata.network_recent?.length || 0),
+                time_delta_ms: new Date(a.metadata.timestamp) - new Date(b.metadata.timestamp)
+            };
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (diff, snapA, snapB) => {
+                    const panel = document.createElement('div');
+                    panel.style = `position:fixed; top:20px; left:20px; width:380px; background:#0d1117; border:1px solid #f59e0b; border-radius:16px; z-index:10000000; color:white; font-family:monospace; overflow:hidden; box-shadow:0 20px 50px rgba(245,158,11,0.2);`;
+                    panel.innerHTML = `
+                        <div style="padding:14px 18px; background:rgba(245,158,11,0.1); border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between;">
+                            <span style="font-size:11px; font-weight:900; letter-spacing:2px; color:#f59e0b;">🔬 DOM VISUAL DIFF</span>
+                            <span id="__diff_close" style="cursor:pointer; opacity:0.5;">✕</span>
+                        </div>
+                        <div style="padding:16px; display:flex; flex-direction:column; gap:8px; font-size:11px;">
+                            <div style="color:#8b949e;">Comparing: <span style="color:#f59e0b;">${new Date(snapA.metadata.timestamp).toLocaleTimeString()}</span> → <span style="color:#6366f1;">${new Date(snapB.metadata.timestamp).toLocaleTimeString()}</span></div>
+                            ${[
+                                { label: 'URL Changed', value: diff.url_changed, type: diff.url_changed ? 'warn' : 'ok' },
+                                { label: 'Title Changed', value: diff.title_changed, type: diff.title_changed ? 'warn' : 'ok' },
+                                { label: 'Tech Stack Diff', value: diff.stack_diff ? JSON.stringify(diff.stack_diff) : 'Identical', type: diff.stack_diff ? 'warn' : 'ok' },
+                                { label: 'DOM Growth', value: (diff.dom_growth > 0 ? '+' : '') + diff.dom_growth + ' chars', type: diff.dom_growth > 0 ? 'grow' : diff.dom_growth < 0 ? 'shrink' : 'ok' },
+                                { label: 'Network Δ', value: (diff.network_requests > 0 ? '+' : '') + diff.network_requests + ' requests', type: 'info' },
+                                { label: 'Time Between', value: Math.round(diff.time_delta_ms / 1000) + 's', type: 'info' },
+                            ].map(r => `
+                                <div style="display:flex; justify-content:space-between; padding:8px; background:#1a1f2e; border-radius:8px; border-left:3px solid ${{ warn:'#f59e0b', ok:'#10b981', info:'#3b82f6', grow:'#8b5cf6', shrink:'#ef4444' }[r.type]};">
+                                    <span style="color:#8b949e;">${r.label}</span>
+                                    <span style="color:white; font-weight:700; word-break:break-all; max-width:60%; text-align:right;">${r.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="padding:10px; border-top:1px solid rgba(255,255,255,0.05);">
+                            <button id="__diff_copy" style="width:100%; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:white; padding:8px; border-radius:8px; font-family:monospace; font-size:10px; font-weight:700; cursor:pointer;">COPY DIFF AS AI CONTEXT</button>
+                        </div>
+                    `;
+                    document.body.appendChild(panel);
+                    document.getElementById('__diff_close').onclick = () => panel.remove();
+                    document.getElementById('__diff_copy').onclick = () => {
+                        const txt = `### VISUAL DOM DIFF\n\n${Object.entries(diff).map(([k,v]) => `- **${k}**: ${JSON.stringify(v)}`).join('\n')}\n\nSnap A (${snapA.metadata.timestamp}): ${snapA.metadata.url}\nSnap B (${snapB.metadata.timestamp}): ${snapB.metadata.url}`;
+                        const tmp = document.createElement('textarea'); tmp.value = txt; document.body.appendChild(tmp); tmp.select(); document.execCommand('copy'); tmp.remove();
+                        alert('Diff copied!');
+                    };
+                },
+                args: [diffResult, a, b]
+            });
         });
     }
 });
