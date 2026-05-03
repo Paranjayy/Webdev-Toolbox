@@ -14,8 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (target === 'extensions') renderExtensions();
             if (target === 'system') renderLogs();
+            if (target === 'agent') renderAgentLogs();
         });
     });
+
+    renderAgentLogs();
 
     async function getActiveTab() {
         const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -800,20 +803,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    safeListen('btn-generate-blueprint', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            showToast("Synthesizing Master Blueprint...", 'info');
+            chrome.runtime.sendMessage({ action: 'PERFORM_SNAPSHOT', raw: false, tabId: tab.id }, (res) => {
+                if (res?.success) {
+                    const dom = res.snapshot;
+                    // Try to get tech stack too
+                    safeExecute(() => {
+                        const stack = [];
+                        if (window.React) stack.push('React');
+                        if (window.next) stack.push('Next.js');
+                        if (window.vue) stack.push('Vue');
+                        if (window.jQuery) stack.push('jQuery');
+                        if (document.querySelector('meta[name="generator"]')) stack.push(document.querySelector('meta[name="generator"]').content);
+                        return stack;
+                    }).then(stackRes => {
+                        const detectedStack = stackRes?.[0]?.result || [];
+                        const masterBlueprint = `
+# REPLICATION MASTER BLUEPRINT
+**Target**: ${tab.url}
+**Title**: ${tab.title}
+**Detected Stack**: ${detectedStack.join(', ') || 'Vanilla/Unknown'}
+
+## TASK
+Replicate this interface and functionality exactly using the provided DOM structure. Ensure high-fidelity design, responsive layout, and interactive elements are preserved.
+
+## DOM CONTEXT
+${dom}
+
+## NOTES
+- Use modern ESM and clean CSS.
+- Prioritize performance and accessibility.
+- Implement all detected interactive patterns.
+                        `;
+                        navigator.clipboard.writeText(masterBlueprint);
+                        alert("MASTER BLUEPRINT GENERATED!\nFull replication prompt copied to clipboard.");
+                    });
+                }
+            });
+        });
+    });
+
     // ── AGENT INTEL: Query Logging ──────────────────────────────────────────
     function renderAgentLogs() {
         const logEl = document.getElementById('agent-logs');
         if (!logEl) return;
         
-        chrome.storage.local.get(['agent_queries'], (data) => {
-            const queries = data.agent_queries || [];
-            if (queries.length === 0) {
-                logEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">No queries logged yet.</div>';
+        chrome.storage.local.get(['dev_notes'], (data) => {
+            const notes = data.dev_notes || [];
+            if (notes.length === 0) {
+                logEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">No issues or notes logged yet.</div>';
             } else {
-                logEl.innerHTML = queries.reverse().map(q => `
-                    <div class="log-item log-info" style="margin-bottom:8px;">
-                        <div style="font-size:0.6rem; opacity:0.6; margin-bottom:2px;">${new Date(q.timestamp).toLocaleString()} @ ${q.domain}</div>
-                        <div style="font-weight:600;">${q.query}</div>
+                logEl.innerHTML = notes.map(n => `
+                    <div class="log-item log-info" style="margin-bottom:8px; display:flex; flex-direction:column; gap:2px;">
+                        <div style="font-size:0.55rem; opacity:0.6; display:flex; justify-content:space-between;">
+                            <span>${new Date(n.timestamp).toLocaleString()}</span>
+                            <span class="mono">${n.url ? new URL(n.url).hostname : 'N/A'}</span>
+                        </div>
+                        <div style="font-weight:600; font-size:0.75rem;">${n.content}</div>
+                        ${n.title ? `<div style="font-size:0.6rem; opacity:0.5; font-style:italic;">"${n.title}"</div>` : ''}
                     </div>
                 `).join('');
             }
@@ -822,44 +872,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     safeListen('btn-log-query', 'click', () => {
         const input = document.getElementById('agent-query-input');
-        const query = input.value.trim();
-        if (!query) return;
+        const content = input.value.trim();
+        if (!content) return;
 
         getActiveTab().then(tab => {
-            const domain = tab?.url ? new URL(tab.url).hostname : 'Unknown';
-            chrome.storage.local.get(['agent_queries'], (data) => {
-                const queries = data.agent_queries || [];
-                queries.push({
-                    query,
-                    domain,
-                    timestamp: Date.now(),
-                    tabId: tab?.id
+            chrome.storage.local.get(['dev_notes'], (data) => {
+                const notes = data.dev_notes || [];
+                notes.unshift({
+                    id: Date.now(),
+                    content,
+                    url: tab?.url || 'N/A',
+                    title: tab?.title || 'N/A',
+                    timestamp: new Date().toISOString()
                 });
-                chrome.storage.local.set({ agent_queries: queries }, () => {
+                chrome.storage.local.set({ dev_notes: notes.slice(0, 100) }, () => {
                     input.value = '';
                     renderAgentLogs();
-                    showToast("Query logged for agent review.", 'success');
+                    showToast("Issue noted for resolution.", 'success');
                 });
             });
         });
     });
 
     safeListen('btn-export-queries', 'click', () => {
-        chrome.storage.local.get(['agent_queries'], (data) => {
-            const blob = new Blob([JSON.stringify(data.agent_queries || [], null, 2)], { type: 'application/json' });
+        chrome.storage.local.get(['dev_notes'], (data) => {
+            const blob = new Blob([JSON.stringify(data.dev_notes || [], null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `agent-queries-${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `dev-notes-${new Date().toISOString().slice(0,10)}.json`;
             a.click();
         });
     });
 
     safeListen('btn-clear-queries', 'click', () => {
-        if (confirm("Wipe all agent query history?")) {
-            chrome.storage.local.set({ agent_queries: [] }, () => {
+        if (confirm("Wipe all dev log history?")) {
+            chrome.storage.local.set({ dev_notes: [] }, () => {
                 renderAgentLogs();
-                showToast("Agent logs cleared.", 'info');
+                showToast("Dev logs cleared.", 'info');
             });
         }
     });

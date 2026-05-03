@@ -264,6 +264,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.action === 'TRIGGER_SLOP_DETECT') {
         // Handled in contextMenus.onClicked directly but added here for Nexus relay
         sendResponse({ success: true });
+    } else if (request.action === 'SAVE_DEV_NOTE') {
+        chrome.storage.local.get(['dev_notes'], (res) => {
+            const notes = Array.isArray(res.dev_notes) ? res.dev_notes : [];
+            notes.unshift({
+                id: Date.now(),
+                content: request.note,
+                url: request.url,
+                title: request.title,
+                timestamp: new Date().toISOString()
+            });
+            chrome.storage.local.set({ dev_notes: notes.slice(0, 100) }, () => {
+                showContentToast(sender.tab.id, '🚀 Issue noted for future resolution!', 'info');
+            });
+        });
+        return true;
     }
     return true;
 });
@@ -1158,6 +1173,30 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     }},
                     { label: '🎬', title: 'Vibe Recorder', fn: () => { chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' }); } },
                     { label: '🚫', title: 'AI Slop Detect', fn: () => { chrome.runtime.sendMessage({ action: 'TRIGGER_SLOP_DETECT' }); } },
+                    { label: '📝', title: 'Dev Log / Issue Note', fn: () => {
+                        const noteId = '__nexus_note_input';
+                        if (document.getElementById(noteId)) return;
+                        const div = document.createElement('div');
+                        div.id = noteId;
+                        div.style = 'position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:#0d1117; border:1px solid #ff00ff; border-radius:12px; padding:12px; z-index:10000001; box-shadow:0 10px 40px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:8px; width:300px;';
+                        div.innerHTML = `
+                            <div style="font-size:10px; font-weight:900; color:#ff00ff; text-transform:uppercase;">Note Issue/Idea</div>
+                            <textarea id="__note_text" style="background:#161b22; color:white; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px; font-family:sans-serif; font-size:12px; resize:none; height:60px;" placeholder="What's broken or needed?"></textarea>
+                            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                <button id="__note_cancel" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:10px; font-weight:700;">CANCEL</button>
+                                <button id="__note_save" style="background:#ff00ff; border:none; color:white; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:10px; font-weight:900;">SAVE</button>
+                            </div>
+                        `;
+                        document.body.appendChild(div);
+                        const txt = div.querySelector('#__note_text');
+                        txt.focus();
+                        div.querySelector('#__note_cancel').onclick = () => div.remove();
+                        div.querySelector('#__note_save').onclick = () => {
+                            const note = txt.value.trim();
+                            if (note) chrome.runtime.sendMessage({ action: 'SAVE_DEV_NOTE', note, url: window.location.href, title: document.title });
+                            div.remove();
+                        };
+                    }},
                     { label: '✕', title: 'Close', fn: () => bar.remove(), danger: true },
                 ];
 
