@@ -549,6 +549,34 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     highlight.style.left = `${rect.left}px`;
                     highlight.style.width = `${rect.width}px`;
                     highlight.style.height = `${rect.height}px`;
+<<<<<<< Updated upstream
+=======
+
+                    // Color Palette Sniffer
+                    const cs = window.getComputedStyle(e.target);
+                    const colors = [cs.backgroundColor, cs.color];
+                    const paletteHtml = colors.filter(c => c !== 'rgba(0, 0, 0, 0)').map(c => `
+                        <div style="width:10px; height:10px; background:${c}; border:1px solid rgba(255,255,255,0.2); border-radius:50%;"></div>
+                    `).join('');
+
+                    // Asset & Image Preview
+                    let assetHtml = '';
+                    if (e.target.tagName === 'IMG') {
+                        assetHtml = `<img src="${e.target.src}" style="width:16px; height:16px; border-radius:2px; object-fit:cover;">`;
+                    } else {
+                        const bgImg = cs.backgroundImage;
+                        if (bgImg && bgImg !== 'none') {
+                            const url = bgImg.match(/url\(["']?([^"']+)["']?\)/);
+                            if (url) assetHtml = `<div style="width:16px; height:16px; border-radius:2px; background-image:url(${url[1]}); background-size:cover;"></div>`;
+                        }
+                    }
+                    
+                    highlight.innerHTML = `
+                        <div style="position:absolute; bottom:100%; left:0; background:#ff00ff; color:white; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px 4px 0 0; display:flex; align-items:center; gap:4px; transform:translateY(-2px); white-space:nowrap; box-shadow:0 -4px 10px rgba(255,0,255,0.3);">
+                            ${assetHtml} ${e.target.tagName} ${paletteHtml}
+                        </div>
+                    `;
+>>>>>>> Stashed changes
                 };
 
                 const onClick = (e) => {

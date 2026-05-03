@@ -419,6 +419,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+<<<<<<< Updated upstream
+=======
+    // Pause/Toggle Pick Mode
+    safeListen('btn-toggle-pick', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'TOGGLE_PICK_MODE' });
+    });
+
+    // Live Text Edit (Design Mode)
+    safeListen('btn-live-edit', 'click', () => {
+        safeExecute(() => {
+            document.designMode = document.designMode === 'on' ? 'off' : 'on';
+            return `Design Mode: ${document.designMode.toUpperCase()}`;
+        }).then(res => {
+            if (res?.[0]?.result) showToast(res[0].result, 'success');
+        });
+    });
+
+    // Asset DNA Sniffer
+    safeListen('btn-asset-sniffer', 'click', () => {
+        const btn = document.getElementById('btn-scan-resources');
+        if (btn) {
+            const navBtn = document.querySelector('[data-tab="resources"]');
+            if (navBtn) navBtn.click();
+            btn.click();
+        }
+    });
+
+    // Playwright Vibe Recorder
+    safeListen('btn-toggle-macro', 'click', () => {
+        chrome.runtime.sendMessage({ action: 'PERFORM_MACRO' });
+        window.close(); // Close popup to allow interaction
+    });
+
+>>>>>>> Stashed changes
     // Toggle 12-Col Grid
     safeListen('btn-toggle-grid', 'click', () => {
         safeExecute(() => {
@@ -473,6 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const unpacked = filtered.filter(e => e.installType === 'development');
             const store = filtered.filter(e => e.installType !== 'development');
 
+<<<<<<< Updated upstream
             const renderCard = (ext) => `
                 <div class="card" style="padding: 10px; flex-direction: row; align-items: center; justify-content: space-between;">
                     <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
@@ -495,6 +530,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
             unpackedList.innerHTML = unpacked.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
             storeList.innerHTML = store.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No production extensions.</div>';
+=======
+            chrome.storage.local.get(['ext_notes'], (res) => {
+                const extNotes = res.ext_notes || {};
+                
+                const renderCard = (ext) => {
+                    const note = extNotes[ext.id] || '';
+                    return `
+                        <div class="card" style="padding: 10px; flex-direction: column; border-color: ${ext.enabled ? 'var(--border)' : 'rgba(239, 68, 68, 0.2)'};">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                                    <img src="${ext.icons?.[0]?.url || 'icon.png'}" style="width:24px; height:24px; border-radius:4px; opacity: ${ext.enabled ? 1 : 0.5};">
+                                    <div style="min-width:0;">
+                                        <div class="card-title truncate" style="font-size:0.75rem; color: ${ext.enabled ? 'var(--text-header)' : 'var(--text-muted)'};">${ext.name}</div>
+                                        <div class="mono" style="font-size:0.5rem; opacity:0.5;">${ext.id}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem; border-color:${ext.enabled ? 'var(--emerald)' : 'var(--border)'}; color: ${ext.enabled ? 'var(--emerald)' : 'var(--text-muted)'};" id="toggle-${ext.id}">
+                                        ${ext.enabled ? 'ON' : 'OFF'}
+                                    </button>
+                                    <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" id="rip-${ext.id}" title="Rip Blueprint">🧬</button>
+                                </div>
+                            </div>
+                            
+                            <div id="note-container-${ext.id}" style="display: ${note ? 'block' : 'none'}; margin-bottom: 8px;">
+                                <textarea id="note-input-${ext.id}" placeholder="Issues or notes for this tool..." style="width:100%; height:40px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.65rem; padding:4px; border-radius:4px; resize:none;">${note}</textarea>
+                            </div>
+                            
+                            <div style="display:flex; gap:6px; justify-content: flex-end;">
+                                <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="btn-note-${ext.id}">${note ? 'EDIT NOTE' : '+ NOTE'}</button>
+                                ${ext.installType === 'development' ? `
+                                    <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="reload-${ext.id}">RELOAD</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                };
+
+                unpackedList.innerHTML = unpacked.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
+                storeList.innerHTML = store.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
+>>>>>>> Stashed changes
 
             [...unpacked, ...store].forEach(ext => {
                 safeListen(`toggle-${ext.id}`, 'click', () => {
