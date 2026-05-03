@@ -427,9 +427,9 @@ chrome.runtime.onInstalled.addListener(() => {
         contexts: ["all"]
     });
     chrome.contextMenus.create({
-        id: "element_tagger",
+        id: "design_lab",
         parentId: "webdev_toolbox",
-        title: "📝 AI: Element Tagger",
+        title: "✨ AI: Design Superpowers (Lab)",
         contexts: ["all"]
     });
     chrome.contextMenus.create({
@@ -618,44 +618,89 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 document.addEventListener('click', handler, true);
             }
         });
-    } else if (info.menuItemId === "element_tagger") {
+    } else if (info.menuItemId === "design_lab") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                if (window.__TAGGER_ACTIVE) return;
-                window.__TAGGER_ACTIVE = true;
-                const selections = [];
+                if (window.__DESIGN_LAB_ACTIVE) return;
+                window.__DESIGN_LAB_ACTIVE = true;
 
+                // Create the floating lab UI
                 const container = document.createElement('div');
-                container.id = '__toolbox_tagger_ui';
+                container.id = '__design_lab';
                 container.style = `
-                    position: fixed; top: 10px; right: 10px; width: 320px; max-height: 80vh;
-                    background: #0f172a; border: 1px solid #334155; border-radius: 12px;
-                    z-index: 9999999; color: white; display: flex; flex-direction: column;
-                    font-family: sans-serif; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-                    overflow: hidden;
+                    position: fixed; top: 20px; right: 20px; width: 340px;
+                    background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 16px;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(255, 0, 255, 0.15);
+                    z-index: 10000000; font-family: 'Inter', sans-serif; color: white;
+                    display: flex; flex-direction: column; overflow: hidden;
+                    animation: labIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+                    user-select: none;
                 `;
+
                 container.innerHTML = `
-                    <div style="padding:12px; background:#1e293b; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:700; font-size:13px; color:#6366f1;">AI ELEMENT TAGGER</span>
-                        <button id="__tagger_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
+                    <style>
+                        @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+                        .__lab-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+                        .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #ff00ff; text-shadow: 0 0 10px rgba(255,0,255,0.3); }
+                        .__lab-close { cursor: pointer; opacity: 0.5; transition: 0.2s; font-size: 14px; font-weight: bold; }
+                        .__lab-close:hover { opacity: 1; color: #ff00ff; }
+                        .__lab-input-group { padding: 14px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); }
+                        .__lab-input { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 12px; font-size: 12px; outline: none; transition: 0.2s; }
+                        .__lab-input:focus { border-color: #ff00ff; background: rgba(255,255,255,0.06); }
+                        .__lab-go { background: #ff00ff; color: white; border: none; border-radius: 10px; padding: 0 14px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.2s; }
+                        .__lab-go:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(255,0,255,0.4); }
+                        .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.1); }
+                        .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+                        .__lab-btn:hover { background: rgba(255, 0, 255, 0.05); }
+                        .__lab-btn span { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.6); }
+                        .__lab-btn.active { background: rgba(255, 0, 255, 0.1); }
+                        .__lab-btn.active span { color: #ff00ff; }
+                        .__lab-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #ff00ff; transform: scaleX(0); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+                        .__lab-btn.active::after { transform: scaleX(1); }
+                        .__lab-footer { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); }
+                        .__lab-counter { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.4); }
+                        .__lab-export { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+                        .__lab-export:hover { border-color: #ff00ff; color: #ff00ff; background: rgba(255,0,255,0.05); }
+                    </style>
+                    <div class="__lab-header">
+                        <div class="__lab-title">Superpowers Lab</div>
+                        <div class="__lab-close">✕</div>
                     </div>
-                    <div id="__tagger_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
-                        <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to tag them for the AI...</div>
+                    <div class="__lab-input-group">
+                        <input type="text" class="__lab-input" placeholder="Freeform Instruction (e.g. 'Make it modern')">
+                        <button class="__lab-go">Go →</button>
                     </div>
-                    <div style="padding:12px; border-top:1px solid #334155; background:#0f172a;">
-                        <button id="__tagger_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
+                    <div class="__lab-grid">
+                        <button class="__lab-btn" data-skill="bolder"><span>Bolder</span></button>
+                        <button class="__lab-btn" data-skill="quieter"><span>Quieter</span></button>
+                        <button class="__lab-btn" data-skill="distill"><span>Distill</span></button>
+                        <button class="__lab-btn" data-skill="polish"><span>Polish</span></button>
+                        <button class="__lab-btn" data-skill="typeset"><span>Typeset</span></button>
+                        <button class="__lab-btn" data-skill="colorize"><span>Colorize</span></button>
+                        <button class="__lab-btn" data-skill="layout"><span>Layout</span></button>
+                        <button class="__lab-btn" data-skill="adapt"><span>Adapt</span></button>
+                        <button class="__lab-btn" data-skill="animate"><span>Animate</span></button>
+                        <button class="__lab-btn" data-skill="delight"><span>Delight</span></button>
+                        <button class="__lab-btn" data-skill="overdrive"><span>Overdrive</span></button>
+                        <button class="__lab-btn" data-skill="frontend-design"><span>Design</span></button>
+                    </div>
+                    <div class="__lab-footer">
+                        <div class="__lab-counter">0 targets locked</div>
+                        <button class="__lab-export">Capture Context</button>
                     </div>
                 `;
+
                 document.body.appendChild(container);
 
-                const list = container.querySelector('#__tagger_list');
-                const copyBtn = container.querySelector('#__tagger_copy');
-                const closeBtn = container.querySelector('#__tagger_close');
-
                 const highlight = document.createElement('div');
-                highlight.style = 'position:fixed; background:rgba(99,102,241,0.1); border:2px dashed #6366f1; z-index:9999998; pointer-events:none; transition: all 0.05s;';
+                highlight.id = '__lab_highlight';
+                highlight.style = 'position:fixed; border:2px solid #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.4), inset 0 0 10px rgba(255,0,255,0.2); z-index: 9999999; pointer-events:none; transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0;';
                 document.body.appendChild(highlight);
+
+                let selections = [];
+                let activeSkills = new Set();
 
                 const getSelector = (el) => {
                     if (el.id) return `#${el.id}`;
@@ -671,25 +716,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     return path.join(' > ');
                 };
 
-                const refreshList = () => {
-                    if (selections.length === 0) {
-                        list.innerHTML = '<div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to tag them for the AI...</div>';
-                        return;
-                    }
-                    list.innerHTML = selections.map((s, i) => `
-                        <div style="background:#1e293b; padding:8px; border-radius:6px; border:1px solid #334155;">
-                            <div style="font-family:monospace; font-size:10px; color:#818cf8; margin-bottom:4px; word-break:break-all;">${s.selector}</div>
-                            <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;">${s.comment || ''}</textarea>
-                        </div>
-                    `).join('');
-                    list.querySelectorAll('textarea').forEach(tx => {
-                        tx.addEventListener('input', (e) => { selections[e.target.dataset.idx].comment = e.target.value; });
-                    });
-                };
-
                 const onMouseOver = (e) => {
                     if (container.contains(e.target)) return;
                     const rect = e.target.getBoundingClientRect();
+                    highlight.style.opacity = '1';
                     highlight.style.top = `${rect.top}px`;
                     highlight.style.left = `${rect.left}px`;
                     highlight.style.width = `${rect.width}px`;
@@ -699,9 +729,38 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 const onClick = (e) => {
                     if (container.contains(e.target)) return;
                     e.preventDefault(); e.stopPropagation();
+                    
                     const sel = getSelector(e.target);
-                    selections.push({ selector: sel, comment: '' });
-                    refreshList();
+                    const rect = e.target.getBoundingClientRect();
+                    
+                    // Permanent Selection Anchor
+                    const anchor = document.createElement('div');
+                    anchor.className = '__lab-anchor';
+                    anchor.style = `position:fixed; top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px; border:1px solid #ff00ff; background:rgba(255,0,255,0.1); z-index:9999998; pointer-events:none; box-shadow: 0 0 15px rgba(255,0,255,0.2);`;
+                    document.body.appendChild(anchor);
+
+                    // Grab style context
+                    const computed = window.getComputedStyle(e.target);
+                    const coreStyles = {
+                        display: computed.display,
+                        margin: computed.margin,
+                        padding: computed.padding,
+                        color: computed.color,
+                        background: computed.backgroundColor,
+                        fontFamily: computed.fontFamily,
+                        fontSize: computed.fontSize,
+                        border: computed.border
+                    };
+
+                    selections.push({ 
+                        selector: sel, 
+                        anchor,
+                        html: e.target.outerHTML.slice(0, 1500),
+                        text: e.target.innerText.slice(0, 300),
+                        styles: JSON.stringify(coreStyles)
+                    });
+                    
+                    container.querySelector('.__lab-counter').innerText = `${selections.length} targets locked`;
                 };
 
                 const cleanup = () => {
@@ -709,18 +768,46 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', onClick, true);
                     container.remove();
                     highlight.remove();
-                    window.__TAGGER_ACTIVE = false;
+                    document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
+                    window.__DESIGN_LAB_ACTIVE = false;
                 };
 
-                closeBtn.onclick = cleanup;
-                copyBtn.onclick = () => {
-                    const prompt = `### AI TASK ANNOTATIONS\n\n${selections.map(s => `- **ELEMENT**: \`${s.selector}\`\n  **TASK**: ${s.comment || 'No specific task described.'}`).join('\n\n')}`;
+                container.querySelector('.__lab-close').onclick = cleanup;
+
+                container.querySelectorAll('.__lab-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const skill = btn.dataset.skill;
+                        if (activeSkills.has(skill)) {
+                            activeSkills.delete(skill);
+                            btn.classList.remove('active');
+                        } else {
+                            activeSkills.add(skill);
+                            btn.classList.add('active');
+                        }
+                    };
+                });
+
+                const triggerExport = () => {
+                    const freeform = container.querySelector('.__lab-input').value;
+                    const skills = Array.from(activeSkills);
+                    
+                    if (selections.length === 0 && skills.length === 0 && !freeform) {
+                        alert("Select targets or input instructions first.");
+                        return;
+                    }
+
+                    const prompt = `### SUPERPOWERS DESIGN LAB CAPTURE\n\n**FRAMEWORK**: Frontend Design / Impeccable\n**PRIMARY SKILLS**: ${skills.join(', ') || 'General Enhancement'}\n**FREEFORM INSTRUCTION**: ${freeform || 'Apply chosen skills.'}\n\n**TARGET ELEMENTS**:\n${selections.map(s => `- **SELECTOR**: \`${s.selector}\`\n  **HTML**: \n\`\`\`html\n${s.html}\n\`\`\`\n  **CORE STYLES**: \`${s.styles}\``).join('\n\n')}\n\n**SYSTEM**: Perform a high-fidelity design transformation on the locked targets based on the requested skills. Output the CSS/HTML code needed to upgrade the design.`;
+                    
                     const tmp = document.createElement('textarea');
                     tmp.value = prompt; document.body.appendChild(tmp);
                     tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-                    alert('AI Task Annotations copied to clipboard!');
+                    
+                    alert('Superpowers Context Captured! Forward to AI Agent.');
                     cleanup();
                 };
+
+                container.querySelector('.__lab-export').onclick = triggerExport;
+                container.querySelector('.__lab-go').onclick = triggerExport;
 
                 document.addEventListener('mouseover', onMouseOver, { passive: true });
                 document.addEventListener('click', onClick, true);
