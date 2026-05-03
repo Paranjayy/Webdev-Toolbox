@@ -7,15 +7,22 @@ const INTERCEPTOR_SCRIPT = `
     const originalSend = window.XMLHttpRequest.prototype.send;
 
     window.fetch = async (...args) => {
+        const url = args[0];
+        const options = args[1] || {};
+        const method = options.method || 'GET';
+        const headers = options.headers ? (options.headers instanceof Headers ? Object.fromEntries(options.headers) : options.headers) : {};
+
         try {
             const response = await originalFetch(...args);
-            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: args[0], status: response.status, method: 'FETCH', time: new Date().toISOString() } }));
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { 
+                detail: { url, status: response.status, method, headers, time: new Date().toISOString(), type: 'FETCH' } 
+            }));
             if (response.status >= 500) {
-                window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: args[0], status: response.status } }));
+                window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url, status: response.status } }));
             }
             return response;
         } catch (error) {
-            window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: args[0], status: 'FAILED' } }));
+            window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url, status: 'FAILED' } }));
             throw error;
         }
     };
@@ -23,12 +30,28 @@ const INTERCEPTOR_SCRIPT = `
     window.XMLHttpRequest.prototype.open = function(method, url) {
         this._url = url;
         this._method = method;
+        this._reqHeaders = {};
         return originalXHR.apply(this, arguments);
+    };
+
+    const originalSetHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+    window.XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+        this._reqHeaders[header] = value;
+        return originalSetHeader.apply(this, arguments);
     };
 
     window.XMLHttpRequest.prototype.send = function() {
         this.addEventListener('load', function() {
-            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { detail: { url: this._url, status: this.status, method: this._method, time: new Date().toISOString() } }));
+            window.dispatchEvent(new CustomEvent('VAULT_TRAFFIC_LOG', { 
+                detail: { 
+                    url: this._url, 
+                    status: this.status, 
+                    method: this._method, 
+                    headers: this._reqHeaders,
+                    time: new Date().toISOString(),
+                    type: 'XHR'
+                } 
+            }));
             if (this.status >= 500) {
                 window.dispatchEvent(new CustomEvent('VAULT_NETWORK_ERROR', { detail: { url: this._url, status: this.status } }));
             }
@@ -51,8 +74,25 @@ const INTERCEPTOR_SCRIPT = `
     // Global variable hijacking for debugging
     window.$v = {
         scan: () => console.log('Vault Debugger Active'),
-        rip: (el) => console.log('Element Ripped:', el),
-        help: () => console.log('$v.scan(), $v.rip(el), $v.help()')
+        rip: (el) => {
+            console.log('Element Ripped:', el);
+            const s = window.getComputedStyle(el);
+            console.table({
+                width: s.width,
+                height: s.height,
+                margin: s.margin,
+                padding: s.padding,
+                display: s.display,
+                position: s.position
+            });
+        },
+        edit: (el) => {
+            if (!el) return;
+            el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
+            el.style.outline = el.contentEditable === 'true' ? '2px dashed #ff00ff' : 'none';
+            console.log('Edit Mode:', el.contentEditable === 'true' ? 'ON' : 'OFF');
+        },
+        help: () => console.log('$v.scan(), $v.rip(el), $v.edit(el), $v.help()')
     };
 })();
 `;
@@ -196,11 +236,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.type === 'VAULT_TRAFFIC_LOG') {
+        vaultTrafficBuffer.push(request);
+        if (vaultTrafficBuffer.length > 200) vaultTrafficBuffer.shift();
+        return true;
+    }
+
+    if (request.type === 'VAULT_NETWORK_ERROR') {
+        // Auto-snap on critical 5xx errors if enabled (default true)
+        chrome.storage.local.get(['auto_snap_enabled'], (res) => {
+            if (res.auto_snap_enabled !== false && request.status >= 500) {
+                handleDOMCleaner(sender.tab?.id, false);
+            }
+        });
+        return true;
+    }
+
     if (request.action === 'PERFORM_SNAPSHOT') {
         handleDOMCleaner(sender.tab?.id || request.tabId, request.raw || false);
         sendResponse({ success: true });
     } else if (request.action === 'PERFORM_MACRO') {
         handleVibeRecorder(sender.tab?.id || request.tabId);
+        sendResponse({ success: true });
+    } else if (request.action === 'TRIGGER_DOM_CLEAN') {
+        handleDOMCleaner(sender.tab?.id || request.tabId, false);
+        sendResponse({ success: true });
+    } else if (request.action === 'TRIGGER_SLOP_DETECT') {
+        // Handled in contextMenus.onClicked directly but added here for Nexus relay
         sendResponse({ success: true });
     }
     return true;
@@ -498,7 +560,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             target: { tabId: tab.id },
             func: () => {
                 document.designMode = document.designMode === 'on' ? 'off' : 'on';
-                return `Design Mode: ${document.designMode.toUpperCase()}`;
+                return `✍ LIVE EDIT: ${document.designMode === 'on' ? 'ENABLED (Type anywhere!)' : 'DISABLED'}`;
             }
         }, (res) => {
             if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
@@ -643,70 +705,116 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 if (window.__DESIGN_LAB_ACTIVE) return;
                 window.__DESIGN_LAB_ACTIVE = true;
 
+                // State
+                let selections = [];
+                let activeSkills = new Set();
+                let isPicking = true;
+
                 // Create the floating lab UI
                 const container = document.createElement('div');
                 container.id = '__design_lab';
                 container.style = `
-                    position: fixed; top: 20px; right: 20px; width: 340px;
-                    background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(12px);
-                    border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 16px;
-                    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(255, 0, 255, 0.15);
-                    z-index: 10000000; font-family: 'Inter', sans-serif; color: white;
+                    position: fixed; top: 20px; right: 20px; width: 360px;
+                    background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(16px);
+                    border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 20px;
+                    box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255, 0, 255, 0.2);
+                    z-index: 10000000; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: white;
                     display: flex; flex-direction: column; overflow: hidden;
-                    animation: labIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-                    user-select: none;
+                    animation: labIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                    user-select: none; border-bottom: 4px solid #ff00ff;
                 `;
 
                 container.innerHTML = `
                     <style>
                         @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
-                        .__lab-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-                        .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #ff00ff; text-shadow: 0 0 10px rgba(255,0,255,0.3); }
-                        .__lab-close { cursor: pointer; opacity: 0.5; transition: 0.2s; font-size: 14px; font-weight: bold; }
-                        .__lab-close:hover { opacity: 1; color: #ff00ff; }
-                        .__lab-input-group { padding: 14px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); }
-                        .__lab-input { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 12px; font-size: 12px; outline: none; transition: 0.2s; }
-                        .__lab-input:focus { border-color: #ff00ff; background: rgba(255,255,255,0.06); }
-                        .__lab-go { background: #ff00ff; color: white; border: none; border-radius: 10px; padding: 0 14px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.2s; }
-                        .__lab-go:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(255,0,255,0.4); }
-                        .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.1); }
-                        .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+                        .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+                        .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                        .__lab-controls { display: flex; gap: 12px; align-items: center; }
+                        .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
+                        .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
+                        
+                        .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
+                        .__lab-pick-btn { 
+                            background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
+                            color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
+                            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+                        }
+                        .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                        .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
+                        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+
+                        .__lab-input-wrapper { flex: 1; position: relative; }
+                        .__lab-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; transition: 0.2s; }
+                        .__lab-input:focus { border-color: #ff00ff; background: rgba(255,255,255,0.08); }
+                        
+                        .__lab-main { display: flex; flex-direction: column; }
+                        .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); }
+                        .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; }
                         .__lab-btn:hover { background: rgba(255, 0, 255, 0.05); }
-                        .__lab-btn span { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.6); }
-                        .__lab-btn.active { background: rgba(255, 0, 255, 0.1); }
+                        .__lab-btn i { font-size: 18px; margin-bottom: 2px; }
+                        .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.5); }
+                        .__lab-btn.active { background: rgba(255, 0, 255, 0.15); }
                         .__lab-btn.active span { color: #ff00ff; }
-                        .__lab-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #ff00ff; transform: scaleX(0); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+                        .__lab-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #ff00ff; transform: scaleX(0); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
                         .__lab-btn.active::after { transform: scaleX(1); }
-                        .__lab-footer { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); }
-                        .__lab-counter { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.4); }
-                        .__lab-export { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-                        .__lab-export:hover { border-color: #ff00ff; color: #ff00ff; background: rgba(255,0,255,0.05); }
+
+                        .__lab-selections { max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                        .__selection-item { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; }
+                        .__selection-info { display: flex; flex-direction: column; gap: 2px; }
+                        .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
+                        .__selection-desc { font-size: 10px; color: rgba(255,255,255,0.5); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+                        .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; transition: 0.2s; }
+                        .__selection-remove:hover { opacity: 1; color: #ff00ff; }
+
+                        .__lab-footer { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.05); }
+                        .__lab-stats { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+                        .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255,0,255,0.3); }
+                        .__lab-export:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,0,255,0.5); }
+                        .__lab-export:active { transform: translateY(0); }
                     </style>
                     <div class="__lab-header">
-                        <div class="__lab-title">Superpowers Lab</div>
-                        <div class="__lab-close">✕</div>
+                        <div class="__lab-title">Design Lab Superpowers</div>
+                        <div class="__lab-controls">
+                            <span class="__lab-close">✕</span>
+                        </div>
                     </div>
-                    <div class="__lab-input-group">
-                        <input type="text" class="__lab-input" placeholder="Freeform Instruction (e.g. 'Make it modern')">
-                        <button class="__lab-go">Go →</button>
+                    <div class="__lab-toolbar">
+                        <button class="__lab-pick-btn active" id="__lab_pick_toggle">
+                            <div class="__lab-pick-indicator"></div>
+                            PICK MODE
+                        </button>
+                        <div class="__lab-input-wrapper">
+                            <input type="text" class="__lab-input" placeholder="Prompt (e.g. 'Make it minimalist')">
+                        </div>
                     </div>
-                    <div class="__lab-grid">
-                        <button class="__lab-btn" data-skill="bolder"><span>Bolder</span></button>
-                        <button class="__lab-btn" data-skill="quieter"><span>Quieter</span></button>
-                        <button class="__lab-btn" data-skill="distill"><span>Distill</span></button>
-                        <button class="__lab-btn" data-skill="polish"><span>Polish</span></button>
-                        <button class="__lab-btn" data-skill="typeset"><span>Typeset</span></button>
-                        <button class="__lab-btn" data-skill="colorize"><span>Colorize</span></button>
-                        <button class="__lab-btn" data-skill="layout"><span>Layout</span></button>
-                        <button class="__lab-btn" data-skill="adapt"><span>Adapt</span></button>
-                        <button class="__lab-btn" data-skill="animate"><span>Animate</span></button>
-                        <button class="__lab-btn" data-skill="delight"><span>Delight</span></button>
-                        <button class="__lab-btn" data-skill="overdrive"><span>Overdrive</span></button>
-                        <button class="__lab-btn" data-skill="frontend-design"><span>Design</span></button>
+                    <div class="__lab-main">
+                        <div class="__lab-grid">
+                            <button class="__lab-btn" data-skill="bolder"><span>Bolder</span></button>
+                            <button class="__lab-btn" data-skill="quieter"><span>Quieter</span></button>
+                            <button class="__lab-btn" data-skill="distill"><span>Distill</span></button>
+                            <button class="__lab-btn" data-skill="polish"><span>Polish</span></button>
+                            <button class="__lab-btn" data-skill="typeset"><span>Typeset</span></button>
+                            <button class="__lab-btn" data-skill="colorize"><span>Colorize</span></button>
+                            <button class="__lab-btn" data-skill="layout"><span>Layout</span></button>
+                            <button class="__lab-btn" data-skill="adapt"><span>Adapt</span></button>
+                            <button class="__lab-btn" data-skill="animate"><span>Animate</span></button>
+                            <button class="__lab-btn" data-skill="delight"><span>Delight</span></button>
+                            <button class="__lab-btn" data-skill="overdrive"><span>Overdrive</span></button>
+                            <button class="__lab-btn" data-skill="live-edit"><span>Live Edit</span></button>
+                            <button class="__lab-btn" data-skill="frontend-design"><span>Design</span></button>
+                            <button class="__lab-btn" data-skill="inspect"><span>Inspect</span></button>
+                        </div>
+                        <div class="__lab-selections-header" style="padding: 10px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase;">Locked Targets</span>
+                            <span id="__lab_clear_all" style="font-size: 9px; font-weight: 900; color: #ff00ff; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">Clear All</span>
+                        </div>
+                        <div class="__lab-selections" id="__lab_selections_list">
+                            <!-- Selected elements go here -->
+                        </div>
                     </div>
                     <div class="__lab-footer">
-                        <div class="__lab-counter">0 targets locked</div>
-                        <button class="__lab-export">Capture Context</button>
+                        <div class="__lab-stats" id="__lab_counter">0 ELEMENTS LOCKED</div>
+                        <button class="__lab-export">CAPTURE DATA</button>
                     </div>
                 `;
 
@@ -714,11 +822,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
                 const highlight = document.createElement('div');
                 highlight.id = '__lab_highlight';
-                highlight.style = 'position:fixed; border:2px solid #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.4), inset 0 0 10px rgba(255,0,255,0.2); z-index: 9999999; pointer-events:none; transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0;';
+                highlight.style = 'position:fixed; border:3px solid #ff00ff; box-shadow: 0 0 30px rgba(255,0,255,0.5), inset 0 0 15px rgba(255,0,255,0.3); z-index: 9999999; pointer-events:none; transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; border-radius: 4px;';
                 document.body.appendChild(highlight);
-
-                let selections = [];
-                let activeSkills = new Set();
 
                 const getSelector = (el) => {
                     if (el.id) return `#${el.id}`;
@@ -734,8 +839,40 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     return path.join(' > ');
                 };
 
+                const updateUI = () => {
+                    const list = container.querySelector('#__lab_selections_list');
+                    container.querySelector('#__lab_counter').innerText = `${selections.length} ELEMENTS LOCKED`;
+                    
+                    if (selections.length === 0) {
+                        list.innerHTML = '<div style="padding:20px; text-align:center; color:rgba(255,255,255,0.2); font-size:10px; font-weight:700; letter-spacing:1px;">NO TARGETS SELECTED</div>';
+                        return;
+                    }
+
+                    list.innerHTML = selections.map((s, i) => `
+                        <div class="__selection-item">
+                            <div class="__selection-info">
+                                <div class="__selection-tag">${s.tagName}</div>
+                                <div class="__selection-desc">${s.preview}</div>
+                            </div>
+                            <span class="__selection-remove" data-idx="${i}">✕</span>
+                        </div>
+                    `).join('');
+
+                    list.querySelectorAll('.__selection-remove').forEach(btn => {
+                        btn.onclick = (e) => {
+                            const idx = parseInt(e.target.dataset.idx);
+                            selections[idx].anchor.remove();
+                            selections.splice(idx, 1);
+                            updateUI();
+                        };
+                    });
+                };
+
                 const onMouseOver = (e) => {
-                    if (container.contains(e.target)) return;
+                    if (!isPicking || container.contains(e.target)) {
+                        highlight.style.opacity = '0';
+                        return;
+                    }
                     const rect = e.target.getBoundingClientRect();
                     highlight.style.opacity = '1';
                     highlight.style.top = `${rect.top}px`;
@@ -745,6 +882,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 };
 
                 const onClick = (e) => {
+                    if (!isPicking) return;
                     if (container.contains(e.target)) return;
                     e.preventDefault(); e.stopPropagation();
                     
@@ -754,7 +892,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     // Permanent Selection Anchor
                     const anchor = document.createElement('div');
                     anchor.className = '__lab-anchor';
-                    anchor.style = `position:fixed; top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px; border:1px solid #ff00ff; background:rgba(255,0,255,0.1); z-index:9999998; pointer-events:none; box-shadow: 0 0 15px rgba(255,0,255,0.2);`;
+                    anchor.style = `position:fixed; top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.15); z-index:9999998; pointer-events:none; box-shadow: 0 0 20px rgba(255,0,255,0.3); border-radius: 4px;`;
                     document.body.appendChild(anchor);
 
                     // Grab style context
@@ -772,13 +910,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
                     selections.push({ 
                         selector: sel, 
+                        tagName: e.target.tagName,
+                        preview: (e.target.innerText || e.target.placeholder || e.target.value || '').slice(0, 40).trim() || 'No Content',
                         anchor,
                         html: e.target.outerHTML.slice(0, 1500),
                         text: e.target.innerText.slice(0, 300),
                         styles: JSON.stringify(coreStyles)
                     });
                     
-                    container.querySelector('.__lab-counter').innerText = `${selections.length} targets locked`;
+                    updateUI();
                 };
 
                 const cleanup = () => {
@@ -790,11 +930,63 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     window.__DESIGN_LAB_ACTIVE = false;
                 };
 
+                // Event Listeners
                 container.querySelector('.__lab-close').onclick = cleanup;
+                
+                container.querySelector('#__lab_clear_all').onclick = () => {
+                    document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
+                    selections = [];
+                    updateUI();
+                };
+
+                const pickToggle = container.querySelector('#__lab_pick_toggle');
+                pickToggle.onclick = () => {
+                    isPicking = !isPicking;
+                    pickToggle.classList.toggle('active', isPicking);
+                    highlight.style.opacity = '0';
+                    if (isPicking) {
+                        pickToggle.innerHTML = '<div class="__lab-pick-indicator"></div> PICK MODE';
+                        document.body.style.cursor = 'crosshair';
+                    } else {
+                        pickToggle.innerHTML = 'PAUSED (Selection Off)';
+                        document.body.style.cursor = 'default';
+                    }
+                };
+
+                // Keyboard Shortcuts
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'p' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        pickToggle.click();
+                    }
+                });
 
                 container.querySelectorAll('.__lab-btn').forEach(btn => {
                     btn.onclick = () => {
                         const skill = btn.dataset.skill;
+                        
+                        // Special Skill Actions
+                        if (skill === 'live-edit') {
+                            selections.forEach(s => {
+                                const el = document.querySelector(s.selector);
+                                if (el) {
+                                    el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
+                                    el.style.outline = el.contentEditable === 'true' ? '2px dashed #ff00ff' : 'none';
+                                }
+                            });
+                        }
+                        
+                        if (skill === 'inspect') {
+                            if (selections.length > 0) {
+                                console.log('%c [DESIGN LAB INSPECT] ', 'background: #ff00ff; color: white; font-weight: bold;');
+                                selections.forEach(s => {
+                                    console.log(`Tag: ${s.tagName} | Selector: ${s.selector}`);
+                                    console.log('Styles:', JSON.parse(s.styles));
+                                    console.log('---');
+                                });
+                            }
+                        }
+
                         if (activeSkills.has(skill)) {
                             activeSkills.delete(skill);
                             btn.classList.remove('active');
@@ -810,22 +1002,22 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     const skills = Array.from(activeSkills);
                     
                     if (selections.length === 0 && skills.length === 0 && !freeform) {
-                        alert("Select targets or input instructions first.");
+                        alert("Select targets or choose skills first.");
                         return;
                     }
 
-                    const prompt = `### SUPERPOWERS DESIGN LAB CAPTURE\n\n**FRAMEWORK**: Frontend Design / Impeccable\n**PRIMARY SKILLS**: ${skills.join(', ') || 'General Enhancement'}\n**FREEFORM INSTRUCTION**: ${freeform || 'Apply chosen skills.'}\n\n**TARGET ELEMENTS**:\n${selections.map(s => `- **SELECTOR**: \`${s.selector}\`\n  **HTML**: \n\`\`\`html\n${s.html}\n\`\`\`\n  **CORE STYLES**: \`${s.styles}\``).join('\n\n')}\n\n**SYSTEM**: Perform a high-fidelity design transformation on the locked targets based on the requested skills. Output the CSS/HTML code needed to upgrade the design.`;
+                    const prompt = `### SUPERPOWERS DESIGN LAB EXPORT\n\n**PRIMARY SKILLS**: ${skills.join(', ') || 'General Polish'}\n**INSTRUCTIONS**: ${freeform || 'Apply selected transformations.'}\n\n**LOCKED TARGETS**:\n${selections.map(s => `- **${s.tagName}** [\`${s.selector}\`]:\n  **CONTENT**: "${s.preview}"\n  **HTML**: \n\`\`\`html\n${s.html}\n\`\`\`\n  **STYLES**: \`${s.styles}\``).join('\n\n')}\n\n**MISSION**: Perform a high-fidelity design upgrade. Maintain brand identity while maximizing visual impact and interactive delight.`;
                     
                     const tmp = document.createElement('textarea');
                     tmp.value = prompt; document.body.appendChild(tmp);
                     tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
                     
-                    alert('Superpowers Context Captured! Forward to AI Agent.');
+                    alert('Superpowers Context Captured! Send it to your agent.');
                     cleanup();
                 };
 
-                document.querySelector('.__lab-export').onclick = triggerExport;
-                document.querySelector('.__lab-go').onclick = triggerExport;
+                container.querySelector('.__lab-export').onclick = triggerExport;
+                updateUI(); // Initial empty state
 
                 document.addEventListener('mouseover', onMouseOver, { passive: true });
                 document.addEventListener('click', onClick, true);
