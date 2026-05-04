@@ -508,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const store = filtered.filter(e => e.installType !== 'development');
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             const renderCard = (ext) => `
                 <div class="card" style="padding: 10px; flex-direction: row; align-items: center; justify-content: space-between;">
                     <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
@@ -531,6 +532,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unpackedList.innerHTML = unpacked.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
             storeList.innerHTML = store.map(renderCard).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No production extensions.</div>';
 =======
+=======
+>>>>>>> Stashed changes
             chrome.storage.local.get(['ext_notes'], (res) => {
                 const extNotes = res.ext_notes || {};
                 
@@ -567,6 +570,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                 };
+<<<<<<< Updated upstream
+=======
+
+                unpackedList.innerHTML = unpacked.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
+                storeList.innerHTML = store.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
+>>>>>>> Stashed changes
 
                 unpackedList.innerHTML = unpacked.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
                 storeList.innerHTML = store.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
