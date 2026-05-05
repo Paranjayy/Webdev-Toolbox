@@ -42,5 +42,25 @@ cd releases/webdev-toolbox-safari
 node ../../converter.js safari
 cd ../..
 
+# 4. Generate/Update Xcode Project
+echo "🔹 Converting to Safari/Xcode Project..."
+xcrun safari-web-extension-converter ./releases/webdev-toolbox-safari --project-location ./releases/ --macos-only --no-open --no-prompt --force
+
+# 5. Build Native App (Optional: requires Xcode)
+echo "🔹 Building Native Safari App (Release)..."
+rm -rf build_output/
+xcodebuild -project "releases/Webdev Toolbox/Webdev Toolbox.xcodeproj" \
+           -scheme "Webdev Toolbox" \
+           -configuration Release \
+           -derivedDataPath ./build_output > /dev/null
+
+if [ $? -eq 0 ]; then
+    echo "✅ Native Build Successful!"
+    echo "🔹 Creating Safari ZIP..."
+    zip -r "releases/Webdev-Toolbox-Safari.zip" "build_output/Build/Products/Release/Webdev Toolbox.app" > /dev/null
+else
+    echo "❌ Native Build Failed. Ensure Xcode is installed."
+fi
+
 echo "🏁 Build Complete! Bundles located in /releases"
-ls -R releases
+ls -F releases
