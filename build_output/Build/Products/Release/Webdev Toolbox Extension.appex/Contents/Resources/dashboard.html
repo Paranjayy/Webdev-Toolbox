@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webdev Toolbox — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-header: #21262d;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-header: #f0f6fc;
+            --emerald: #2ea043;
+            --danger: #f85149;
+            --accent: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .brand {
+            padding: 24px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-header);
+            border-bottom: 1px solid var(--border);
+        }
+        .brand span { color: var(--primary); }
+
+        nav { padding: 16px 8px; flex: 1; }
+        .nav-item {
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s ease;
+            color: var(--text);
+        }
+        .nav-item:hover {
+            background: rgba(139, 148, 158, 0.1);
+        }
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--text-header);
+            border-left: 3px solid var(--primary);
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: var(--bg);
+        }
+
+        header {
+            height: 64px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--panel);
+        }
+
+        .view-title { font-size: 1.1rem; font-weight: 600; color: var(--text-header); }
+
+        .search-bar {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            width: 320px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .content-area { 
+            padding: 24px; 
+            flex: 1; 
+            overflow-y: auto; 
+        }
+
+        /* Dashboard Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s;
+        }
+        .card:hover {
+            border-color: var(--text-muted);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .ext-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--panel-header);
+        }
+        .status-pill {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pill.on { background: rgba(46, 160, 67, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+        .status-pill.off { background: rgba(248, 81, 73, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        .card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-header); }
+        .card-id { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+        .card-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 12px 0; flex: 1; }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--panel-header);
+            color: var(--text);
+            transition: all 0.1s;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn:hover { background: var(--border); }
+
+        /* Shortcuts Table */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .key-badge {
+            background: var(--panel-header);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+            color: var(--text-header);
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--panel-header); border: 2px solid var(--bg); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+    </style>
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="brand">🛠 Webdev <span>Toolbox</span></div>
+        <nav>
+            <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
+            <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
+            <div class="nav-item" data-view="reverse">🧪 Reverse Ops</div>
+            <div class="nav-item" data-view="privacy">🛡️ Privacy Shield</div>
+            <div class="nav-item" data-view="settings">⚙️ Settings</div>
+        </nav>
+        <div style="padding: 24px; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border);">
+            v1.3 Enterprise Build<br>
+            Authorized Access Only
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="view-title" id="active-view-title">Extensions</div>
+            <div class="search-bar">
+                <span>🔍</span>
+                <input type="text" id="global-search" placeholder="Search across the vault...">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn" style="width:auto;" id="btn-refresh">↻ Refresh All</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div class="view active" id="view-extensions">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn ext-filter active" data-filter="all">All</button>
+                        <button class="btn ext-filter" data-filter="development">Development</button>
+                        <button class="btn ext-filter" data-filter="store">Store</button>
+                    </div>
+                    <select id="ext-sort" style="background:var(--panel-header); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer; outline:none;">
+                        <option value="name">Sort by Name</option>
+                        <option value="status">Sort by Status</option>
+                        <option value="type">Sort by Type</option>
+                    </select>
+                </div>
+                <div class="grid" id="extensions-grid">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- Shortcuts View -->
+            <div class="view" id="view-shortcuts">
+                <div class="card">
+                    <h3 style="margin-bottom:20px;">Global Command Registry</h3>
+                    <p style="color:var(--text-dim); margin-bottom:30px; font-size:0.9rem;">
+                        This list tracks all keyboard shortcuts registered by your extensions. 
+                        Shortcuts for consolidated extensions are parsed directly from their manifests.
+                    </p>
+                    <table id="shortcuts-table">
+                        <thead>
+                            <tr>
+                                <th>Extension</th>
+                                <th>Command</th>
+                                <th>Shortcut</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shortcuts-body">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reverse Ops View -->
+            <div class="view" id="view-reverse">
+                <div class="grid" id="reverse-grid">
+                    <!-- Cards for reverse engineering targets -->
+                </div>
+            </div>
+
+            <div class="view" id="view-settings">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h2 style="margin-bottom:10px;">Vault Configuration</h2>
+                    <p style="color:var(--text-dim); margin-bottom:40px;">Manage your orchestration environment and design preferences.</p>
+                    
+                    <div class="card" style="margin-bottom:24px;">
+                        <h4 style="margin-bottom:20px;">System Preferences</h4>
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">Auto-Refresh Extensions</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Automatically reload dashboard on extension state change.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ON</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">High-Performance Mode</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Optimizes animations for lower CPU usage.</div>
+                                </div>
+                                <button class="btn" style="width:100px;">OFF</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">AI Context Sync</div>
+                                    <div style="font-size:0.8rem; color:var(--text-dim);">Allow extensions to share state for bundled AI snapshots.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ACTIVE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="margin-bottom:20px; color:var(--danger);">Danger Zone</h4>
+                        <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Wipe all stored redactions and vault metadata.</p>
+                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border-color:var(--danger); width:auto; padding: 10px 24px;">Reset Vault Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

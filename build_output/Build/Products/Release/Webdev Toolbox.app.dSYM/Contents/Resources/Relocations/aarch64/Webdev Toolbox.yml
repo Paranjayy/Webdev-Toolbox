@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Products/Release/Webdev Toolbox.app/Contents/MacOS/Webdev Toolbox'
+relocations:     []
+...
