@@ -29,10 +29,23 @@ The **SNAPSHOT** engine provides maximum context while staying within token limi
 - **Global Data Hunter**: Scans for `__NEXT_DATA__`, Apollo state, etc.
 - **Token-Optimized DOM**: Pierces Shadow DOM, strips bloat, and preserves semantic structure.
 
-## 🚀 How to use
+## 🚀 Installation & Portability
+
+### 🖥️ Chrome / Brave (Recommended)
+1. Go to `chrome://extensions`.
+2. Enable **Developer Mode**.
+3. Click **Load Unpacked** and select this directory.
+
+### 🌐 Cross-Browser (Firefox / Safari)
+This extension is built for the entire ecosystem. For high-fidelity installation on Safari or Firefox:
+- See the [Universal Portability Guide](PORTABILITY.md) for step-by-step instructions.
+- Run `./release.sh` to generate browser-optimized bundles.
+
+## 🕹️ How to use
 1. **Right-Click** and select **⚡ Snapshot: Capture Context**.
-2. Open the **Toolbox Popup** for Ghost Mode or Scrambling.
-3. Paste into your LLM to start debugging.
+2. Open the **Toolbox Popup** for Ghost Mode, Scrambling, or the **Forensic Vault**.
+3. Navigate to the **Forensic Vault** for a "Refero-style" visual recap of your snapshots.
+4. Paste into your LLM to start debugging.
 
 ---
 *Built for the God Build ecosystem by Antigravity.*

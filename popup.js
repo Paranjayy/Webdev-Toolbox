@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target === 'system') renderLogs();
             if (target === 'agent') renderAgentLogs();
             if (target === 'network') renderNetworkLog();
+            if (target === 'forensics') renderForensics();
         });
     });
 
@@ -428,6 +429,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.runtime.sendMessage({ action: 'TOGGLE_PICK_MODE' });
     });
 
+    // Live Text Edit (Design Mode)
+    safeListen('btn-live-edit', 'click', () => {
+        safeExecute(() => {
+            document.designMode = document.designMode === 'on' ? 'off' : 'on';
+            return `Design Mode: ${document.designMode.toUpperCase()}`;
+        }).then(res => {
+            if (res?.[0]?.result) showToast(res[0].result, 'success');
+        });
+    });
+
     // Asset DNA Sniffer
     safeListen('btn-asset-sniffer', 'click', () => {
         const btn = document.getElementById('btn-scan-resources');
@@ -508,44 +519,45 @@ document.addEventListener('DOMContentLoaded', () => {
             const unpacked = filtered.filter(e => e.installType === 'development');
             const store = filtered.filter(e => e.installType !== 'development');
 
-            const renderCard = (ext) => {
-                const note = extNotes[ext.id] || '';
-                return `
-                    <div class="card" style="padding: 10px; flex-direction: column; border-color: ${ext.enabled ? 'var(--border)' : 'rgba(239, 68, 68, 0.2)'};">
-                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
-                            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-                                <img src="${ext.icons?.[0]?.url || 'icon.png'}" style="width:24px; height:24px; border-radius:4px; opacity: ${ext.enabled ? 1 : 0.5};">
-                                <div style="min-width:0;">
-                                    <div class="card-title truncate" style="font-size:0.75rem; color: ${ext.enabled ? 'var(--text-header)' : 'var(--text-muted)'};">${ext.name}</div>
-                                    <div class="mono" style="font-size:0.5rem; opacity:0.5;">${ext.id}</div>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem; border-color:${ext.enabled ? 'var(--emerald)' : 'var(--border)'}; color: ${ext.enabled ? 'var(--emerald)' : 'var(--text-muted)'};" id="toggle-${ext.id}">
-                                    ${ext.enabled ? 'ON' : 'OFF'}
-                                </button>
-                                <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" id="rip-${ext.id}" title="Rip Blueprint">🧬</button>
-                            </div>
-                        </div>
-                        
-                        <div id="note-container-${ext.id}" style="display: ${note ? 'block' : 'none'}; margin-bottom: 8px;">
-                            <textarea id="note-input-${ext.id}" placeholder="Issues or notes for this tool..." style="width:100%; height:40px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.65rem; padding:4px; border-radius:4px; resize:none;">${note}</textarea>
-                        </div>
-                        
-                        <div style="display:flex; gap:6px; justify-content: flex-end;">
-                            <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="btn-note-${ext.id}">${note ? 'EDIT NOTE' : '+ NOTE'}</button>
-                            ${ext.installType === 'development' ? `
-                                <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="reload-${ext.id}">RELOAD</button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            };
-
             chrome.storage.local.get(['ext_notes'], (res) => {
                 const extNotes = res.ext_notes || {};
-                unpackedList.innerHTML = unpacked.map(ext => renderCard(ext, extNotes)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
-                storeList.innerHTML = store.map(ext => renderCard(ext, extNotes)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
+                
+                const renderCard = (ext) => {
+                    const note = extNotes[ext.id] || '';
+                    return `
+                        <div class="card" style="padding: 10px; flex-direction: column; border-color: ${ext.enabled ? 'var(--border)' : 'rgba(239, 68, 68, 0.2)'};">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                                    <img src="${ext.icons?.[0]?.url || 'icon.png'}" style="width:24px; height:24px; border-radius:4px; opacity: ${ext.enabled ? 1 : 0.5};">
+                                    <div style="min-width:0;">
+                                        <div class="card-title truncate" style="font-size:0.75rem; color: ${ext.enabled ? 'var(--text-header)' : 'var(--text-muted)'};">${ext.name}</div>
+                                        <div class="mono" style="font-size:0.5rem; opacity:0.5;">${ext.id}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem; border-color:${ext.enabled ? 'var(--emerald)' : 'var(--border)'}; color: ${ext.enabled ? 'var(--emerald)' : 'var(--text-muted)'};" id="toggle-${ext.id}">
+                                        ${ext.enabled ? 'ON' : 'OFF'}
+                                    </button>
+                                    <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" id="rip-${ext.id}" title="Rip Blueprint">🧬</button>
+                                </div>
+                            </div>
+                            
+                            <div id="note-container-${ext.id}" style="display: ${note ? 'block' : 'none'}; margin-bottom: 8px;">
+                                <textarea id="note-input-${ext.id}" placeholder="Issues or notes for this tool..." style="width:100%; height:40px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-size:0.65rem; padding:4px; border-radius:4px; resize:none;">${note}</textarea>
+                            </div>
+                            
+                            <div style="display:flex; gap:6px; justify-content: flex-end;">
+                                <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="btn-note-${ext.id}">${note ? 'EDIT NOTE' : '+ NOTE'}</button>
+                                ${ext.installType === 'development' ? `
+                                    <button class="btn" style="width:auto; padding:2px 8px; font-size:0.6rem;" id="reload-${ext.id}">RELOAD</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                };
+
+                unpackedList.innerHTML = unpacked.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No development extensions.</div>';
+                storeList.innerHTML = store.map(ext => renderCard(ext)).join('') || '<div style="font-size:0.7rem; color:var(--text-muted); text-align:center;">No store extensions.</div>';
 
                 [...unpacked, ...store].forEach(ext => {
                     // Toggle
@@ -786,6 +798,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Cross-Browser Hub
+    safeListen('btn-convert-ff', 'click', () => {
+        chrome.storage.local.get(null, () => {
+            const ffManifest = {
+                "manifest_version": 3,
+                "name": "Webdev Toolbox (Nexus)",
+                "version": "2.1.0",
+                "browser_specific_settings": {
+                    "gecko": { "id": "webdev-toolbox@paranjay.dev" }
+                },
+                "permissions": ["management", "tabs", "activeTab", "scripting", "storage", "notifications", "contextMenus", "webRequest"],
+                "host_permissions": ["<all_urls>"],
+                "background": { "scripts": ["background.js"] },
+                "action": { "default_popup": "popup.html" }
+            };
+            const tmp = document.createElement('textarea');
+            tmp.value = JSON.stringify(ffManifest, null, 2);
+            document.body.appendChild(tmp);
+            tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+            alert("Firefox-compatible manifest copied! Replace manifest.json with this to port.");
+        });
+    });
+
+    safeListen('btn-universal-poly', 'click', () => {
+        const poly = `const browser = typeof chrome !== "undefined" ? chrome : window.browser;\n// Use 'browser' instead of 'chrome' globally for cross-platform support.`;
+        const tmp = document.createElement('textarea');
+        tmp.value = poly; document.body.appendChild(tmp);
+        tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+        alert("Universal Polyfill copied! Paste at the top of your background/popup scripts.");
+    });
+
     // ── SYSTEM: Health & Logs ────────────────────────────────────────────
     function renderLogs() {
         const consoleEl = document.getElementById('error-console');
@@ -1015,33 +1058,146 @@ ${dom}
 
     // ── SNAPSHOT HISTORY ────────────────────────────────────────────────
     function renderSnapHistory() {
-        const list = document.getElementById('snap-history-list');
-        if (!list) return;
-        chrome.storage.local.get(['snap_history'], (res) => {
-            const history = res.snap_history || [];
-            if (history.length === 0) {
-                list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px; font-size:0.75rem;">No snapshots in vault.</div>';
-                return;
-            }
-            list.innerHTML = history.map((snap, i) => `
-                <div class="card" style="padding:10px; flex-direction:row; justify-content:space-between; align-items:center;">
-                    <div style="min-width:0;">
-                        <div class="card-title truncate" style="font-size:0.75rem;">${snap.metadata.title || 'Untitled'}</div>
-                        <div style="font-size:0.6rem; color:var(--text-muted);">${new Date(snap.metadata.timestamp).toLocaleTimeString()} — ${snap.metadata.type}</div>
-                    </div>
-                    <div style="display:flex; gap:6px;">
-                        <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" onclick="copySnap(${i})">COPY</button>
-                        <button class="btn" style="width:auto; padding:2px 6px; font-size:0.6rem;" onclick="diffSnap(${i})">DIFF</button>
-                    </div>
-                </div>
-            `).join('');
-        });
-    }
+         const list = document.getElementById('snap-history-list');
+         if (!list) return;
+         chrome.storage.local.get(['snap_history'], (res) => {
+             const history = res.snap_history || [];
+             if (history.length === 0) {
+                 list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px; font-size:0.75rem;">No snapshots in vault.</div>';
+                 return;
+             }
+             list.innerHTML = history.slice(0, 4).map((snap, i) => `
+                 <div class="snap-card" onclick="viewSnap(${i})">
+                     <img src="${snap.metadata.screenshot || 'icon.png'}" class="snap-thumb">
+                     <span class="snap-badge">${snap.metadata.type === 'Raw-DOM' ? 'RAW' : 'CLEAN'}</span>
+                     <div class="snap-info">
+                         <div class="snap-title">${snap.metadata.title || 'Untitled'}</div>
+                         <div class="snap-meta">${new Date(snap.metadata.timestamp).toLocaleTimeString()}</div>
+                     </div>
+                 </div>
+             `).join('');
+         });
+     }
+
+     function renderForensics() {
+         const container = document.getElementById('forensic-gallery');
+         if (!container) return;
+
+         chrome.storage.local.get(['snap_history'], (res) => {
+             const history = res.snap_history || [];
+             if (history.length === 0) {
+                 container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:40px;">No forensic data available. Take a snapshot to begin.</div>';
+                 return;
+             }
+
+             container.innerHTML = history.map((snap, i) => `
+                 <div class="snap-card-large">
+                     <img src="${snap.metadata.screenshot || ''}" class="snap-thumb-large" onerror="this.style.display='none'">
+                     <div class="snap-content-large">
+                         <div class="snap-header-large">
+                             <div>
+                                 <h3 style="font-size:1rem; color:var(--text-header);">${snap.metadata.title || 'Untitled Page'}</h3>
+                                 <p style="font-size:0.7rem; color:var(--primary); margin-top:4px;">${snap.metadata.url}</p>
+                             </div>
+                             <span class="badge" style="background:var(--primary-glow); color:var(--primary); border-color:var(--primary);">${snap.metadata.type}</span>
+                         </div>
+                         
+                         <div class="snap-details-large">
+                             <div class="detail-item">
+                                 <div class="detail-label">Captured</div>
+                                 <div class="detail-value">${new Date(snap.metadata.timestamp).toLocaleString()}</div>
+                             </div>
+                             <div class="detail-item">
+                                 <div class="detail-label">Tech Stack</div>
+                                 <div class="detail-value">${snap.stack.join(', ') || 'Vanilla'}</div>
+                             </div>
+                             <div class="detail-item">
+                                 <div class="detail-label">DOM Size</div>
+                                 <div class="detail-value">${(snap.dom_content.length / 1024).toFixed(1)} KB</div>
+                             </div>
+                             <div class="detail-item">
+                                 <div class="detail-label">Network</div>
+                                 <div class="detail-value">${snap.metadata.network_vault?.length || 0} reqs captured</div>
+                             </div>
+                         </div>
+
+                         <div style="display:flex; gap:8px; margin-top:8px;">
+                             <button class="btn btn-primary" style="flex:1;" onclick="viewSnap(${i})">INSPECT</button>
+                             <button class="btn" style="flex:1;" onclick="copySnap(${i})">COPY DATA</button>
+                             <button class="btn" style="flex:1;" onclick="diffSnap(${i})">COMPARE</button>
+                             <button class="btn btn-danger" style="width:auto; padding:8px 12px;" onclick="deleteSnap(${i})">🗑</button>
+                         </div>
+                     </div>
+                 </div>
+             `).join('');
+         });
+     }
+
+     window.deleteSnap = (idx) => {
+         if (!confirm('Delete this forensic record?')) return;
+         chrome.storage.local.get(['snap_history'], (res) => {
+             const history = res.snap_history || [];
+             history.splice(idx, 1);
+             chrome.storage.local.set({ snap_history: history }, () => {
+                 renderSnapHistory();
+                 renderForensics();
+             });
+         });
+     };
+
+     safeListen('btn-open-vault', 'click', () => {
+         const navBtn = document.querySelector('[data-tab="forensics"]');
+         if (navBtn) navBtn.click();
+     });
 
     // Visual DOM Diff (Active Tab)
     safeListen('btn-visual-diff', 'click', () => {
         chrome.runtime.sendMessage({ action: 'visual_diff' });
     });
+
+     window.viewSnap = (idx) => {
+         chrome.storage.local.get(['snap_history'], (res) => {
+             const snap = res.snap_history[idx];
+             const overlay = document.createElement('div');
+             overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100000; display:flex; align-items:center; justify-content:center; padding:20px;';
+             overlay.innerHTML = `
+                 <div style="background:var(--panel); border:1px solid var(--border); border-radius:16px; width:100%; max-height:100%; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+                     <div style="padding:16px; background:var(--panel-header); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                         <div style="font-weight:700; color:var(--text-header); font-size:0.9rem;">FORENSIC INSPECTOR</div>
+                         <button class="btn" style="width:auto; padding:4px 10px;" id="close-inspector">CLOSE</button>
+                     </div>
+                     <div style="padding:20px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px;">
+                         <img src="${snap.metadata.screenshot || ''}" style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                         
+                         <div class="section-title">Visual DNA (Palette & Type)</div>
+                         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                             ${snap.metadata.visual_dna?.palette?.map(c => `
+                                 <div style="width:40px; height:40px; background:${c}; border-radius:8px; border:1px solid var(--border); position:relative;" title="${c}">
+                                     <div style="position:absolute; bottom:-12px; left:0; width:100%; text-align:center; font-size:0.4rem; color:var(--text-muted);">${c}</div>
+                                 </div>
+                             `).join('') || 'No palette captured'}
+                         </div>
+                         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">
+                             ${snap.metadata.visual_dna?.typography?.map(f => `
+                                 <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-header); border-color:var(--border);">${f}</span>
+                             `).join('') || 'No fonts captured'}
+                         </div>
+
+                         <div class="section-title">Telemetry & Context</div>
+                         <pre style="font-family:'JetBrains Mono', monospace; font-size:0.65rem; background:#010409; padding:12px; border-radius:8px; border:1px solid var(--border); color:#79c0ff; white-space:pre-wrap;">${JSON.stringify(snap.metadata, (k,v) => (k === 'screenshot' || k === 'visual_dna') ? '[HIDDEN]' : v, 2)}</pre>
+                         
+                         <div class="section-title">Tech Stack</div>
+                         <div style="display:flex; gap:8px;">${snap.stack.map(s => `<span class="badge" style="background:var(--primary-glow); color:var(--primary); border-color:var(--primary);">${s}</span>`).join('') || 'Vanilla'}</div>
+                         
+                         <div class="section-title">DOM Blueprint (${(snap.dom_content.length / 1024).toFixed(1)} KB)</div>
+                         <pre style="font-family:'JetBrains Mono', monospace; font-size:0.6rem; background:#010409; padding:12px; border-radius:8px; border:1px solid var(--border); color:var(--text-muted); max-height:200px; overflow:auto;">${snap.dom_content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                     </div>
+                 </div>
+             `;
+             document.body.appendChild(overlay);
+             document.getElementById('close-inspector').onclick = () => overlay.remove();
+         });
+     };
 
     window.copySnap = (idx) => {
         chrome.storage.local.get(['snap_history'], (res) => {
@@ -1058,18 +1214,10 @@ ${dom}
         chrome.storage.local.get(['snap_history'], (res) => {
             const history = res.snap_history;
             if (history.length < 2) return alert('Need at least 2 snapshots to compare.');
-            const current = history[idx];
-            const previous = history[idx + 1] || history[0]; // Compare with next in list or first
             
-            // Simple visual diff (in console for now, or a popup)
-            console.log('%c [VAULT DIFF] ', 'background:#f59e0b; color:black; font-weight:bold;', {
-                target: current.metadata.timestamp,
-                base: previous.metadata.timestamp,
-                url_changed: current.metadata.url !== previous.metadata.url,
-                stack_changed: JSON.stringify(current.stack) !== JSON.stringify(previous.stack),
-                dom_length_diff: current.dom_content.length - previous.dom_content.length
-            });
-            alert(`Diff calculated. Check console for structural breakdown between ${current.metadata.timestamp} and ${previous.metadata.timestamp}.`);
+            // Trigger the visual diff in the active tab using background service
+            chrome.runtime.sendMessage({ action: 'visual_diff' });
+            showToast("Visual Diff triggered on active tab. Switch to page to view.", 'info');
         });
     };
 

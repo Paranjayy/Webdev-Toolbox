@@ -332,9 +332,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handleDOMCleaner(tabId, raw = false) {
     const traffic = [...vaultTrafficBuffer];
+    
+    // Capture screenshot first
+    let screenshot = null;
+    try {
+        screenshot = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 });
+    } catch (e) {
+        console.warn("Screenshot capture failed:", e);
+    }
+
     const results = await chrome.scripting.executeScript({
         target: { tabId },
-        func: (isRaw, netBuffer) => {
+        func: (isRaw, netBuffer, ss) => {
             const cleanDomForTokens = (docEl) => {
                 const traverse = (node) => {
                     if (node instanceof ShadowRoot) {
@@ -374,6 +383,25 @@ async function handleDOMCleaner(tabId, raw = false) {
                     return cloned.outerHTML;
                 };
                 return traverse(docEl);
+            };
+
+            const extractVisualDNA = () => {
+                const colors = new Set();
+                const fonts = new Set();
+                
+                // Sample some elements for colors and fonts
+                const samples = document.querySelectorAll('h1, h2, h3, p, button, a, div[class*="hero"], div[class*="nav"]');
+                samples.forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    if (style.color && !style.color.includes('rgba(0, 0, 0, 0)')) colors.add(style.color);
+                    if (style.backgroundColor && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) colors.add(style.backgroundColor);
+                    if (style.fontFamily) fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
+                });
+
+                return {
+                    palette: [...colors].slice(0, 8),
+                    typography: [...fonts].slice(0, 4)
+                };
             };
 
             const detectStack = () => {
@@ -427,7 +455,9 @@ async function handleDOMCleaner(tabId, raw = false) {
                     network_vault: netBuffer,
                     console_logs: window.__VAULT_CONSOLE_LOGS || [],
                     storage_keys: getStorageSummary(),
-                    referrer: document.referrer
+                    referrer: document.referrer,
+                    screenshot: ss,
+                    visual_dna: extractVisualDNA()
                 },
                 stack: detectStack(),
                 dom_content: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)
@@ -439,7 +469,7 @@ async function handleDOMCleaner(tabId, raw = false) {
             tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
             return snapshot;
         },
-        args: [raw, traffic]
+        args: [raw, traffic, screenshot]
     });
 
     if (results?.[0]?.result) {
@@ -447,9 +477,10 @@ async function handleDOMCleaner(tabId, raw = false) {
         chrome.storage.local.get(['snap_history'], (res) => {
             const history = Array.isArray(res.snap_history) ? res.snap_history : [];
             history.unshift(snap);
-            chrome.storage.local.set({ snap_history: history.slice(0, 5) });
+            // Keep up to 10 snapshots for a better gallery experience
+            chrome.storage.local.set({ snap_history: history.slice(0, 10) });
         });
-        showContentToast(tabId, `${snap.metadata.type} copied to clipboard!`, 'success');
+        showContentToast(tabId, `${snap.metadata.type} captured with visual context!`, 'success');
     }
 }
 
@@ -1001,10 +1032,22 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     const paletteHtml = colors.filter(c => c !== 'rgba(0, 0, 0, 0)').map(c => `
                         <div style="width:10px; height:10px; background:${c}; border:1px solid rgba(255,255,255,0.2); border-radius:50%;"></div>
                     `).join('');
+
+                    // Asset & Image Preview
+                    let assetHtml = '';
+                    if (e.target.tagName === 'IMG') {
+                        assetHtml = `<img src="${e.target.src}" style="width:16px; height:16px; border-radius:2px; object-fit:cover;">`;
+                    } else {
+                        const bgImg = cs.backgroundImage;
+                        if (bgImg && bgImg !== 'none') {
+                            const url = bgImg.match(/url\(["']?([^"']+)["']?\)/);
+                            if (url) assetHtml = `<div style="width:16px; height:16px; border-radius:2px; background-image:url(${url[1]}); background-size:cover;"></div>`;
+                        }
+                    }
                     
                     highlight.innerHTML = `
-                        <div style="position:absolute; bottom:100%; left:0; background:#ff00ff; color:white; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px 4px 0 0; display:flex; align-items:center; gap:4px; transform:translateY(-2px); white-space:nowrap;">
-                            ${e.target.tagName} ${paletteHtml}
+                        <div style="position:absolute; bottom:100%; left:0; background:#ff00ff; color:white; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px 4px 0 0; display:flex; align-items:center; gap:4px; transform:translateY(-2px); white-space:nowrap; box-shadow:0 -4px 10px rgba(255,0,255,0.3);">
+                            ${assetHtml} ${e.target.tagName} ${paletteHtml}
                         </div>
                     `;
                 };
