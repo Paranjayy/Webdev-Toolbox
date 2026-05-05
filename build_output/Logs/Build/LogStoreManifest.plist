@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>3388020D-F86C-4077-A002-B80DDA0994FC</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>3388020D-F86C-4077-A002-B80DDA0994FC.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Webdev Toolbox project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Webdev Toolbox</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Webdev Toolbox with scheme Webdev Toolbox and configuration Release</string>
+			<key>timeStartedRecording</key>
+			<real>799691220.95770502</real>
+			<key>timeStoppedRecording</key>
+			<real>799691256.01088095</real>
+			<key>title</key>
+			<string>Building project Webdev Toolbox with scheme Webdev Toolbox and configuration Release</string>
+			<key>uniqueIdentifier</key>
+			<string>3388020D-F86C-4077-A002-B80DDA0994FC</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

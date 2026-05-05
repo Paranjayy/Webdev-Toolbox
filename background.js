@@ -325,6 +325,46 @@ async function handleVibeRecorder(tabId) {
     });
 }
 
+<<<<<<< Updated upstream
+=======
+async function showContentToast(tabId, message, type = 'success') {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: (msg, t) => {
+            const id = '__toolbox_toast';
+            const styleId = '__toolbox_toast_style';
+            
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.innerHTML = `
+                    @keyframes toolboxToastIn { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+                    .__toolbox-toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#161b22; color:white; padding:12px 24px; border-radius:12px; z-index:2147483647; font-family:sans-serif; font-size:14px; font-weight:600; box-shadow:0 10px 40px rgba(0,0,0,0.8); animation: toolboxToastIn 0.3s ease forwards; pointer-events:none; }
+                `;
+                (document.head || document.documentElement).appendChild(style);
+            }
+
+            if (document.getElementById(id)) document.getElementById(id).remove();
+            const toast = document.createElement('div');
+            toast.id = id;
+            toast.className = '__toolbox-toast';
+            const colors = { success: '#2ea043', error: '#f85149', info: '#3b82f6' };
+            toast.style.border = `1px solid ${colors[t] || colors.info}`;
+            toast.innerText = msg;
+            
+            (document.body || document.documentElement).appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        },
+        args: [message, type]
+    }).catch(() => {});
+}
+
+>>>>>>> Stashed changes
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
     // Parent Menu
@@ -546,15 +586,110 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     overflow: hidden;
                 `;
                 container.innerHTML = `
+<<<<<<< Updated upstream
                     <div style="padding:12px; background:#1e293b; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight:700; font-size:13px; color:#6366f1;">AI ELEMENT TAGGER</span>
                         <button id="__tagger_close" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;">&times;</button>
+=======
+                    <style>
+                        @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+                        .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+                        .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                        .__lab-controls { display: flex; gap: 12px; align-items: center; }
+                        .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
+                        .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
+                        
+                        .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
+                        .__lab-pick-btn { 
+                            background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
+                            color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
+                            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+                        }
+                        .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                        .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
+                        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+
+                        .__lab-input-wrapper { flex: 1; position: relative; }
+                        .__lab-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; transition: 0.2s; }
+                        .__lab-input:focus { border-color: #ff00ff; background: rgba(255,255,255,0.08); }
+                        
+                        .__lab-main { display: flex; flex-direction: column; }
+                        .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; }
+                        .__lab-grid.collapsed { max-height: 0; }
+                        .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; }
+                        .__lab-btn:hover { background: rgba(255, 0, 255, 0.05); }
+                        .__lab-btn i { font-size: 18px; margin-bottom: 2px; }
+                        .__lab-btn span { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.5); }
+                        .__lab-btn.active { background: rgba(255, 0, 255, 0.15); }
+                        .__lab-btn.active span { color: #ff00ff; }
+                        .__lab-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #ff00ff; transform: scaleX(0); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+                        .__lab-btn.active::after { transform: scaleX(1); }
+
+                        .__lab-selections { max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                        .__selection-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 10px; transition: 0.2s; }
+                        .__selection-item:hover { background: rgba(255,255,255,0.02); }
+                        .__selection-top { display: flex; justify-content: space-between; align-items: center; }
+                        .__selection-info { display: flex; flex-direction: column; gap: 2px; }
+                        .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
+                        .__selection-desc { font-size: 10px; color: rgba(255,255,255,0.5); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+                        .__selection-prompt { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: white; padding: 6px 10px; font-size: 10px; outline: none; transition: 0.2s; }
+                        .__selection-prompt:focus { border-color: #ff00ff; background: rgba(255,255,255,0.05); }
+                        .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; transition: 0.2s; }
+                        .__selection-remove:hover { opacity: 1; color: #ff00ff; }
+
+                        .__lab-footer { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.05); }
+                        .__lab-stats { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+                        .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255,0,255,0.3); }
+                        .__lab-export:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,0,255,0.5); }
+                        .__lab-export:active { transform: translateY(0); }
+                    </style>
+                    <div class="__lab-header">
+                        <div class="__lab-title">Design Lab Superpowers</div>
+                        <div class="__lab-controls">
+                            <span class="__lab-close">✕</span>
+                        </div>
+>>>>>>> Stashed changes
                     </div>
                     <div id="__tagger_list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
                         <div style="color:#94a3b8; font-size:11px; text-align:center; padding:20px;">Click elements on the page to tag them for the AI...</div>
                     </div>
+<<<<<<< Updated upstream
                     <div style="padding:12px; border-top:1px solid #334155; background:#0f172a;">
                         <button id="__tagger_copy" style="width:100%; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; font-weight:700; cursor:pointer;">Finish & Copy AI Prompt</button>
+=======
+                    <div class="__lab-main">
+                        <div class="__lab-grid-header" id="__lab_grid_toggle" style="padding: 10px 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span style="font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase;">Abilities & Skills</span>
+                            <span id="__lab_grid_status" style="font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase;">Hide</span>
+                        </div>
+                        <div class="__lab-grid" id="__lab_grid_panel">
+                            <button class="__lab-btn" data-skill="bolder"><span>Bolder</span></button>
+                            <button class="__lab-btn" data-skill="quieter"><span>Quieter</span></button>
+                            <button class="__lab-btn" data-skill="distill"><span>Distill</span></button>
+                            <button class="__lab-btn" data-skill="polish"><span>Polish</span></button>
+                            <button class="__lab-btn" data-skill="typeset"><span>Typeset</span></button>
+                            <button class="__lab-btn" data-skill="colorize"><span>Colorize</span></button>
+                            <button class="__lab-btn" data-skill="layout"><span>Layout</span></button>
+                            <button class="__lab-btn" data-skill="adapt"><span>Adapt</span></button>
+                            <button class="__lab-btn" data-skill="animate"><span>Animate</span></button>
+                            <button class="__lab-btn" data-skill="delight"><span>Delight</span></button>
+                            <button class="__lab-btn" data-skill="overdrive"><span>Overdrive</span></button>
+                            <button class="__lab-btn" data-skill="live-edit"><span>Live Edit</span></button>
+                            <button class="__lab-btn" data-skill="frontend-design"><span>Design</span></button>
+                            <button class="__lab-btn" data-skill="inspect"><span>Inspect</span></button>
+                        </div>
+                        <div class="__lab-selections-header" style="padding: 10px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase;">Locked Targets</span>
+                            <span id="__lab_clear_all" style="font-size: 9px; font-weight: 900; color: #ff00ff; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">Clear All</span>
+                        </div>
+                        <div class="__lab-selections" id="__lab_selections_list">
+                            <!-- Selected elements go here -->
+                        </div>
+                    </div>
+                    <div class="__lab-footer">
+                        <div class="__lab-stats" id="__lab_counter">0 ELEMENTS LOCKED</div>
+                        <button class="__lab-export">CAPTURE DATA</button>
+>>>>>>> Stashed changes
                     </div>
                 `;
                 document.body.appendChild(container);
@@ -587,13 +722,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                         return;
                     }
                     list.innerHTML = selections.map((s, i) => `
+<<<<<<< Updated upstream
                         <div style="background:#1e293b; padding:8px; border-radius:6px; border:1px solid #334155;">
                             <div style="font-family:monospace; font-size:10px; color:#818cf8; margin-bottom:4px; word-break:break-all;">${s.selector}</div>
                             <textarea data-idx="${i}" placeholder="Describe the task or issue here..." style="width:100%; background:#0f172a; border:1px solid #334155; color:white; font-size:11px; padding:6px; border-radius:4px; resize:vertical; min-height:40px;">${s.comment || ''}</textarea>
+=======
+                        <div class="__selection-item">
+                            <div class="__selection-top">
+                                <div class="__selection-info">
+                                    <div class="__selection-tag">${s.tagName}</div>
+                                    <div class="__selection-desc">${s.preview}</div>
+                                </div>
+                                <span class="__selection-remove" data-idx="${i}">✕</span>
+                            </div>
+                            <input type="text" class="__selection-prompt" data-idx="${i}" placeholder="Specific brief for this element..." value="${s.prompt || ''}">
+>>>>>>> Stashed changes
                         </div>
                     `).join('');
                     list.querySelectorAll('textarea').forEach(tx => {
                         tx.addEventListener('input', (e) => { selections[e.target.dataset.idx].comment = e.target.value; });
+                    });
+
+                    list.querySelectorAll('.__selection-prompt').forEach(input => {
+                        input.oninput = (e) => {
+                            const idx = parseInt(e.target.dataset.idx);
+                            selections[idx].prompt = e.target.value;
+                        };
                     });
                 };
 
@@ -638,8 +792,44 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     if (container.contains(e.target)) return;
                     e.preventDefault(); e.stopPropagation();
                     const sel = getSelector(e.target);
+<<<<<<< Updated upstream
                     selections.push({ selector: sel, comment: '' });
                     refreshList();
+=======
+                    const rect = e.target.getBoundingClientRect();
+                    
+                    // Permanent Selection Anchor
+                    const anchor = document.createElement('div');
+                    anchor.className = '__lab-anchor';
+                    anchor.style = `position:fixed; top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.15); z-index:9999998; pointer-events:none; box-shadow: 0 0 20px rgba(255,0,255,0.3); border-radius: 4px;`;
+                    document.body.appendChild(anchor);
+
+                    // Grab style context
+                    const computed = window.getComputedStyle(e.target);
+                    const coreStyles = {
+                        display: computed.display,
+                        margin: computed.margin,
+                        padding: computed.padding,
+                        color: computed.color,
+                        background: computed.backgroundColor,
+                        fontFamily: computed.fontFamily,
+                        fontSize: computed.fontSize,
+                        border: computed.border
+                    };
+
+                    selections.push({ 
+                        selector: sel, 
+                        tagName: e.target.tagName,
+                        preview: (e.target.innerText || e.target.placeholder || e.target.value || '').slice(0, 40).trim() || 'No Content',
+                        anchor,
+                        prompt: '',
+                        html: e.target.outerHTML.slice(0, 1500),
+                        text: e.target.innerText.slice(0, 300),
+                        styles: JSON.stringify(coreStyles)
+                    });
+                    
+                    updateUI();
+>>>>>>> Stashed changes
                 };
 
                 const cleanup = () => {
@@ -650,9 +840,104 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     window.__TAGGER_ACTIVE = false;
                 };
 
+<<<<<<< Updated upstream
                 closeBtn.onclick = cleanup;
                 copyBtn.onclick = () => {
                     const prompt = `### AI TASK ANNOTATIONS\n\n${selections.map(s => `- **ELEMENT**: \`${s.selector}\`\n  **TASK**: ${s.comment || 'No specific task described.'}`).join('\n\n')}`;
+=======
+                // Event Listeners
+                container.querySelector('.__lab-close').onclick = cleanup;
+                
+                container.querySelector('#__lab_clear_all').onclick = () => {
+                    document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
+                    selections = [];
+                    updateUI();
+                };
+
+                const pickToggle = container.querySelector('#__lab_pick_toggle');
+                pickToggle.onclick = () => {
+                    isPicking = !isPicking;
+                    pickToggle.classList.toggle('active', isPicking);
+                    highlight.style.opacity = '0';
+                    if (isPicking) {
+                        pickToggle.innerHTML = '<div class="__lab-pick-indicator"></div> PICK MODE';
+                        document.body.style.cursor = 'crosshair';
+                    } else {
+                        pickToggle.innerHTML = 'PAUSED (Selection Off)';
+                        document.body.style.cursor = 'default';
+                    }
+                };
+
+                const gridToggle = container.querySelector('#__lab_grid_toggle');
+                const gridPanel = container.querySelector('#__lab_grid_panel');
+                const gridStatus = container.querySelector('#__lab_grid_status');
+                gridToggle.onclick = () => {
+                    gridPanel.classList.toggle('collapsed');
+                    gridStatus.innerText = gridPanel.classList.contains('collapsed') ? 'Show' : 'Hide';
+                };
+
+                // Remote Control
+                const messageHandler = (req) => {
+                    if (req.action === 'TOGGLE_PICK_MODE') pickToggle.click();
+                };
+                chrome.runtime.onMessage.addListener(messageHandler);
+
+                // Keyboard Shortcuts
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'p' && e.altKey && e.shiftKey) {
+                        e.preventDefault();
+                        pickToggle.click();
+                    }
+                });
+
+                container.querySelectorAll('.__lab-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const skill = btn.dataset.skill;
+                        
+                        // Special Skill Actions
+                        if (skill === 'live-edit') {
+                            selections.forEach(s => {
+                                const el = document.querySelector(s.selector);
+                                if (el) {
+                                    el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
+                                    el.style.outline = el.contentEditable === 'true' ? '2px dashed #ff00ff' : 'none';
+                                }
+                            });
+                        }
+                        
+                        if (skill === 'inspect') {
+                            if (selections.length > 0) {
+                                console.log('%c [DESIGN LAB INSPECT] ', 'background: #ff00ff; color: white; font-weight: bold;');
+                                selections.forEach(s => {
+                                    console.log(`Tag: ${s.tagName} | Selector: ${s.selector}`);
+                                    console.log('Styles:', JSON.parse(s.styles));
+                                    console.log('---');
+                                });
+                            }
+                        }
+
+                        if (activeSkills.has(skill)) {
+                            activeSkills.delete(skill);
+                            btn.classList.remove('active');
+                        } else {
+                            activeSkills.add(skill);
+                            btn.classList.add('active');
+                        }
+                    };
+                });
+
+                const triggerExport = () => {
+                    const freeform = container.querySelector('.__lab-input').value;
+                    const skills = Array.from(activeSkills);
+                    
+                    if (selections.length === 0 && skills.length === 0 && !freeform) {
+                        alert("Select targets or choose skills first.");
+                        return;
+                    }
+
+                    const prompt = `### SUPERPOWERS DESIGN LAB EXPORT\n\n**PRIMARY SKILLS**: ${skills.join(', ') || 'General Polish'}\n**GLOBAL INSTRUCTIONS**: ${freeform || 'Apply selected transformations.'}\n\n**LOCKED TARGETS**:\n${selections.map(s => `- **${s.tagName}** [\`${s.selector}\`]:\n  **CONTENT**: "${s.preview}"\n  **SPECIFIC BRIEF**: ${s.prompt || 'Apply global instructions'}\n  **HTML**: \n\`\`\`html\n${s.html}\n\`\`\`\n  **STYLES**: \`${s.styles}\``).join('\n\n')}\n\n**MISSION**: Perform a high-fidelity design upgrade. Maintain brand identity while maximizing visual impact and interactive delight.`;
+                    
+>>>>>>> Stashed changes
                     const tmp = document.createElement('textarea');
                     tmp.value = prompt; document.body.appendChild(tmp);
                     tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
