@@ -118,9 +118,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleDOMCleaner(tabId, raw = false) {
+<<<<<<< Updated upstream
     const results = await chrome.scripting.executeScript({
         target: { tabId },
         func: (isRaw) => {
+=======
+    const traffic = [...vaultTrafficBuffer];
+    
+    // Capture screenshot first
+    let screenshot = null;
+    try {
+        screenshot = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 });
+    } catch (e) {
+        console.warn("Screenshot capture failed:", e);
+    }
+
+    const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (isRaw, netBuffer, ss) => {
+>>>>>>> Stashed changes
             const cleanDomForTokens = (docEl) => {
                 const traverse = (node) => {
                     if (node instanceof ShadowRoot) {
@@ -162,6 +178,25 @@ async function handleDOMCleaner(tabId, raw = false) {
                 return traverse(docEl);
             };
 
+            const extractVisualDNA = () => {
+                const colors = new Set();
+                const fonts = new Set();
+                
+                // Sample some elements for colors and fonts
+                const samples = document.querySelectorAll('h1, h2, h3, p, button, a, div[class*="hero"], div[class*="nav"]');
+                samples.forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    if (style.color && !style.color.includes('rgba(0, 0, 0, 0)')) colors.add(style.color);
+                    if (style.backgroundColor && !style.backgroundColor.includes('rgba(0, 0, 0, 0)')) colors.add(style.backgroundColor);
+                    if (style.fontFamily) fonts.add(style.fontFamily.split(',')[0].replace(/['"]/g, ''));
+                });
+
+                return {
+                    palette: [...colors].slice(0, 8),
+                    typography: [...fonts].slice(0, 4)
+                };
+            };
+
             const detectStack = () => {
                 const stack = [];
                 if (window.React || document.querySelector('[data-reactroot]')) stack.push('React');
@@ -189,7 +224,18 @@ async function handleDOMCleaner(tabId, raw = false) {
                     title: document.title,
                     type: isRaw ? 'Raw-DOM' : 'Clean-DOM',
                     agent_intel,
+<<<<<<< Updated upstream
                     performance: performance.getEntriesByType('navigation')[0] || {}
+=======
+                    performance: performance.getEntriesByType('navigation')[0] || {},
+                    network_recent: getNetworkSummary(),
+                    network_vault: netBuffer,
+                    console_logs: window.__VAULT_CONSOLE_LOGS || [],
+                    storage_keys: getStorageSummary(),
+                    referrer: document.referrer,
+                    screenshot: ss,
+                    visual_dna: extractVisualDNA()
+>>>>>>> Stashed changes
                 },
                 stack: detectStack(),
                 dom_content: isRaw ? document.documentElement.outerHTML : cleanDomForTokens(document.documentElement)
@@ -201,7 +247,11 @@ async function handleDOMCleaner(tabId, raw = false) {
             tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
             return snapshot;
         },
+<<<<<<< Updated upstream
         args: [raw]
+=======
+        args: [raw, traffic, screenshot]
+>>>>>>> Stashed changes
     });
 
     if (results?.[0]?.result) {
@@ -209,8 +259,13 @@ async function handleDOMCleaner(tabId, raw = false) {
         chrome.storage.local.get(['snap_history'], (res) => {
             const history = Array.isArray(res.snap_history) ? res.snap_history : [];
             history.unshift(snap);
-            chrome.storage.local.set({ snap_history: history.slice(0, 5) });
+            // Keep up to 10 snapshots for a better gallery experience
+            chrome.storage.local.set({ snap_history: history.slice(0, 10) });
         });
+<<<<<<< Updated upstream
+=======
+        showContentToast(tabId, `${snap.metadata.type} captured with visual context!`, 'success');
+>>>>>>> Stashed changes
     }
 }
 
