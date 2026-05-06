@@ -4,17 +4,53 @@
 <dict>
 	<key>files</key>
 	<dict>
+		<key>Resources/CONVERSION.md</key>
+		<data>
+		ofvdGuc8C1BcHxIkm5gTc/AhQHA=
+		</data>
+		<key>Resources/IDEAS.md</key>
+		<data>
+		JY7iYGsX0Ftr1mWMCYwA1Exwh6A=
+		</data>
+		<key>Resources/INSTRUCTIONS.md</key>
+		<data>
+		NK7I40yuVPGhwbD8EAVfe4cP5Eo=
+		</data>
+		<key>Resources/NEW_IDEAS.md</key>
+		<data>
+		VGBRA2vN5lzvGZPmmpuY1Bt9BNA=
+		</data>
+		<key>Resources/PORTABILITY.md</key>
+		<data>
+		Uiw8HpKjC4ax+sxn2E7msjp6bwg=
+		</data>
+		<key>Resources/README.md</key>
+		<data>
+		JuzmaiVdtSUC7z7ta+SZBWf1Of0=
+		</data>
+		<key>Resources/ROADMAP.md</key>
+		<data>
+		JG/DvcZ0qP9eDCWQOhu/eLUlVXA=
+		</data>
 		<key>Resources/background.js</key>
 		<data>
-		WBsYavJVa7gk7jODpMNJ9WoRn9U=
+		l9M/sJzYq89kOsvLQTQpM+ZYcHw=
+		</data>
+		<key>Resources/background_f50.js</key>
+		<data>
+		mDijIzJEoiMrntf0AJ0M6yNrl2o=
+		</data>
+		<key>Resources/converter.js</key>
+		<data>
+		OjCiSp8+2truMH6mr5SzHDVVM6A=
 		</data>
 		<key>Resources/dashboard.html</key>
 		<data>
-		wqtIW61qfjcsBg9QW8K67yq+NFs=
+		a18r4wQuWO9KYIRETIhwBZS08oA=
 		</data>
 		<key>Resources/dashboard.js</key>
 		<data>
-		ugpSltRmgK8jIOLB+zEqnEnP5sc=
+		xNVVHwHN5BOv7DE9pTOurf7mJ40=
 		</data>
 		<key>Resources/icon.png</key>
 		<data>
@@ -22,38 +58,121 @@
 		</data>
 		<key>Resources/manifest.json</key>
 		<data>
-		4nbamgq26qOVPvqRNWvh0Gi24YY=
+		RlqHL6RAQkMFHg70wOu0Q5QsVgM=
+		</data>
+		<key>Resources/old_toolkit_listeners.txt</key>
+		<data>
+		2jmj7l5rSw0yVb/vlWAYkK/YBwk=
 		</data>
 		<key>Resources/popup.html</key>
 		<data>
-		kxuHdk+kW9OtKYMdlvLKTTOhvo4=
+		wyVmHk0UWAB61SQiFeZkGRp9nh0=
 		</data>
 		<key>Resources/popup.js</key>
 		<data>
-		xZ467iHpfnMLr7qR73lOFvpgFvw=
+		qzQ6FYea0vUbTOUp23vt1D89yUs=
+		</data>
+		<key>Resources/popup_f50.html</key>
+		<data>
+		15Qf6ReKjbOOPGsrqzDxut5ukKs=
+		</data>
+		<key>Resources/popup_f50.js</key>
+		<data>
+		g4xpVw1k5tXkfUjch2/hgIwfbcs=
+		</data>
+		<key>Resources/popup_old.js</key>
+		<data>
+		Xm3bN1Sq02arWRlGK8peNhHBR2M=
+		</data>
+		<key>Resources/release.sh</key>
+		<data>
+		X7k7crLsxLtQXWygZj3pd7Oez6Y=
 		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
+		<key>Resources/CONVERSION.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			moUIl/EbXlqALEgVBMg1kKDGYwUOB0jO4i6XrPXNDYs=
+			</data>
+		</dict>
+		<key>Resources/IDEAS.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			Ya9E150K9TsXAjd6Y/ajeY1krZRBzooYOfoYBLoOZM0=
+			</data>
+		</dict>
+		<key>Resources/INSTRUCTIONS.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			MpRAKyMB3CyIjr9PnHfTtUhOliWNf2ylzpDMNPOMKSw=
+			</data>
+		</dict>
+		<key>Resources/NEW_IDEAS.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			0yx3Dc5MVfn4F81L0Y7Dy0OwmIy+js9IdM59HS6SYLw=
+			</data>
+		</dict>
+		<key>Resources/PORTABILITY.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			ZSiK3PECPOdOuhU538a1wWG1Vw0XYqdRE/lVbDCVxqM=
+			</data>
+		</dict>
+		<key>Resources/README.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			CmrXkg5P4oZ0fXrZ3qktLvoa4cNqeULiFWf2WXFLgaE=
+			</data>
+		</dict>
+		<key>Resources/ROADMAP.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			KXGRnUm8n0f9v92AGcTpQj0FD4uTaOpc9yXAc1DreuQ=
+			</data>
+		</dict>
 		<key>Resources/background.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			nPtYMDhuCEsLHEfVaV4dhucOfTmSWeJaezix4nvJ1iI=
+			w3X1Pc37aUf1J44ARgmF6WZLCknBvKQb3a34hwrviBc=
+			</data>
+		</dict>
+		<key>Resources/background_f50.js</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			4JHtLj3XuuCv+HAQ3gga42vvgjBrEwU5EePIH9nYQbI=
+			</data>
+		</dict>
+		<key>Resources/converter.js</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			oX+YG1OBgj2BCVXn/L+U4cFZBG68sZZGMCjc9frLQFo=
 			</data>
 		</dict>
 		<key>Resources/dashboard.html</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			878+tPe6LnwcMm2niqdNdXZp+HfvJs8h9RmNGX9cNU0=
+			sDj3pVGQ6TUQlCS1LRQzfGuap/QLyWyADcsDCA11+Lk=
 			</data>
 		</dict>
 		<key>Resources/dashboard.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			e0JqxD9ZcZU8JvZVl3khUpuLSd/UD9vRdUheSQYakqw=
+			EVO92U/y8Nz5bEbE2/vxAkO9KReDCsx+C/OmVB1Dj1A=
 			</data>
 		</dict>
 		<key>Resources/icon.png</key>
@@ -67,21 +186,56 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			fprnITwfvrT1w6XwIiLdLFwgE+U5V977YzdipfjU6YU=
+			99biog1hWmnE2V7HPWX8TBZ/wdBSstKC1FEFan32R98=
+			</data>
+		</dict>
+		<key>Resources/old_toolkit_listeners.txt</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=
 			</data>
 		</dict>
 		<key>Resources/popup.html</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Qhf1vCrK3I2+2Du7qjTbLe1aey62BZ30TUIF4GY3ZCw=
+			BESX2x6wla6bPXUnfFhlvdJtfYQ3yt8L/7m+HIfzeEs=
 			</data>
 		</dict>
 		<key>Resources/popup.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			HZeN2X268hGWBdqzL4qIGoiADGUISrRPaI0i3LhzYJ4=
+			Yr1g8VlhYuaSQDugOFTGlaYYLtq5rqpLp5Z1d1azbd8=
+			</data>
+		</dict>
+		<key>Resources/popup_f50.html</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			MRC1EXLqDPOklitADOqUVoNs6sR7w+e+G2FrmMuXjlw=
+			</data>
+		</dict>
+		<key>Resources/popup_f50.js</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			nUg4wvCiyfDvPmOqW/nYWeQ2/24jliR99jGX5wbxvFE=
+			</data>
+		</dict>
+		<key>Resources/popup_old.js</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			1x3cYi4sJiYIiD+0Rt2P2REUSW8LYJ59ad1BAPfT8rM=
+			</data>
+		</dict>
+		<key>Resources/release.sh</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			ghevwiW+8u9jGgDGM0VcOq9ieZKhbbz/SjxpcKLplj4=
 			</data>
 		</dict>
 	</dict>

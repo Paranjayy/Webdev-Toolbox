@@ -207,16 +207,6 @@
                     <button class="btn" id="btn-inspect-metadata">Toggle Inspector</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Vibe Recorder (Playwright)</div>
-                    <div class="card-desc">Record clicks and inputs to generate automated testing scripts.</div>
-                    <button class="btn btn-primary" id="btn-toggle-macro">🔴 Toggle Recording</button>
-                </div>
-                <div class="card">
-                    <div class="card-title">Visual DOM Diff</div>
-                    <div class="card-desc">Compare the last 2 snapshots to see what changed in the DOM.</div>
-                    <button class="btn" id="btn-visual-diff">Compare Last 2 Snaps</button>
-                </div>
-                <div class="card">
                     <div class="card-title">State Scanner</div>
                     <div class="card-desc">Extract and inspect JSON state blobs and data-props.</div>
                     <button class="btn" id="btn-scan-state">Scan State</button>
@@ -234,31 +224,40 @@
 
         <!-- NETWORK TAB -->
         <div id="tab-network" class="tab-content">
-            <div class="section-title">Network Forensics</div>
+            <div class="section-title">Runtime Interceptors</div>
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">Global Resource Sniffer</div>
-                    <div class="card-desc">Capturing metadata for ALL resource types (Images, Scripts, CSS).</div>
-                    <button class="btn btn-primary" id="btn-refresh-network">Refresh Forensic Log</button>
+                    <div class="card-title">Fetch/XHR Monitor</div>
+                    <div class="card-desc">Inject hooks to monitor and log network responses.</div>
+                    <button class="btn" id="btn-hook-network">Enable Monitor</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">Latency Simulator</div>
-                    <div class="card-desc">Delay all requests by 2s to test loading states.</div>
+                    <div class="card-title">Socket Traffic</div>
+                    <div class="card-desc">Sniff and log active WebSocket communication.</div>
+                    <button class="btn" id="btn-hook-ws">Enable Sniffer</button>
+                </div>
+            </div>
+            <div class="section-title">Performance Simulation</div>
+            <div class="grid">
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-title">Network Latency Delay</div>
+                    <div class="card-desc">Artificially delay all network requests by 2 seconds.</div>
                     <button class="btn" id="btn-toggle-latency">Toggle Delay (2s)</button>
                 </div>
             </div>
-            
-            <div class="section-title">Forensic Traffic Log (ALL Types)</div>
-            <div class="console" id="network-console" style="max-height: 350px; font-size: 0.65rem;">
-                <div style="color:var(--text-muted); text-align:center; padding:20px;">No traffic captured yet.</div>
-            </div>
-        </div>
             <div class="section-title">Console Hook</div>
             <button class="btn" id="btn-console-overlay">Inject Professional Console Overlay</button>
         </div>
 
         <!-- DESIGN TAB -->
         <div id="tab-design" class="tab-content">
+            <div class="section-title">AI Superpowers</div>
+            <div class="card" style="border-color: #ff00ff; background: rgba(255, 0, 255, 0.02);">
+                <div class="card-title" style="color: #ff00ff;">Design Lab Superpowers</div>
+                <div class="card-desc">Advanced per-element annotation, skill-grid, and context capture.</div>
+                <button class="btn btn-primary" id="btn-design-lab" style="background: linear-gradient(135deg, #ff00ff, #8b5cf6); border: none;">Launch Design Lab</button>
+            </div>
+
             <div class="section-title">Extraction Tools</div>
             <div class="grid">
                 <div class="card">
@@ -292,8 +291,6 @@
             </div>
             <div class="section-title">Visual Overlays</div>
             <div class="grid">
-                <button class="btn btn-primary" id="btn-toggle-pick">⏸ Toggle/Pause Pick Mode</button>
-                <button class="btn" id="btn-asset-sniffer">🧬 Asset DNA Sniffer</button>
                 <button class="btn" id="btn-toggle-grid">Toggle Layout Grid</button>
                 <button class="btn" id="btn-toggle-guides">Toggle Visual Guides</button>
             </div>
@@ -322,13 +319,8 @@
 
         <!-- EXTENSIONS TAB -->
         <div id="tab-extensions" class="tab-content">
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <input type="text" id="ext-search" class="search-input" placeholder="Filter by name or ID..." style="flex:1;">
-                <select id="ext-sort" style="background:var(--panel-header); border:1px solid var(--border); color:var(--text); padding:0 8px; border-radius:6px; font-size:0.75rem; cursor:pointer; outline:none;">
-                    <option value="name">Sort: Name</option>
-                    <option value="status">Sort: Status</option>
-                    <option value="type">Sort: Type</option>
-                </select>
+            <div class="search-bar" style="padding: 0 0 10px 0; background: none; border: none;">
+                <input type="text" id="ext-search" class="search-input" placeholder="Filter extensions by name or ID...">
             </div>
             <div class="section-title">Development Workspace</div>
             <div id="ext-list-unpacked" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -348,20 +340,13 @@
         <!-- AGENT INTEL TAB -->
         <div id="tab-agent" class="tab-content">
             <div class="section-title">Query Feedback Loop</div>
-            <div class="section-title">Replication Engine</div>
-            <div class="card" style="border-color: #6366f1;">
-                <div class="card-title">Project Blueprint Generator</div>
-                <div class="card-desc">Generate a master prompt for AI to replicate this entire page/tool from scratch.</div>
-                <button class="btn btn-primary" id="btn-generate-blueprint" style="background:#6366f1;">🧬 Generate Master Blueprint</button>
-            </div>
-
             <div class="card">
                 <div class="card-title">Log Agent Query</div>
-                <div class="card-desc">Capture a manual request or issue for the agent to resolve later.</div>
+                <div class="card-desc">Capture a request or issue for the agent to resolve later.</div>
                 <textarea id="agent-query-input" class="search-input" style="height: 60px; resize: none; margin-top: 8px;" placeholder="Describe the issue or feature request..."></textarea>
                 <button class="btn btn-primary" id="btn-log-query" style="margin-top: 8px;">Log for Agent</button>
             </div>
-
+            
             <div class="section-title">Recent Logs</div>
             <div class="console" id="agent-logs" style="max-height: 200px;">
                 <div style="color:var(--text-muted); text-align:center; padding:20px;">No queries logged yet.</div>
@@ -375,26 +360,14 @@
 
         <!-- EXPERIMENTAL TAB -->
         <div id="tab-experimental" class="tab-content">
-            <div class="section-title">Visual Debugging</div>
+            <div class="section-title">Vibe & Chaos</div>
             <div class="grid">
-                <button class="btn" id="btn-visual-debugger">Box Model Debugger</button>
-                <button class="btn" id="btn-color-palette">Extract Color Palette</button>
                 <button class="btn" id="btn-neon-profile">Neon Interface Profile</button>
                 <button class="btn" id="btn-crt-sim">CRT Display Simulation</button>
-            </div>
-            
-            <div class="section-title">Runtime Manipulation</div>
-            <div class="grid">
-                <button class="btn" id="btn-gravity">Physics Engine (Gravity)</button>
-                <button class="btn" id="btn-style-roulette">Style Randomizer</button>
-                <button class="btn" id="btn-tab-solo">Tab Solo (Kill Others)</button>
-                <button class="btn" id="btn-auto-fill">Mock Form Filler</button>
-            </div>
-
-            <div class="section-title">Observation & Flow</div>
-            <div class="grid">
                 <button class="btn" id="btn-mutation-pulse">Layout Stability Pulse</button>
+                <button class="btn" id="btn-gravity">Physics Engine (Gravity)</button>
                 <button class="btn" id="btn-ui-cloner">Structure Replicator</button>
+                <button class="btn" id="btn-style-roulette">Style Randomizer</button>
                 <button class="btn" id="btn-spotlight">UI Spotlight</button>
                 <button class="btn" id="btn-isolation">Element Isolation (Ghost)</button>
                 <button class="btn" id="btn-speedrun">Performance Stress Timer</button>

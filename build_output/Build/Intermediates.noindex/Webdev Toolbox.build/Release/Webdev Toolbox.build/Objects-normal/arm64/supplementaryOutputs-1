@@ -1,0 +1,12 @@
+{
+  "/Users/paranjay/Developer/Antigravity-Dev-Vault/releases/Webdev Toolbox/Webdev Toolbox/ViewController.swift" : {
+    "abi-baseline-json" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev_Toolbox.abi.json",
+    "const-values" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.swiftconstvalues",
+    "dependencies" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.d",
+    "diagnostics" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.dia",
+    "objc-header" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev_Toolbox-Swift.h",
+    "swiftdoc" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev_Toolbox.swiftdoc",
+    "swiftmodule" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev_Toolbox.swiftmodule",
+    "swiftsourceinfo" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev_Toolbox.swiftsourceinfo"
+  }
+}

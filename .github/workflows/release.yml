@@ -1,0 +1,35 @@
+name: Release Orchestrator
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔧 Install Dependencies
+        run: npm install
+
+      - name: 📦 Execute Nexus Release Build
+        run: |
+          chmod +x release.sh
+          ./release.sh
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            releases/Webdev-Toolbox-*.zip
+          body: "God Build v2.1.0-GOLD Distribution"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

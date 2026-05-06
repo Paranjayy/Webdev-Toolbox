@@ -15,8 +15,7 @@
     "scripting",
     "storage",
     "notifications",
-    "contextMenus",
-    "webRequest"
+    "contextMenus"
   ],
   "host_permissions": [
     "<all_urls>"
