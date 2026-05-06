@@ -719,7 +719,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 // since 'all' context doesn't pass the element directly in MV3 background script
                 // we'll use the last right-clicked element if we tracked it, 
                 // or just ask the user to click again for simplicity in this lab tool.
-                return 'Click an element to see its core styles in the console.';
                 const handler = (e) => {
                     e.preventDefault();
                     const style = window.getComputedStyle(e.target);
@@ -731,13 +730,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click an element to see its core styles in the console.';
             }
         });
     } else if (info.menuItemId === "copy_selector") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click an element to copy its unique CSS selector.';
                 const handler = (e) => {
                     e.preventDefault();
                     const getSelector = (el) => {
@@ -770,13 +769,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click an element to copy its unique CSS selector.';
             }
         });
     } else if (info.menuItemId === "nuke_element") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click any element to delete it from the DOM.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -784,6 +783,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click any element to delete it from the DOM.';
             }
         });
     } else if (info.menuItemId === "css_roulette") {
@@ -820,7 +820,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click an element to cycle its colors.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -842,6 +841,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     setTimeout(() => document.removeEventListener('click', handler, true), 10000);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click an element to cycle its colors.';
             }
         });
     } else if (info.menuItemId === "design_lab") {
