@@ -62,5 +62,11 @@ else
     echo "❌ Native Build Failed. Ensure Xcode is installed."
 fi
 
+echo "🔹 Creating CHROME ZIP..."
+zip -r "releases/Webdev-Toolbox-Chrome.zip" "releases/webdev-toolbox-chrome/" > /dev/null
+
+echo "🔹 Creating FIREFOX ZIP..."
+zip -r "releases/Webdev-Toolbox-Firefox.zip" "releases/webdev-toolbox-firefox/" > /dev/null
+
 echo "🏁 Build Complete! Bundles located in /releases"
 ls -F releases
