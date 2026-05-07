@@ -641,6 +641,7 @@ async function handleDesignLab(tabId) {
                 display: flex; flex-direction: column; overflow: hidden;
                 animation: labIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
                 user-select: none; border-bottom: 4px solid #ff00ff;
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, width 0.3s;
             `;
 
             container.innerHTML = `
@@ -650,17 +651,26 @@ async function handleDesignLab(tabId) {
                     .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
                     .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
                     .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
+                    .__lab-min { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; margin-right: 12px; }
+                    .__lab-min:hover { opacity: 1; color: #ff00ff; }
                     .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
                     .__lab-pick-btn { 
                         background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
                         color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
                         cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
                     }
+                    .__lab-skill-toggle {
+                        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+                        color: rgba(255, 255, 255, 0.6); border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 800;
+                        cursor: pointer; transition: 0.2s;
+                    }
+                    .__lab-skill-toggle.active { color: #ff00ff; border-color: rgba(255, 0, 255, 0.4); background: rgba(255, 0, 255, 0.1); }
                     .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
                     .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
                     @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
                     .__lab-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; }
-                    .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); }
+                    .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); transition: max-height 0.3s ease-out, opacity 0.3s; max-height: 500px; overflow: hidden; }
+                    .__lab-grid.hidden { max-height: 0; opacity: 0; }
                     .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s; }
                     .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.5); }
                     .__lab-btn.active span { color: #ff00ff; }
@@ -764,6 +774,47 @@ async function handleDesignLab(tabId) {
                 container.remove(); highlight.remove();
                 window.__DESIGN_LAB_ACTIVE = false;
             };
+
+            container.querySelector('.__lab-min').onclick = () => {
+                container.classList.toggle('__lab-minimized');
+                container.querySelector('.__lab-min').innerText = container.classList.contains('__lab-minimized') ? '+' : '_';
+            };
+
+            container.querySelector('#__lab_grid_toggle').onclick = () => {
+                const grid = container.querySelector('.__lab-grid');
+                grid.classList.toggle('hidden');
+                container.querySelector('#__lab_grid_toggle').classList.toggle('active', !grid.classList.contains('hidden'));
+            };
+
+            // Drag Logic
+            let isDragging = false;
+            let startX, startY, initialRight, initialTop;
+            const header = container.querySelector('.__lab-header');
+            header.style.cursor = 'move';
+            header.onmousedown = (e) => {
+                if (e.target.closest('.__lab-close') || e.target.closest('.__lab-min')) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = container.getBoundingClientRect();
+                initialRight = window.innerWidth - rect.right;
+                initialTop = rect.top;
+                container.style.transition = 'none';
+                e.preventDefault();
+            };
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = startX - e.clientX;
+                const deltaY = e.clientY - startY;
+                container.style.right = (initialRight + deltaX) + 'px';
+                container.style.top = (initialTop + deltaY) + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    container.style.transition = '0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                }
+            });
 
             container.querySelector('#__lab_pick_toggle').onclick = () => {
                 isPicking = !isPicking;

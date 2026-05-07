@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'Webdev Toolbox' in project 'Webdev Toolbox'
-➜ Explicit dependency on target 'Webdev Toolbox Extension' in project 'Webdev Toolbox'
-Target 'Webdev Toolbox Extension' in project 'Webdev Toolbox' (no dependencies)
