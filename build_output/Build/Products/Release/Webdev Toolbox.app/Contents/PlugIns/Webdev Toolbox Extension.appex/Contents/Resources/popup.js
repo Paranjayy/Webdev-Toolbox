@@ -444,6 +444,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Design Lab (Annotate)
+    safeListen('btn-design-lab', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            chrome.runtime.sendMessage({ action: 'TRIGGER_DESIGN_LAB', tabId: tab.id });
+            window.close(); // Close popup to allow interaction
+        });
+    });
+
     // Asset DNA Sniffer
     safeListen('btn-asset-sniffer', 'click', () => {
         const btn = document.getElementById('btn-scan-resources');

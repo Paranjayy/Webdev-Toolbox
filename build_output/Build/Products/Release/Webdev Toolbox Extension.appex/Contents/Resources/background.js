@@ -301,9 +301,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.action === 'PERFORM_MACRO') {
         handleVibeRecorder(sender.tab?.id || request.tabId);
         sendResponse({ success: true });
+    } else if (request.action === 'TRIGGER_DESIGN_LAB') {
+        handleDesignLab(request.tabId || sender.tab.id);
     } else if (request.action === 'TRIGGER_DOM_CLEAN') {
-        handleDOMCleaner(sender.tab?.id || request.tabId, false);
-        sendResponse({ success: true });
+        handleDOMCleaner(sender.tab.id);
     } else if (request.action === 'TOGGLE_PICK_MODE') {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: 'TOGGLE_PICK_MODE' });
@@ -609,7 +610,10 @@ async function showContentToast(tabId, message, type = 'success') {
             toast.innerText = msg;
             document.body.appendChild(toast);
             const style = document.createElement('style');
-            style.innerHTML = `@keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`;
+            style.innerHTML = `
+                @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+                @-webkit-keyframes toastIn { from { opacity:0; -webkit-transform:translateX(-50%) translateY(20px); } to { opacity:1; -webkit-transform:translateX(-50%) translateY(0); } }
+            `;
             document.head.appendChild(style);
             setTimeout(() => {
                 toast.style.opacity = '0';
@@ -631,70 +635,80 @@ async function handleDesignLab(tabId) {
             let selections = [];
             let activeSkills = new Set();
             let isPicking = true;
+            let gridVisible = true;
 
             const container = document.createElement('div');
             container.id = '__design_lab';
             container.style = `
                 position: fixed; top: 20px; right: 20px; width: 380px;
-                background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(16px);
+                background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 20px;
                 box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255, 0, 255, 0.2);
                 z-index: 10000000; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: white;
                 display: flex; flex-direction: column; overflow: hidden;
                 animation: labIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
                 user-select: none; border-bottom: 4px solid #ff00ff;
-                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, width 0.3s;
+                transition: transform 0.3s, opacity 0.3s, width 0.3s, height 0.3s;
             `;
 
             container.innerHTML = `
                 <style>
                     @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
-                    .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+                    .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); cursor: move; }
                     .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
-                    .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
-                    .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
-                    .__lab-min { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; margin-right: 12px; }
-                    .__lab-min:hover { opacity: 1; color: #ff00ff; }
+                    .__lab-controls { display: flex; align-items: center; gap: 12px; }
+                    .__lab-control-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
+                    .__lab-control-btn:hover { opacity: 1; color: #ff00ff; }
                     .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
                     .__lab-pick-btn { 
                         background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
                         color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
                         cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
                     }
-                    .__lab-skill-toggle {
+                    .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                    .__lab-grid-toggle {
                         background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
                         color: rgba(255, 255, 255, 0.6); border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 800;
                         cursor: pointer; transition: 0.2s;
                     }
-                    .__lab-skill-toggle.active { color: #ff00ff; border-color: rgba(255, 0, 255, 0.4); background: rgba(255, 0, 255, 0.1); }
-                    .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                    .__lab-grid-toggle.active { color: #ff00ff; border-color: rgba(255, 0, 255, 0.4); background: rgba(255, 0, 255, 0.1); }
                     .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
                     @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
                     .__lab-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; }
-                    .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); transition: max-height 0.3s ease-out, opacity 0.3s; max-height: 500px; overflow: hidden; }
-                    .__lab-grid.hidden { max-height: 0; opacity: 0; }
+                    .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s; max-height: 500px; overflow: hidden; }
+                    .__lab-grid.hidden { max-height: 0; opacity: 0; border: none; }
                     .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s; }
-                    .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.5); }
-                    .__lab-btn.active span { color: #ff00ff; }
-                    .__lab-selections { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); }
+                    .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+                    .__lab-btn:hover { background: rgba(255,255,255,0.05); }
+                    .__lab-btn.active { background: rgba(255, 0, 255, 0.1); }
+                    .__lab-btn.active span { color: #ff00ff; font-weight: 900; }
+                    .__lab-selections { max-height: 240px; overflow-y: auto; background: rgba(0,0,0,0.2); scrollbar-width: thin; }
                     .__selection-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 6px; }
                     .__selection-top { display: flex; justify-content: space-between; align-items: center; }
-                    .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
-                    .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; }
-                    .__selection-prompt { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: white; padding: 4px 8px; font-size: 10px; outline: none; }
+                    .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; opacity: 0.8; }
+                    .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; transition: 0.2s; }
+                    .__selection-remove:hover { opacity: 1; color: #ff4444; }
+                    .__selection-prompt { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 6px 10px; font-size: 11px; outline: none; }
                     .__lab-footer { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); }
-                    .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 11px; font-weight: 900; cursor: pointer; }
+                    .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 22px; font-size: 11px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,255,0.3); }
+                    .__lab-export:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,0,255,0.4); }
+                    .__lab-minimized { height: 50px !important; width: 280px !important; }
+                    .__lab-minimized .__lab-toolbar, .__lab-minimized .__lab-main, .__lab-minimized .__lab-footer { display: none !important; }
                 </style>
-                <div class="__lab-header">
+                <div class="__lab-header" id="__lab_header">
                     <div class="__lab-title">Design Lab Superpowers</div>
-                    <span class="__lab-close">✕</span>
+                    <div class="__lab-controls">
+                        <span class="__lab-control-btn" id="__lab_min_btn">_</span>
+                        <span class="__lab-control-btn" id="__lab_close_btn">✕</span>
+                    </div>
                 </div>
                 <div class="__lab-toolbar">
-                    <button class="__lab-pick-btn active" id="__lab_pick_toggle"><div class="__lab-pick-indicator"></div> PICK MODE</button>
+                    <button class="__lab-pick-btn active" id="__lab_pick_toggle"><div class="__lab-pick-indicator"></div> PICK</button>
+                    <button class="__lab-grid-toggle active" id="__lab_grid_toggle">SKILLS</button>
                     <input type="text" class="__lab-input" id="__lab_global_prompt" placeholder="Global Mission...">
                 </div>
                 <div class="__lab-main">
-                    <div class="__lab-grid">
+                    <div class="__lab-grid" id="__lab_skill_grid">
                         ${['bolder', 'quieter', 'distill', 'polish', 'typeset', 'colorize', 'layout', 'adapt', 'animate', 'delight', 'overdrive', 'live-edit', 'design', 'inspect'].map(s => `
                             <button class="__lab-btn" data-skill="${s}"><span>${s}</span></button>
                         `).join('')}
@@ -702,14 +716,14 @@ async function handleDesignLab(tabId) {
                     <div class="__lab-selections" id="__lab_selections_list"></div>
                 </div>
                 <div class="__lab-footer">
-                    <div id="__lab_counter" style="font-size:10px; opacity:0.5;">0 ELEMENTS</div>
+                    <div id="__lab_counter" style="font-size:10px; opacity:0.5; font-weight: 700;">0 ELEMENTS</div>
                     <button class="__lab-export">CAPTURE DATA</button>
                 </div>
             `;
 
             document.body.appendChild(container);
             const highlight = document.createElement('div');
-            highlight.style = 'position:fixed; border:3px solid #ff00ff; z-index: 9999999; pointer-events:none; opacity: 0; transition: 0.1s; border-radius: 4px;';
+            highlight.style = 'position:fixed; border:3px solid #ff00ff; z-index: 9999999; pointer-events:none; opacity: 0; transition: 0.1s; border-radius: 4px; box-shadow: 0 0 20px rgba(255,0,255,0.4);';
             document.body.appendChild(highlight);
 
             const getSelector = (el) => {
@@ -735,13 +749,14 @@ async function handleDesignLab(tabId) {
                             <div class="__selection-tag">${s.tagName}</div>
                             <span class="__selection-remove" data-idx="${i}">✕</span>
                         </div>
-                        <input type="text" class="__selection-prompt" data-idx="${i}" placeholder="Instructions..." value="${s.prompt || ''}">
+                        <input type="text" class="__selection-prompt" data-idx="${i}" placeholder="Specific instructions for this element..." value="${s.prompt || ''}">
                     </div>
                 `).join('');
                 list.querySelectorAll('.__selection-remove').forEach(btn => {
                     btn.onclick = (e) => {
-                        selections[parseInt(e.target.dataset.idx)].anchor.remove();
-                        selections.splice(parseInt(e.target.dataset.idx), 1);
+                        const idx = parseInt(e.target.dataset.idx);
+                        selections[idx].anchor.remove();
+                        selections.splice(idx, 1);
                         updateUI();
                     };
                 });
@@ -763,13 +778,13 @@ async function handleDesignLab(tabId) {
                 e.preventDefault(); e.stopPropagation();
                 const r = e.target.getBoundingClientRect();
                 const anchor = document.createElement('div');
-                anchor.style = `position:fixed; top:${r.top}px; left:${r.left}px; width:${r.width}px; height:${r.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.1); z-index:9999998; pointer-events:none;`;
+                anchor.style = `position:fixed; top:${r.top}px; left:${r.left}px; width:${r.width}px; height:${r.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.1); z-index:9999998; pointer-events:none; box-shadow: 0 0 10px rgba(255,0,255,0.2);`;
                 document.body.appendChild(anchor);
                 selections.push({ selector: getSelector(e.target), tagName: e.target.tagName, anchor, prompt: '', html: e.target.outerHTML.slice(0, 500) });
                 updateUI();
             };
 
-            container.querySelector('.__lab-close').onclick = () => {
+            container.querySelector('#__lab_close_btn').onclick = () => {
                 document.removeEventListener('mouseover', onMouseOver);
                 document.removeEventListener('click', onClick, true);
                 selections.forEach(s => s.anchor.remove());
@@ -777,39 +792,40 @@ async function handleDesignLab(tabId) {
                 window.__DESIGN_LAB_ACTIVE = false;
             };
 
-            container.querySelector('.__lab-min').onclick = () => {
+            container.querySelector('#__lab_min_btn').onclick = () => {
                 container.classList.toggle('__lab-minimized');
-                container.querySelector('.__lab-min').innerText = container.classList.contains('__lab-minimized') ? '+' : '_';
+                container.querySelector('#__lab_min_btn').innerText = container.classList.contains('__lab-minimized') ? '+' : '_';
             };
 
             container.querySelector('#__lab_grid_toggle').onclick = () => {
-                const grid = container.querySelector('.__lab-grid');
-                grid.classList.toggle('hidden');
-                container.querySelector('#__lab_grid_toggle').classList.toggle('active', !grid.classList.contains('hidden'));
+                gridVisible = !gridVisible;
+                const grid = container.querySelector('#__lab_skill_grid');
+                grid.classList.toggle('hidden', !gridVisible);
+                container.querySelector('#__lab_grid_toggle').classList.toggle('active', gridVisible);
             };
 
-            // Drag Logic
+            // Enhanced Drag Logic
             let isDragging = false;
-            let startX, startY, initialRight, initialTop;
-            const header = container.querySelector('.__lab-header');
-            header.style.cursor = 'move';
+            let startX, startY, initialLeft, initialTop;
+            const header = container.querySelector('#__lab_header');
             header.onmousedown = (e) => {
-                if (e.target.closest('.__lab-close') || e.target.closest('.__lab-min')) return;
+                if (e.target.closest('.__lab-control-btn')) return;
                 isDragging = true;
                 startX = e.clientX;
                 startY = e.clientY;
                 const rect = container.getBoundingClientRect();
-                initialRight = window.innerWidth - rect.right;
+                initialLeft = rect.left;
                 initialTop = rect.top;
                 container.style.transition = 'none';
                 e.preventDefault();
             };
             document.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
-                const deltaX = startX - e.clientX;
+                const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
-                container.style.right = (initialRight + deltaX) + 'px';
+                container.style.left = (initialLeft + deltaX) + 'px';
                 container.style.top = (initialTop + deltaY) + 'px';
+                container.style.right = 'auto'; // Break the fixed right positioning
             });
             document.addEventListener('mouseup', () => {
                 if (isDragging) {
@@ -821,6 +837,7 @@ async function handleDesignLab(tabId) {
             container.querySelector('#__lab_pick_toggle').onclick = () => {
                 isPicking = !isPicking;
                 container.querySelector('#__lab_pick_toggle').classList.toggle('active', isPicking);
+                highlight.style.opacity = '0';
             };
 
             container.querySelectorAll('.__lab-btn').forEach(btn => {
@@ -840,11 +857,11 @@ async function handleDesignLab(tabId) {
                 const prompt = `### DESIGN LAB SUPERPOWERS\n${JSON.stringify(data, null, 2)}`;
                 const tmp = document.createElement('textarea'); tmp.value = prompt; document.body.appendChild(tmp);
                 tmp.select(); document.execCommand('copy'); tmp.remove();
-                alert('Context Copied!');
+                alert('DESIGN LAB CONTEXT COPIED!');
             };
 
             document.addEventListener('mouseover', onMouseOver);
-            document.addEventListener('click', onClick, true);
+            document.addEventListener('click', onClick, { capture: true, passive: false });
         }
     });
 }

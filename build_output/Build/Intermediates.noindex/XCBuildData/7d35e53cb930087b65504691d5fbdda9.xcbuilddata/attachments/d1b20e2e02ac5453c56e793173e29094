@@ -1,0 +1,26 @@
+{
+  "" : {
+    "const-values" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.swiftconstvalues",
+    "dependencies" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.d",
+    "diagnostics" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.dia",
+    "emit-module-dependencies" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary-emit-module.dia",
+    "pch" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/Webdev Toolbox-primary.swiftdeps"
+  },
+  "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  },
+  "/Users/paranjay/Developer/Antigravity-Dev-Vault/releases/Webdev Toolbox/Webdev Toolbox/AppDelegate.swift" : {
+    "index-unit-output-path" : "/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/AppDelegate.o",
+    "llvm-bc" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/AppDelegate.bc",
+    "object" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/AppDelegate.o"
+  },
+  "/Users/paranjay/Developer/Antigravity-Dev-Vault/releases/Webdev Toolbox/Webdev Toolbox/ViewController.swift" : {
+    "index-unit-output-path" : "/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/ViewController.o",
+    "llvm-bc" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/ViewController.bc",
+    "object" : "/Users/paranjay/Developer/Antigravity-Dev-Vault/build_output/Build/Intermediates.noindex/Webdev Toolbox.build/Release/Webdev Toolbox.build/Objects-normal/arm64/ViewController.o"
+  }
+}
