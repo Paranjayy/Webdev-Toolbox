@@ -23,12 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAgentLogs();
 
     async function getActiveTab() {
-        const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!t || !t.url) return t;
-        if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:')) {
-            return { ...t, restricted: true };
+        try {
+            const [t] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (!t || !t.url) return t;
+            if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:') || t.url.startsWith('safari-')) {
+                return { ...t, restricted: true };
+            }
+            return t;
+        } catch (e) {
+            console.error("Error getting active tab:", e);
+            return null;
         }
-        return t;
     }
 
     async function safeExecute(func, args = []) {
@@ -503,6 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const unpackedList = document.getElementById('ext-list-unpacked');
         const storeList = document.getElementById('ext-list-store');
         if (!unpackedList || !storeList) return;
+
+        if (typeof chrome.management === 'undefined') {
+            unpackedList.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.5; font-size:0.7rem;">Extension Management is not supported in Safari.</div>';
+            storeList.innerHTML = '';
+            return;
+        }
 
         chrome.management.getAll((extensions) => {
             const list = extensions.filter(e => e.id !== chrome.runtime.id);

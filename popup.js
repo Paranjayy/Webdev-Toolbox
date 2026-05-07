@@ -27,16 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const [t] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
             if (!t || !t.url) return t;
             if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:') || t.url.startsWith('safari-')) {
-               // Capture screenshot first
-                let screenshot = null;
-                try {
-                    // Safari fix: Use currentWindowId instead of null
-                    const currentWindow = await chrome.windows.getCurrent();
-                    screenshot = await chrome.tabs.captureVisibleTab(currentWindow.id, { format: 'jpeg', quality: 50 });
-                } catch (e) {
-                    console.warn("Screenshot capture failed:", e);
-                }
-                return { ...t, restricted: true, screenshot };
+                return { ...t, restricted: true };
             }
             return t;
         } catch (e) {
@@ -512,6 +503,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── EXTENSIONS ────────────────────────────────────────────────────────
     let searchFilter = '';
     let sortType = 'name';
+
+    function renderExtensions() {
+        const unpackedList = document.getElementById('ext-list-unpacked');
+        const storeList = document.getElementById('ext-list-store');
+        if (!unpackedList || !storeList) return;
 
         if (typeof chrome.management === 'undefined') {
             unpackedList.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.5; font-size:0.7rem;">Extension Management is not supported in Safari.</div>';

@@ -336,7 +336,9 @@ async function handleDOMCleaner(tabId, raw = false) {
     // Capture screenshot first
     let screenshot = null;
     try {
-        screenshot = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 });
+        // Safari fix: Use lastFocusedWindow or a specific ID
+        const currentWindow = await chrome.windows.getLastFocused();
+        screenshot = await chrome.tabs.captureVisibleTab(currentWindow.id, { format: 'jpeg', quality: 50 });
     } catch (e) {
         console.warn("Screenshot capture failed:", e);
     }
