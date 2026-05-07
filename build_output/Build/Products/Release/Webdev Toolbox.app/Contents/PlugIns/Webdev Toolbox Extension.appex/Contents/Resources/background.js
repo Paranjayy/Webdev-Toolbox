@@ -619,6 +619,183 @@ async function showContentToast(tabId, message, type = 'success') {
     }).catch(() => {});
 }
 
+
+async function handleDesignLab(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__DESIGN_LAB_ACTIVE) return;
+            window.__DESIGN_LAB_ACTIVE = true;
+            let selections = [];
+            let activeSkills = new Set();
+            let isPicking = true;
+
+            const container = document.createElement('div');
+            container.id = '__design_lab';
+            container.style = `
+                position: fixed; top: 20px; right: 20px; width: 380px;
+                background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 20px;
+                box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255, 0, 255, 0.2);
+                z-index: 10000000; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: white;
+                display: flex; flex-direction: column; overflow: hidden;
+                animation: labIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                user-select: none; border-bottom: 4px solid #ff00ff;
+            `;
+
+            container.innerHTML = `
+                <style>
+                    @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+                    .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+                    .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                    .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
+                    .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
+                    .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
+                    .__lab-pick-btn { 
+                        background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
+                        color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
+                        cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+                    }
+                    .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
+                    .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
+                    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+                    .__lab-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; }
+                    .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); }
+                    .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s; }
+                    .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+                    .__lab-btn.active span { color: #ff00ff; }
+                    .__lab-selections { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); }
+                    .__selection-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 6px; }
+                    .__selection-top { display: flex; justify-content: space-between; align-items: center; }
+                    .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
+                    .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; }
+                    .__selection-prompt { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: white; padding: 4px 8px; font-size: 10px; outline: none; }
+                    .__lab-footer { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); }
+                    .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 11px; font-weight: 900; cursor: pointer; }
+                </style>
+                <div class="__lab-header">
+                    <div class="__lab-title">Design Lab Superpowers</div>
+                    <span class="__lab-close">✕</span>
+                </div>
+                <div class="__lab-toolbar">
+                    <button class="__lab-pick-btn active" id="__lab_pick_toggle"><div class="__lab-pick-indicator"></div> PICK MODE</button>
+                    <input type="text" class="__lab-input" id="__lab_global_prompt" placeholder="Global Mission...">
+                </div>
+                <div class="__lab-main">
+                    <div class="__lab-grid">
+                        ${['bolder', 'quieter', 'distill', 'polish', 'typeset', 'colorize', 'layout', 'adapt', 'animate', 'delight', 'overdrive', 'live-edit', 'design', 'inspect'].map(s => `
+                            <button class="__lab-btn" data-skill="${s}"><span>${s}</span></button>
+                        `).join('')}
+                    </div>
+                    <div class="__lab-selections" id="__lab_selections_list"></div>
+                </div>
+                <div class="__lab-footer">
+                    <div id="__lab_counter" style="font-size:10px; opacity:0.5;">0 ELEMENTS</div>
+                    <button class="__lab-export">CAPTURE DATA</button>
+                </div>
+            `;
+
+            document.body.appendChild(container);
+            const highlight = document.createElement('div');
+            highlight.style = 'position:fixed; border:3px solid #ff00ff; z-index: 9999999; pointer-events:none; opacity: 0; transition: 0.1s; border-radius: 4px;';
+            document.body.appendChild(highlight);
+
+            const getSelector = (el) => {
+                if (el.id) return `#${el.id}`;
+                let path = [];
+                let curr = el;
+                while (curr && curr.parentElement) {
+                    let nth = 1, sib = curr;
+                    while (sib.previousElementSibling) { sib = sib.previousElementSibling; if (sib.tagName === curr.tagName) nth++; }
+                    path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
+                    curr = curr.parentElement;
+                    if (curr.id) { path.unshift(`#${curr.id}`); break; }
+                }
+                return path.join(' > ');
+            };
+
+            const updateUI = () => {
+                const list = container.querySelector('#__lab_selections_list');
+                container.querySelector('#__lab_counter').innerText = `${selections.length} ELEMENTS`;
+                list.innerHTML = selections.map((s, i) => `
+                    <div class="__selection-item">
+                        <div class="__selection-top">
+                            <div class="__selection-tag">${s.tagName}</div>
+                            <span class="__selection-remove" data-idx="${i}">✕</span>
+                        </div>
+                        <input type="text" class="__selection-prompt" data-idx="${i}" placeholder="Instructions..." value="${s.prompt || ''}">
+                    </div>
+                `).join('');
+                list.querySelectorAll('.__selection-remove').forEach(btn => {
+                    btn.onclick = (e) => {
+                        selections[parseInt(e.target.dataset.idx)].anchor.remove();
+                        selections.splice(parseInt(e.target.dataset.idx), 1);
+                        updateUI();
+                    };
+                });
+                list.querySelectorAll('.__selection-prompt').forEach(input => {
+                    input.oninput = (e) => selections[parseInt(e.target.dataset.idx)].prompt = e.target.value;
+                });
+            };
+
+            const onMouseOver = (e) => {
+                if (!isPicking || container.contains(e.target)) { highlight.style.opacity = '0'; return; }
+                const r = e.target.getBoundingClientRect();
+                highlight.style.opacity = '1';
+                highlight.style.top = r.top + 'px'; highlight.style.left = r.left + 'px';
+                highlight.style.width = r.width + 'px'; highlight.style.height = r.height + 'px';
+            };
+
+            const onClick = (e) => {
+                if (!isPicking || container.contains(e.target)) return;
+                e.preventDefault(); e.stopPropagation();
+                const r = e.target.getBoundingClientRect();
+                const anchor = document.createElement('div');
+                anchor.style = `position:fixed; top:${r.top}px; left:${r.left}px; width:${r.width}px; height:${r.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.1); z-index:9999998; pointer-events:none;`;
+                document.body.appendChild(anchor);
+                selections.push({ selector: getSelector(e.target), tagName: e.target.tagName, anchor, prompt: '', html: e.target.outerHTML.slice(0, 500) });
+                updateUI();
+            };
+
+            container.querySelector('.__lab-close').onclick = () => {
+                document.removeEventListener('mouseover', onMouseOver);
+                document.removeEventListener('click', onClick, true);
+                selections.forEach(s => s.anchor.remove());
+                container.remove(); highlight.remove();
+                window.__DESIGN_LAB_ACTIVE = false;
+            };
+
+            container.querySelector('#__lab_pick_toggle').onclick = () => {
+                isPicking = !isPicking;
+                container.querySelector('#__lab_pick_toggle').classList.toggle('active', isPicking);
+            };
+
+            container.querySelectorAll('.__lab-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const s = btn.dataset.skill;
+                    if (activeSkills.has(s)) { activeSkills.delete(s); btn.classList.remove('active'); }
+                    else { activeSkills.add(s); btn.classList.add('active'); }
+                };
+            });
+
+            container.querySelector('.__lab-export').onclick = () => {
+                const data = {
+                    mission: container.querySelector('#__lab_global_prompt').value,
+                    skills: Array.from(activeSkills),
+                    targets: selections.map(s => ({ selector: s.selector, prompt: s.prompt, html: s.html }))
+                };
+                const prompt = `### DESIGN LAB SUPERPOWERS\n${JSON.stringify(data, null, 2)}`;
+                const tmp = document.createElement('textarea'); tmp.value = prompt; document.body.appendChild(tmp);
+                tmp.select(); document.execCommand('copy'); tmp.remove();
+                alert('Context Copied!');
+            };
+
+            document.addEventListener('mouseover', onMouseOver);
+            document.addEventListener('click', onClick, true);
+        }
+    });
+}
+
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
     // Parent Menu
@@ -719,7 +896,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                 // since 'all' context doesn't pass the element directly in MV3 background script
                 // we'll use the last right-clicked element if we tracked it, 
                 // or just ask the user to click again for simplicity in this lab tool.
-                return 'Click an element to see its core styles in the console.';
                 const handler = (e) => {
                     e.preventDefault();
                     const style = window.getComputedStyle(e.target);
@@ -731,13 +907,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click an element to see its core styles in the console.';
             }
         });
     } else if (info.menuItemId === "copy_selector") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click an element to copy its unique CSS selector.';
                 const handler = (e) => {
                     e.preventDefault();
                     const getSelector = (el) => {
@@ -770,13 +946,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click an element to copy its unique CSS selector.';
             }
         });
     } else if (info.menuItemId === "nuke_element") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click any element to delete it from the DOM.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -784,6 +960,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     document.removeEventListener('click', handler, true);
                 };
                 document.addEventListener('click', handler, true);
+                return 'Click any element to delete it from the DOM.';
             }
         });
     } else if (info.menuItemId === "css_roulette") {
@@ -820,7 +997,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                return 'Click an element to cycle its colors.';
                 const handler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -829,378 +1005,20 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
                     const next = colors[(colors.indexOf(current) + 1) % colors.length];
                     e.target.style.color = next;
                     e.target.style.borderColor = next;
-                    // If it has a background-color that isn't transparent, maybe tweak that too
                     const bg = window.getComputedStyle(e.target).backgroundColor;
                     if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-                        e.target.style.backgroundColor = `${next}22`; // 20% opacity
+                        e.target.style.backgroundColor = `${next}22`;
                     }
                     console.log('Tweaked Color to:', next);
-                    // Don't remove listener yet, allow multiple clicks. 
-                    // Add a way to stop? Maybe a keypress or just leave it for the session.
-                    // For now, let's just make it a one-off or limited.
-                    // Actually, let's just stop after 10 seconds.
-                    setTimeout(() => document.removeEventListener('click', handler, true), 10000);
                 };
-                document.addEventListener('click', handler, true);
+                document.addEventListener('click', handler, { once: true, capture: true });
+                return 'Click an element to tweak its color.';
             }
+        }, (res) => {
+            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
         });
     } else if (info.menuItemId === "design_lab") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                if (window.__DESIGN_LAB_ACTIVE) return;
-                window.__DESIGN_LAB_ACTIVE = true;
-
-                // State
-                let selections = [];
-                let activeSkills = new Set();
-                let isPicking = true;
-
-                // Create the floating lab UI
-                const container = document.createElement('div');
-                container.id = '__design_lab';
-                container.style = `
-                    position: fixed; top: 20px; right: 20px; width: 360px;
-                    background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(16px);
-                    border: 1px solid rgba(255, 0, 255, 0.4); border-radius: 20px;
-                    box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255, 0, 255, 0.2);
-                    z-index: 10000000; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: white;
-                    display: flex; flex-direction: column; overflow: hidden;
-                    animation: labIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-                    user-select: none; border-bottom: 4px solid #ff00ff;
-                `;
-
-                container.innerHTML = `
-                    <style>
-                        @keyframes labIn { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
-                        .__lab-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
-                        .__lab-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ff00ff; text-shadow: 0 0 15px rgba(255,0,255,0.4); }
-                        .__lab-controls { display: flex; gap: 12px; align-items: center; }
-                        .__lab-close { cursor: pointer; opacity: 0.6; transition: 0.2s; font-size: 16px; font-weight: bold; }
-                        .__lab-close:hover { opacity: 1; color: #ff00ff; transform: rotate(90deg); }
-                        
-                        .__lab-toolbar { padding: 12px 20px; display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
-                        .__lab-pick-btn { 
-                            background: rgba(255, 0, 255, 0.1); border: 1px solid rgba(255, 0, 255, 0.3); 
-                            color: #ff00ff; border-radius: 8px; padding: 6px 12px; font-size: 10px; font-weight: 800; 
-                            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
-                        }
-                        .__lab-pick-btn.active { background: #ff00ff; color: white; box-shadow: 0 0 15px rgba(255,0,255,0.4); }
-                        .__lab-pick-indicator { width: 6px; height: 6px; background: currentColor; border-radius: 50%; animation: pulse 1.5s infinite; }
-                        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
-
-                        .__lab-input-wrapper { flex: 1; position: relative; }
-                        .__lab-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; padding: 8px 14px; font-size: 12px; outline: none; transition: 0.2s; }
-                        .__lab-input:focus { border-color: #ff00ff; background: rgba(255,255,255,0.08); }
-                        
-                        .__lab-main { display: flex; flex-direction: column; }
-                        .__lab-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.08); }
-                        .__lab-btn { background: #0d1117; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; }
-                        .__lab-btn:hover { background: rgba(255, 0, 255, 0.05); }
-                        .__lab-btn i { font-size: 18px; margin-bottom: 2px; }
-                        .__lab-btn span { font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.5); }
-                        .__lab-btn.active { background: rgba(255, 0, 255, 0.15); }
-                        .__lab-btn.active span { color: #ff00ff; }
-                        .__lab-btn::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: #ff00ff; transform: scaleX(0); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-                        .__lab-btn.active::after { transform: scaleX(1); }
-
-                        .__lab-selections { max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
-                        .__selection-item { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; }
-                        .__selection-info { display: flex; flex-direction: column; gap: 2px; }
-                        .__selection-tag { font-size: 9px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
-                        .__selection-desc { font-size: 10px; color: rgba(255,255,255,0.5); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
-                        .__selection-remove { font-size: 14px; opacity: 0.4; cursor: pointer; transition: 0.2s; }
-                        .__selection-remove:hover { opacity: 1; color: #ff00ff; }
-
-                        .__lab-footer { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.05); }
-                        .__lab-stats { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
-                        .__lab-export { background: linear-gradient(135deg, #ff00ff, #8b5cf6); color: white; border: none; border-radius: 12px; padding: 10px 20px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255,0,255,0.3); }
-                        .__lab-export:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,0,255,0.5); }
-                        .__lab-export:active { transform: translateY(0); }
-                    </style>
-                    <div class="__lab-header">
-                        <div class="__lab-title">Design Lab Superpowers</div>
-                        <div class="__lab-controls">
-                            <span class="__lab-close">✕</span>
-                        </div>
-                    </div>
-                    <div class="__lab-toolbar">
-                        <button class="__lab-pick-btn active" id="__lab_pick_toggle">
-                            <div class="__lab-pick-indicator"></div>
-                            PICK MODE
-                        </button>
-                        <div class="__lab-input-wrapper">
-                            <input type="text" class="__lab-input" placeholder="Prompt (e.g. 'Make it minimalist')">
-                        </div>
-                    </div>
-                    <div class="__lab-main">
-                        <div class="__lab-grid">
-                            <button class="__lab-btn" data-skill="bolder"><span>Bolder</span></button>
-                            <button class="__lab-btn" data-skill="quieter"><span>Quieter</span></button>
-                            <button class="__lab-btn" data-skill="distill"><span>Distill</span></button>
-                            <button class="__lab-btn" data-skill="polish"><span>Polish</span></button>
-                            <button class="__lab-btn" data-skill="typeset"><span>Typeset</span></button>
-                            <button class="__lab-btn" data-skill="colorize"><span>Colorize</span></button>
-                            <button class="__lab-btn" data-skill="layout"><span>Layout</span></button>
-                            <button class="__lab-btn" data-skill="adapt"><span>Adapt</span></button>
-                            <button class="__lab-btn" data-skill="animate"><span>Animate</span></button>
-                            <button class="__lab-btn" data-skill="delight"><span>Delight</span></button>
-                            <button class="__lab-btn" data-skill="overdrive"><span>Overdrive</span></button>
-                            <button class="__lab-btn" data-skill="live-edit"><span>Live Edit</span></button>
-                            <button class="__lab-btn" data-skill="frontend-design"><span>Design</span></button>
-                            <button class="__lab-btn" data-skill="inspect"><span>Inspect</span></button>
-                        </div>
-                        <div class="__lab-selections-header" style="padding: 10px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase;">Locked Targets</span>
-                            <span id="__lab_clear_all" style="font-size: 9px; font-weight: 900; color: #ff00ff; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">Clear All</span>
-                        </div>
-                        <div class="__lab-selections" id="__lab_selections_list">
-                            <!-- Selected elements go here -->
-                        </div>
-                    </div>
-                    <div class="__lab-footer">
-                        <div class="__lab-stats" id="__lab_counter">0 ELEMENTS LOCKED</div>
-                        <button class="__lab-export">CAPTURE DATA</button>
-                    </div>
-                `;
-
-                document.body.appendChild(container);
-
-                const highlight = document.createElement('div');
-                highlight.id = '__lab_highlight';
-                highlight.style = 'position:fixed; border:3px solid #ff00ff; box-shadow: 0 0 30px rgba(255,0,255,0.5), inset 0 0 15px rgba(255,0,255,0.3); z-index: 9999999; pointer-events:none; transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; border-radius: 4px;';
-                document.body.appendChild(highlight);
-
-                const getSelector = (el) => {
-                    if (el.id) return `#${el.id}`;
-                    let path = [];
-                    let curr = el;
-                    while (curr && curr.parentElement) {
-                        let nth = 1, sib = curr;
-                        while (sib.previousElementSibling) { sib = sib.previousElementSibling; if (sib.tagName === curr.tagName) nth++; }
-                        path.unshift(`${curr.tagName.toLowerCase()}${nth > 1 ? `:nth-of-type(${nth})` : ''}`);
-                        curr = curr.parentElement;
-                        if (curr.id) { path.unshift(`#${curr.id}`); break; }
-                    }
-                    return path.join(' > ');
-                };
-
-                const updateUI = () => {
-                    const list = container.querySelector('#__lab_selections_list');
-                    container.querySelector('#__lab_counter').innerText = `${selections.length} ELEMENTS LOCKED`;
-                    
-                    if (selections.length === 0) {
-                        list.innerHTML = '<div style="padding:20px; text-align:center; color:rgba(255,255,255,0.2); font-size:10px; font-weight:700; letter-spacing:1px;">NO TARGETS SELECTED</div>';
-                        return;
-                    }
-
-                    list.innerHTML = selections.map((s, i) => `
-                        <div class="__selection-item">
-                            <div class="__selection-info">
-                                <div class="__selection-tag">${s.tagName}</div>
-                                <div class="__selection-desc">${s.preview}</div>
-                            </div>
-                            <span class="__selection-remove" data-idx="${i}">✕</span>
-                        </div>
-                    `).join('');
-
-                    list.querySelectorAll('.__selection-remove').forEach(btn => {
-                        btn.onclick = (e) => {
-                            const idx = parseInt(e.target.dataset.idx);
-                            selections[idx].anchor.remove();
-                            selections.splice(idx, 1);
-                            updateUI();
-                        };
-                    });
-                };
-
-                const onMouseOver = (e) => {
-                    if (!isPicking || container.contains(e.target)) {
-                        highlight.style.opacity = '0';
-                        return;
-                    }
-                    const rect = e.target.getBoundingClientRect();
-                    highlight.style.opacity = '1';
-                    highlight.style.top = `${rect.top}px`;
-                    highlight.style.left = `${rect.left}px`;
-                    highlight.style.width = `${rect.width}px`;
-                    highlight.style.height = `${rect.height}px`;
-
-                    // Color Palette Sniffer
-                    const cs = window.getComputedStyle(e.target);
-                    const colors = [cs.backgroundColor, cs.color];
-                    const paletteHtml = colors.filter(c => c !== 'rgba(0, 0, 0, 0)').map(c => `
-                        <div style="width:10px; height:10px; background:${c}; border:1px solid rgba(255,255,255,0.2); border-radius:50%;"></div>
-                    `).join('');
-
-                    // Asset & Image Preview
-                    let assetHtml = '';
-                    if (e.target.tagName === 'IMG') {
-                        assetHtml = `<img src="${e.target.src}" style="width:16px; height:16px; border-radius:2px; object-fit:cover;">`;
-                    } else {
-                        const bgImg = cs.backgroundImage;
-                        if (bgImg && bgImg !== 'none') {
-                            const url = bgImg.match(/url\(["']?([^"']+)["']?\)/);
-                            if (url) assetHtml = `<div style="width:16px; height:16px; border-radius:2px; background-image:url(${url[1]}); background-size:cover;"></div>`;
-                        }
-                    }
-                    
-                    highlight.innerHTML = `
-                        <div style="position:absolute; bottom:100%; left:0; background:#ff00ff; color:white; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px 4px 0 0; display:flex; align-items:center; gap:4px; transform:translateY(-2px); white-space:nowrap; box-shadow:0 -4px 10px rgba(255,0,255,0.3);">
-                            ${assetHtml} ${e.target.tagName} ${paletteHtml}
-                        </div>
-                    `;
-                };
-
-                const onClick = (e) => {
-                    if (!isPicking) return;
-                    if (container.contains(e.target)) return;
-                    e.preventDefault(); e.stopPropagation();
-                    
-                    const sel = getSelector(e.target);
-                    const rect = e.target.getBoundingClientRect();
-                    
-                    // Permanent Selection Anchor
-                    const anchor = document.createElement('div');
-                    anchor.className = '__lab-anchor';
-                    anchor.style = `position:fixed; top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px; border:2px solid #ff00ff; background:rgba(255,0,255,0.15); z-index:9999998; pointer-events:none; box-shadow: 0 0 20px rgba(255,0,255,0.3); border-radius: 4px;`;
-                    document.body.appendChild(anchor);
-
-                    // Grab style context
-                    const computed = window.getComputedStyle(e.target);
-                    const coreStyles = {
-                        display: computed.display,
-                        margin: computed.margin,
-                        padding: computed.padding,
-                        color: computed.color,
-                        background: computed.backgroundColor,
-                        fontFamily: computed.fontFamily,
-                        fontSize: computed.fontSize,
-                        border: computed.border
-                    };
-
-                    selections.push({ 
-                        selector: sel, 
-                        tagName: e.target.tagName,
-                        preview: (e.target.innerText || e.target.placeholder || e.target.value || '').slice(0, 40).trim() || 'No Content',
-                        anchor,
-                        html: e.target.outerHTML.slice(0, 1500),
-                        text: e.target.innerText.slice(0, 300),
-                        styles: JSON.stringify(coreStyles)
-                    });
-                    
-                    updateUI();
-                };
-
-                const cleanup = () => {
-                    document.removeEventListener('mouseover', onMouseOver);
-                    document.removeEventListener('click', onClick, true);
-                    chrome.runtime.onMessage.removeListener(messageHandler);
-                    container.remove();
-                    highlight.remove();
-                    document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
-                    window.__DESIGN_LAB_ACTIVE = false;
-                };
-
-                // Event Listeners
-                container.querySelector('.__lab-close').onclick = cleanup;
-                
-                container.querySelector('#__lab_clear_all').onclick = () => {
-                    document.querySelectorAll('.__lab-anchor').forEach(a => a.remove());
-                    selections = [];
-                    updateUI();
-                };
-
-                const pickToggle = container.querySelector('#__lab_pick_toggle');
-                pickToggle.onclick = () => {
-                    isPicking = !isPicking;
-                    pickToggle.classList.toggle('active', isPicking);
-                    highlight.style.opacity = '0';
-                    if (isPicking) {
-                        pickToggle.innerHTML = '<div class="__lab-pick-indicator"></div> PICK MODE';
-                        document.body.style.cursor = 'crosshair';
-                    } else {
-                        pickToggle.innerHTML = 'PAUSED (Selection Off)';
-                        document.body.style.cursor = 'default';
-                    }
-                };
-
-                // Remote Control
-                const messageHandler = (req) => {
-                    if (req.action === 'TOGGLE_PICK_MODE') pickToggle.click();
-                };
-                chrome.runtime.onMessage.addListener(messageHandler);
-
-                // Keyboard Shortcuts
-                window.addEventListener('keydown', (e) => {
-                    if (e.key === 'p' && e.altKey && e.shiftKey) {
-                        e.preventDefault();
-                        pickToggle.click();
-                    }
-                });
-
-                container.querySelectorAll('.__lab-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const skill = btn.dataset.skill;
-                        
-                        // Special Skill Actions
-                        if (skill === 'live-edit') {
-                            selections.forEach(s => {
-                                const el = document.querySelector(s.selector);
-                                if (el) {
-                                    el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
-                                    el.style.outline = el.contentEditable === 'true' ? '2px dashed #ff00ff' : 'none';
-                                }
-                            });
-                        }
-                        
-                        if (skill === 'inspect') {
-                            if (selections.length > 0) {
-                                console.log('%c [DESIGN LAB INSPECT] ', 'background: #ff00ff; color: white; font-weight: bold;');
-                                selections.forEach(s => {
-                                    console.log(`Tag: ${s.tagName} | Selector: ${s.selector}`);
-                                    console.log('Styles:', JSON.parse(s.styles));
-                                    console.log('---');
-                                });
-                            }
-                        }
-
-                        if (activeSkills.has(skill)) {
-                            activeSkills.delete(skill);
-                            btn.classList.remove('active');
-                        } else {
-                            activeSkills.add(skill);
-                            btn.classList.add('active');
-                        }
-                    };
-                });
-
-                const triggerExport = () => {
-                    const freeform = container.querySelector('.__lab-input').value;
-                    const skills = Array.from(activeSkills);
-                    
-                    if (selections.length === 0 && skills.length === 0 && !freeform) {
-                        alert("Select targets or choose skills first.");
-                        return;
-                    }
-
-                    const prompt = `### SUPERPOWERS DESIGN LAB EXPORT\n\n**PRIMARY SKILLS**: ${skills.join(', ') || 'General Polish'}\n**INSTRUCTIONS**: ${freeform || 'Apply selected transformations.'}\n\n**LOCKED TARGETS**:\n${selections.map(s => `- **${s.tagName}** [\`${s.selector}\`]:\n  **CONTENT**: "${s.preview}"\n  **HTML**: \n\`\`\`html\n${s.html}\n\`\`\`\n  **STYLES**: \`${s.styles}\``).join('\n\n')}\n\n**MISSION**: Perform a high-fidelity design upgrade. Maintain brand identity while maximizing visual impact and interactive delight.`;
-                    
-                    const tmp = document.createElement('textarea');
-                    tmp.value = prompt; document.body.appendChild(tmp);
-                    tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-                    
-                    alert('Superpowers Context Captured! Send it to your agent.');
-                    cleanup();
-                };
-
-                container.querySelector('.__lab-export').onclick = triggerExport;
-                updateUI(); // Initial empty state
-
-                document.addEventListener('mouseover', onMouseOver, { passive: true });
-                document.addEventListener('click', onClick, true);
-            }
-        });
+        handleDesignLab(tab.id);
     } else if (info.menuItemId === "anti_slop_detect") {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
