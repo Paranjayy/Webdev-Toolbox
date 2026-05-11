@@ -24,9 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function getActiveTab() {
         try {
-            const [t] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tabs || tabs.length === 0) {
+                tabs = await chrome.tabs.query({ active: true });
+            }
+            const t = tabs[0];
             if (!t || !t.url) return t;
-            if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:') || t.url.startsWith('safari-')) {
+            if (t.url.startsWith('chrome://') || t.url.startsWith('arc://') || t.url.startsWith('edge://') || t.url.startsWith('about:') || t.url.startsWith('safari-') || t.url.startsWith('file://')) {
                 return { ...t, restricted: true };
             }
             return t;

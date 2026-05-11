@@ -1281,33 +1281,36 @@ async function handleDesignLab(tabId) {
 
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.removeAll(() => {
-        const menus = [
-            { id: "webdev_toolbox", title: "🛠 Webdev Toolbox" },
-            { id: "ai_context_capture", parentId: "webdev_toolbox", title: "🧹 AI: Context Capture" },
-            { id: "design_lab", parentId: "webdev_toolbox", title: "✨ AI: Design Superpowers (Lab)" },
-            { id: "visual_edit", parentId: "webdev_toolbox", title: "🎨 Design: Toggle Edit Mode" },
-            { id: "inspect_style", parentId: "webdev_toolbox", title: "🔍 Design: Inspect Style" },
-            { id: "copy_selector", parentId: "webdev_toolbox", title: "📋 Dev: Copy Selector" },
-            { id: "nuke_element", parentId: "webdev_toolbox", title: "💀 Dev: Nuke Element" },
-            { id: "css_roulette", parentId: "webdev_toolbox", title: "🎲 Chaos: CSS Roulette" },
-            { id: "forensic_profiler", parentId: "webdev_toolbox", title: "🧬 Forensic: UI Profiler (Refero)" },
-            { id: "ghost_mode", parentId: "webdev_toolbox", title: "👻 Forensic: Toggle Ghost Mode" },
-            { id: "dom_heatmap", parentId: "webdev_toolbox", title: "🌡️ Forensic: Analyze Heatmap" },
-            { id: "ui_autopsy", parentId: "webdev_toolbox", title: "🫀 Forensic: Live UI Autopsy" },
-            { id: "shadow_pierce", parentId: "webdev_toolbox", title: "🔮 Forensic: Shadow DOM Pierce" },
-            { id: "record_vibe", parentId: "webdev_toolbox", title: "🎨 Inception: Record Vibe" },
-            { id: "apply_vibe", parentId: "webdev_toolbox", title: "✨ Inception: Apply Vibe" },
-            { id: "vibe_recorder", parentId: "webdev_toolbox", title: "🎬 Macro: Vibe Recorder" },
-            { id: "anti_slop_detect", parentId: "webdev_toolbox", title: "🚫 AI Slop Detector (Impeccable)" },
-            { id: "floating_nexus", parentId: "webdev_toolbox", title: "🌐 Toggle Floating Nexus Toolbar" },
-            { id: "visual_diff", parentId: "webdev_toolbox", title: "🔬 Visual DOM Diff (Last 2 Snaps)" },
-            { id: "z_index_map", parentId: "webdev_toolbox", title: "🧊 Forensic: Z-Index 3D Map" },
-            { id: "skeleton_ripper", parentId: "webdev_toolbox", title: "🦴 Inception: Skeleton Ripper" },
-            { id: "refero_lens", parentId: "webdev_toolbox", title: "🔍 Lab: The Refero Lens" },
-            { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" }
-        ];
-        menus.forEach(m => chrome.contextMenus.create({ ...m, contexts: ["all"] }));
+    chrome.contextMenus.removeAll();
+    const menus = [
+        { id: "webdev_toolbox", title: "🛠 Webdev Toolbox" },
+        { id: "ai_context_capture", parentId: "webdev_toolbox", title: "🧹 AI: Context Capture" },
+        { id: "design_lab", parentId: "webdev_toolbox", title: "✨ AI: Design Superpowers (Lab)" },
+        { id: "visual_edit", parentId: "webdev_toolbox", title: "🎨 Design: Toggle Edit Mode" },
+        { id: "inspect_style", parentId: "webdev_toolbox", title: "🔍 Design: Inspect Style" },
+        { id: "copy_selector", parentId: "webdev_toolbox", title: "📋 Dev: Copy Selector" },
+        { id: "nuke_element", parentId: "webdev_toolbox", title: "💀 Dev: Nuke Element" },
+        { id: "css_roulette", parentId: "webdev_toolbox", title: "🎲 Chaos: CSS Roulette" },
+        { id: "forensic_profiler", parentId: "webdev_toolbox", title: "🧬 Forensic: UI Profiler (Refero)" },
+        { id: "ghost_mode", parentId: "webdev_toolbox", title: "👻 Forensic: Toggle Ghost Mode" },
+        { id: "dom_heatmap", parentId: "webdev_toolbox", title: "🌡️ Forensic: Analyze Heatmap" },
+        { id: "ui_autopsy", parentId: "webdev_toolbox", title: "🫀 Forensic: Live UI Autopsy" },
+        { id: "shadow_pierce", parentId: "webdev_toolbox", title: "🔮 Forensic: Shadow DOM Pierce" },
+        { id: "record_vibe", parentId: "webdev_toolbox", title: "🎨 Inception: Record Vibe" },
+        { id: "apply_vibe", parentId: "webdev_toolbox", title: "✨ Inception: Apply Vibe" },
+        { id: "vibe_recorder", parentId: "webdev_toolbox", title: "🎬 Macro: Vibe Recorder" },
+        { id: "anti_slop_detect", parentId: "webdev_toolbox", title: "🚫 AI Slop Detector (Impeccable)" },
+        { id: "floating_nexus", parentId: "webdev_toolbox", title: "🌐 Toggle Floating Nexus Toolbar" },
+        { id: "visual_diff", parentId: "webdev_toolbox", title: "🔬 Visual DOM Diff (Last 2 Snaps)" },
+        { id: "z_index_map", parentId: "webdev_toolbox", title: "🧊 Forensic: Z-Index 3D Map" },
+        { id: "skeleton_ripper", parentId: "webdev_toolbox", title: "🦴 Inception: Skeleton Ripper" },
+        { id: "refero_lens", parentId: "webdev_toolbox", title: "🔍 Lab: The Refero Lens" },
+        { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" }
+    ];
+    menus.forEach(m => {
+        chrome.contextMenus.create({ ...m, contexts: ["all"] }, () => {
+            let e = chrome.runtime.lastError; // Swallow creation errors safely
+        });
     });
 });
 
