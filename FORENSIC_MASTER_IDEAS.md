@@ -14,10 +14,10 @@
 
 ## 🟡 Tier 3: Chaos & Hardening
 - [ ] **Hydration Forensic**: Detect React/Next.js hydration mismatches and highlight the problematic nodes.
-- [ ] **Performance Thermal Map**: Highlight elements that trigger heavy layout shifts (CLS) or long paints.
+- [x] **Performance Thermal Map**: Highlight elements that trigger heavy layout shifts (CLS) or long paints.
 - [x] **Quantum Physics Mode**: Elements don't just fall; they repel each other or attract based on their "semantic weight".
 
 ## 🔵 Experimental Lab Tools
 - [x] **The "Refero" Lens**: A floating magnifying glass that shows the typography and spacing of whatever is beneath it in real-time.
-- **CSS Variable Time-Slider**: A slider in the popup to shift all CSS variables (colors/spacing) globally to test "vibe" variations.
+- [x] **CSS Variable Time-Slider**: A slider in the popup to shift all CSS variables (colors/spacing) globally to test "vibe" variations.
 - [x] **WebSocket Sniffer**: Live feed of socket messages filtered by the current active component.

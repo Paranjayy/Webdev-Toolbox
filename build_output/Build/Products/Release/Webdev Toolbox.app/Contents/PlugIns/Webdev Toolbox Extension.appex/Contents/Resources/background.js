@@ -1305,7 +1305,9 @@ chrome.runtime.onInstalled.addListener(() => {
         { id: "z_index_map", parentId: "webdev_toolbox", title: "🧊 Forensic: Z-Index 3D Map" },
         { id: "skeleton_ripper", parentId: "webdev_toolbox", title: "🦴 Inception: Skeleton Ripper" },
         { id: "refero_lens", parentId: "webdev_toolbox", title: "🔍 Lab: The Refero Lens" },
-        { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" }
+        { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" },
+        { id: "thermal_map", parentId: "webdev_toolbox", title: "🌡️ Forensic: Performance Thermal Map" },
+        { id: "vibe_slider", parentId: "webdev_toolbox", title: "🎛️ Lab: CSS Variable Time-Slider" }
     ];
     menus.forEach(m => {
         chrome.contextMenus.create({ ...m, contexts: ["all"] }, () => {
@@ -1338,7 +1340,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         z_index_map: () => handleZIndexLayerMap(tab.id),
         skeleton_ripper: () => handleSkeletonRipper(tab.id),
         refero_lens: () => handleReferoLens(tab.id),
-        quantum_physics: () => handleQuantumPhysics(tab.id)
+        quantum_physics: () => handleQuantumPhysics(tab.id),
+        thermal_map: () => handleThermalMap(tab.id),
+        vibe_slider: () => handleVibeSlider(tab.id)
     };
     if (handlers[info.menuItemId]) handlers[info.menuItemId]();
 });
@@ -1614,6 +1618,81 @@ async function handleQuantumPhysics(tabId) {
             };
             window.__quantum_raf = requestAnimationFrame(loop);
             return '⚛️ Quantum Physics Activated! Move your mouse.';
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleThermalMap(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__thermal_active) {
+                window.__thermal_active = false;
+                window.__thermal_observer?.disconnect();
+                return 'Performance Thermal Map Disabled.';
+            }
+            window.__thermal_active = true;
+            try {
+                window.__thermal_observer = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.entryType === 'layout-shift') {
+                            entry.sources.forEach(source => {
+                                const el = source.node;
+                                if (el && el.style) {
+                                    const origOutline = el.style.outline;
+                                    const origTransition = el.style.transition;
+                                    const origBg = el.style.backgroundColor;
+                                    el.style.transition = 'none';
+                                    el.style.outline = '3px solid rgba(239, 68, 68, 0.8)';
+                                    el.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                                    setTimeout(() => {
+                                        el.style.transition = 'all 1s ease';
+                                        el.style.outline = origOutline;
+                                        el.style.backgroundColor = origBg;
+                                    }, 200);
+                                }
+                            });
+                        }
+                    }
+                });
+                window.__thermal_observer.observe({ type: 'layout-shift', buffered: true });
+                return '🌡️ Thermal Map Active! Watching for Layout Shifts (CLS).';
+            } catch (e) {
+                return 'Error: PerformanceObserver not supported here.';
+            }
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleVibeSlider(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (document.getElementById('__vibe_slider')) {
+                document.getElementById('__vibe_slider').remove();
+                document.body.style.filter = '';
+                return 'Vibe Slider Removed.';
+            }
+
+            const container = document.createElement('div');
+            container.id = '__vibe_slider';
+            container.style = `position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(13,17,23,0.95); padding:15px 25px; border-radius:30px; z-index:2147483647; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); box-shadow:0 10px 40px rgba(0,0,0,0.5); display:flex; align-items:center; gap:15px; font-family:monospace;`;
+            container.innerHTML = \`
+                <span style="color:#e6edf3; font-size:12px; font-weight:bold;">VIBE SHIFT</span>
+                <input type="range" min="0" max="360" value="0" style="width:200px; accent-color:#8b5cf6; cursor:pointer;">
+                <span style="color:#8b949e; cursor:pointer; font-weight:bold; font-size:14px;" onclick="this.parentElement.remove(); document.body.style.filter = '';">×</span>
+            \`;
+            document.body.appendChild(container);
+            
+            container.querySelector('input').addEventListener('input', (e) => {
+                const hueOffset = e.target.value;
+                document.body.style.filter = \`hue-rotate(\${hueOffset}deg)\`;
+            });
+            return '🎛️ Vibe Time-Slider Active!';
         }
     }, (res) => {
         if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
