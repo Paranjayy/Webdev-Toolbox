@@ -295,6 +295,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     } else if (request.action === 'TRIGGER_FORENSIC_PROFILER') {
         handleForensicProfiler(request.tabId || sender.tab.id);
+    } else if (request.action === 'TRIGGER_GHOST_MODE') {
+        handleGhostMode(request.tabId || sender.tab.id);
+    } else if (request.action === 'TRIGGER_DOM_HEATMAP') {
+        handleDOMHeatmap(request.tabId || sender.tab.id);
+    } else if (request.action === 'TRIGGER_UI_AUTOPSY') {
+        handleUIAutopsy(request.tabId || sender.tab.id);
     } else if (request.action === 'PERFORM_SNAPSHOT') {
         handleDOMCleaner(sender.tab?.id || request.tabId, request.raw || false);
         sendResponse({ success: true });
@@ -405,6 +411,236 @@ ${profile.traffic.map(l => `| ${l.method} | ${l.status} | ${l.type} | ${l.url.sl
         if (res?.[0]?.result?.success) {
             showContentToast(tabId, "Forensic UI Profile Copied (Refero Mode)!", 'success');
         }
+    });
+}
+
+async function handleGravityMode(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const els = Array.from(document.querySelectorAll('div, section, article, h1, h2, h3, p, img, button')).slice(0, 500);
+            els.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                el.style.position = 'fixed';
+                el.style.left = rect.left + 'px';
+                el.style.top = rect.top + 'px';
+                el.style.width = rect.width + 'px';
+                el.style.transition = 'top 2s cubic-bezier(0.17, 0.67, 0.83, 0.67), transform 2s ease-in';
+                el.style.zIndex = '100000';
+            });
+            setTimeout(() => {
+                els.forEach(el => {
+                    el.style.top = (window.innerHeight - 50) + 'px';
+                    el.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+                });
+            }, 100);
+        }
+    });
+}
+
+async function handleGhostMode(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__GHOST_MODE_ACTIVE) {
+                window.__GHOST_MODE_ACTIVE = false;
+                document.querySelectorAll('.__ghost-hidden').forEach(el => el.style.pointerEvents = '');
+                return;
+            }
+            window.__GHOST_MODE_ACTIVE = true;
+            document.addEventListener('mouseover', (e) => {
+                if (!window.__GHOST_MODE_ACTIVE) return;
+                const el = e.target;
+                if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
+                el.style.pointerEvents = 'none';
+                el.classList.add('__ghost-hidden');
+                setTimeout(() => el.style.pointerEvents = '', 2000);
+            }, { capture: true });
+        }
+    });
+}
+
+async function handleDOMHeatmap(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const getMaxDepth = (el) => {
+                let max = 0;
+                for (let child of el.children) max = Math.max(max, getMaxDepth(child));
+                return 1 + max;
+            };
+            const totalMax = getMaxDepth(document.body);
+            document.querySelectorAll('*').forEach(el => {
+                let depth = 0;
+                let curr = el;
+                while (curr && curr !== document.body) { depth++; curr = curr.parentElement; }
+                const ratio = depth / totalMax;
+                const hue = (1 - ratio) * 240; // Blue (0 depth) to Red (max depth)
+                el.style.outline = `1px solid hsla(${hue}, 100%, 50%, 0.3)`;
+                el.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.05)`;
+            });
+        }
+    });
+}
+
+async function handleUIAutopsy(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const onSelect = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                const cloned = el.cloneNode(true);
+                const styles = getComputedStyle(el);
+                
+                const container = document.createElement('div');
+                container.style = `position:fixed; top:10%; left:10%; width:80%; height:80%; background:#0d1117; z-index:10000001; border-radius:16px; border:2px solid #ff00ff; box-shadow:0 0 50px rgba(0,0,0,0.9); display:flex; flex-direction:column; overflow:hidden;`;
+                container.innerHTML = `
+                    <div style="padding:16px; background:#161b22; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363d;">
+                        <span style="color:#ff00ff; font-weight:900; text-transform:uppercase; font-size:12px;">🫀 UI AUTOPSY: ${el.tagName}</span>
+                        <button id="__autopsy_close" style="background:#ff4444; color:white; border:none; padding:4px 12px; border-radius:6px; cursor:pointer;">CLOSE</button>
+                    </div>
+                    <div style="flex:1; display:flex; background:#000;">
+                        <div style="flex:1; padding:40px; display:flex; align-items:center; justify-content:center; overflow:auto;" id="__autopsy_preview"></div>
+                        <div style="width:300px; background:#161b22; border-left:1px solid #30363d; padding:16px; overflow:auto;">
+                            <h4 style="color:#79c0ff; font-size:11px; margin-bottom:12px;">DESIGN TOKENS</h4>
+                            <pre style="font-size:10px; color:#8b949e; white-space:pre-wrap;">${Array.from(el.attributes).map(a => `${a.name}: ${a.value}`).join('\n')}</pre>
+                            <h4 style="color:#79c0ff; font-size:11px; margin:20px 0 12px;">COMPUTED STYLES</h4>
+                            <pre style="font-size:10px; color:#8b949e; white-space:pre-wrap;">display: ${styles.display}\nposition: ${styles.position}\nwidth: ${styles.width}\nheight: ${styles.height}\nbackground: ${styles.backgroundColor}\ncolor: ${styles.color}\nfont: ${styles.fontFamily}</pre>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(container);
+                container.querySelector('#__autopsy_preview').appendChild(cloned);
+                container.querySelector('#__autopsy_close').onclick = () => container.remove();
+                
+                document.removeEventListener('click', onSelect, true);
+                document.body.style.cursor = '';
+            };
+            document.addEventListener('click', onSelect, true);
+            document.body.style.cursor = 'crosshair';
+        }
+    });
+}
+
+async function handleVisualEdit(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            document.designMode = document.designMode === 'on' ? 'off' : 'on';
+            return `✍ LIVE EDIT: ${document.designMode === 'on' ? 'ENABLED (Type anywhere!)' : 'DISABLED'}`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleInspectStyle(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const handler = (e) => {
+                e.preventDefault();
+                const style = window.getComputedStyle(e.target);
+                console.log(`%c [VAULT INSPECT] ${e.target.tagName} `, 'background: #6366f1; color: white; font-weight: bold;');
+                console.log('Font:', style.fontFamily, style.fontSize, style.fontWeight);
+                console.log('Colors:', { color: style.color, background: style.backgroundColor });
+                console.log('Spacing:', { margin: style.margin, padding: style.padding });
+                console.log('Element:', e.target);
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
+            return 'Click an element to see its core styles in the console.';
+        }
+    });
+}
+
+async function handleCopySelector(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const handler = (e) => {
+                e.preventDefault();
+                const getSelector = (el) => {
+                    if (el.id) return `#${el.id}`;
+                    let path = [];
+                    while (el && el.nodeType === Node.ELEMENT_NODE) {
+                        let selector = el.nodeName.toLowerCase();
+                        if (el.id) {
+                            selector += '#' + el.id;
+                            path.unshift(selector);
+                            break;
+                        } else {
+                            let sibling = el, nth = 1;
+                            while (sibling = sibling.previousElementSibling) if (sibling.nodeName === el.nodeName) nth++;
+                            if (nth !== 1) selector += `:nth-of-type(${nth})`;
+                        }
+                        path.unshift(selector);
+                        el = el.parentNode;
+                    }
+                    return path.join(' > ');
+                };
+                const selector = getSelector(e.target);
+                const tmp = document.createElement('textarea');
+                tmp.value = selector;
+                document.body.appendChild(tmp);
+                tmp.select();
+                document.execCommand('copy');
+                document.body.removeChild(tmp);
+                console.log('Copied Selector:', selector);
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
+            return 'Click an element to copy its unique CSS selector.';
+        }
+    });
+}
+
+async function handleNukeElement(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.target.remove();
+                document.removeEventListener('click', handler, true);
+            };
+            document.addEventListener('click', handler, true);
+            return 'Click any element to delete it from the DOM.';
+        }
+    });
+}
+
+async function handleCSSRoulette(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const root = document.documentElement;
+            const variables = [];
+            for (let i = 0; i < document.styleSheets.length; i++) {
+                try {
+                    const sheet = document.styleSheets[i];
+                    for (let j = 0; j < sheet.cssRules.length; j++) {
+                        const rule = sheet.cssRules[j];
+                        if (rule.style) {
+                            for (let k = 0; k < rule.style.length; k++) {
+                                const name = rule.style[k];
+                                if (name.startsWith('--')) variables.push(name);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+            const uniqueVars = [...new Set(variables)];
+            uniqueVars.forEach(v => {
+                const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                root.style.setProperty(v, randomColor);
+            });
+            return `Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
     });
 }
 
@@ -790,6 +1026,19 @@ async function handleDesignLab(tabId) {
                             <button class="__lab-btn" data-skill="${s}"><span>${s}</span></button>
                         `).join('')}
                     </div>
+                    <div class="card" style="grid-column: span 2; border-color: var(--amber); background: rgba(210, 153, 34, 0.05);">
+                    <div class="card-title" style="color: var(--amber);">Forensic UI Profiler (Refero)</div>
+                    <div class="card-desc">Deep style analysis, typography mapping, and token extraction linked to network context.</div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-primary" id="btn-forensic-profile" style="flex:1; background: var(--amber); border-color: var(--amber);">🧬 Profile DNA</button>
+                        <button class="btn" id="btn-ghost-mode" style="flex:1;">👻 Ghost Mode</button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn" id="btn-dom-heatmap" style="flex:1;">🌡️ Heatmap</button>
+                        <button class="btn" id="btn-ui-autopsy" style="flex:1;">🫀 Autopsy</button>
+                    </div>
+                </div>
+            </div>
                     <div class="__lab-selections" id="__lab_selections_list"></div>
                 </div>
                 <div class="__lab-footer">
@@ -992,6 +1241,30 @@ chrome.runtime.onInstalled.addListener(() => {
         id: "css_roulette",
         parentId: "webdev_toolbox",
         title: "🎲 Chaos: CSS Roulette",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "forensic_profiler",
+        parentId: "webdev_toolbox",
+        title: "🧬 Forensic: UI Profiler (Refero)",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "ghost_mode",
+        parentId: "webdev_toolbox",
+        title: "👻 Forensic: Toggle Ghost Mode",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "dom_heatmap",
+        parentId: "webdev_toolbox",
+        title: "🌡️ Forensic: Analyze Heatmap",
+        contexts: ["all"]
+    });
+    chrome.contextMenus.create({
+        id: "ui_autopsy",
+        parentId: "webdev_toolbox",
+        title: "🫀 Forensic: Live UI Autopsy",
         contexts: ["all"]
     });
     chrome.contextMenus.create({

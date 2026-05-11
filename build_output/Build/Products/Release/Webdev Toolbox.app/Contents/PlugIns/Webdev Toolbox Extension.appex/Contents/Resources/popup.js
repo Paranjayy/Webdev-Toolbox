@@ -817,6 +817,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    safeListen('btn-ghost-mode', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            chrome.runtime.sendMessage({ action: 'TRIGGER_GHOST_MODE', tabId: tab.id });
+        });
+    });
+
+    safeListen('btn-dom-heatmap', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            chrome.runtime.sendMessage({ action: 'TRIGGER_DOM_HEATMAP', tabId: tab.id });
+        });
+    });
+
+    safeListen('btn-ui-autopsy', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            chrome.runtime.sendMessage({ action: 'TRIGGER_UI_AUTOPSY', tabId: tab.id });
+        });
+    });
+
     // Action Flow Recorder (Vibe Recorder)
     safeListen('btn-flow-recorder', 'click', () => {
         getActiveTab().then(tab => {

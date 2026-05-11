@@ -219,7 +219,14 @@
                 <div class="card" style="grid-column: span 2; border-color: var(--amber); background: rgba(210, 153, 34, 0.05);">
                     <div class="card-title" style="color: var(--amber);">Forensic UI Profiler (Refero)</div>
                     <div class="card-desc">Deep style analysis, typography mapping, and token extraction linked to network context.</div>
-                    <button class="btn btn-primary" id="btn-forensic-profile" style="background: var(--amber); border-color: var(--amber);">🧬 Profile UI DNA</button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-primary" id="btn-forensic-profile" style="flex:1; background: var(--amber); border-color: var(--amber);">🧬 Profile DNA</button>
+                        <button class="btn" id="btn-ghost-mode" style="flex:1;">👻 Ghost Mode</button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn" id="btn-dom-heatmap" style="flex:1;">🌡️ Heatmap</button>
+                        <button class="btn" id="btn-ui-autopsy" style="flex:1;">🫀 Autopsy</button>
+                    </div>
                 </div>
                 <div class="card">
                     <div class="card-title">State Scanner</div>
