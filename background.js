@@ -1301,7 +1301,11 @@ chrome.runtime.onInstalled.addListener(() => {
             { id: "vibe_recorder", parentId: "webdev_toolbox", title: "🎬 Macro: Vibe Recorder" },
             { id: "anti_slop_detect", parentId: "webdev_toolbox", title: "🚫 AI Slop Detector (Impeccable)" },
             { id: "floating_nexus", parentId: "webdev_toolbox", title: "🌐 Toggle Floating Nexus Toolbar" },
-            { id: "visual_diff", parentId: "webdev_toolbox", title: "🔬 Visual DOM Diff (Last 2 Snaps)" }
+            { id: "visual_diff", parentId: "webdev_toolbox", title: "🔬 Visual DOM Diff (Last 2 Snaps)" },
+            { id: "z_index_map", parentId: "webdev_toolbox", title: "🧊 Forensic: Z-Index 3D Map" },
+            { id: "skeleton_ripper", parentId: "webdev_toolbox", title: "🦴 Inception: Skeleton Ripper" },
+            { id: "refero_lens", parentId: "webdev_toolbox", title: "🔍 Lab: The Refero Lens" },
+            { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" }
         ];
         menus.forEach(m => chrome.contextMenus.create({ ...m, contexts: ["all"] }));
     });
@@ -1327,7 +1331,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         anti_slop_detect: () => handleSlopDetect(tab.id),
         floating_nexus: () => handleFloatingNexus(tab.id),
         visual_diff: () => handleVisualDiff(tab.id),
-        vibe_recorder: () => handleVibeRecorder(tab.id)
+        vibe_recorder: () => handleVibeRecorder(tab.id),
+        z_index_map: () => handleZIndexLayerMap(tab.id),
+        skeleton_ripper: () => handleSkeletonRipper(tab.id),
+        refero_lens: () => handleReferoLens(tab.id),
+        quantum_physics: () => handleQuantumPhysics(tab.id)
     };
     if (handlers[info.menuItemId]) handlers[info.menuItemId]();
 });
@@ -1368,6 +1376,244 @@ async function handleShadowPierce(tabId) {
         }
     }, (res) => {
         if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'success');
+    });
+}
+
+async function handleZIndexLayerMap(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (document.body.style.transform.includes('rotateX')) {
+                // Toggle off
+                document.body.style.transform = '';
+                document.body.style.transformStyle = '';
+                document.body.style.perspective = '';
+                document.querySelectorAll('*').forEach(el => {
+                    el.style.transform = el.dataset.origTransform || '';
+                    el.style.boxShadow = el.dataset.origBoxShadow || '';
+                });
+                return 'Z-Index 3D Map Disabled.';
+            }
+
+            document.body.style.perspective = '2000px';
+            document.body.style.transformStyle = 'preserve-3d';
+            document.body.style.transform = 'rotateX(60deg) rotateZ(-30deg) scale(0.6)';
+            document.body.style.transition = 'transform 1s ease';
+
+            document.querySelectorAll('*').forEach(el => {
+                const z = window.getComputedStyle(el).zIndex;
+                if (z !== 'auto' && z !== '0') {
+                    el.dataset.origTransform = el.style.transform;
+                    el.dataset.origBoxShadow = el.style.boxShadow;
+                    
+                    // Cap extreme z-index values so it doesn't break the viewport
+                    const zVal = Math.min(Math.max(parseInt(z, 10), -500), 500);
+                    const offset = zVal * 2; // scale the visual offset
+                    
+                    el.style.transform = `translateZ(${offset}px)`;
+                    el.style.boxShadow = `0 ${offset}px ${offset/2}px rgba(0,0,0,0.3)`;
+                    el.style.transition = 'all 1s ease';
+                }
+            });
+            return '🧊 Z-Index 3D Map Enabled! (Click again to disable)';
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleSkeletonRipper(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const onSelect = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const el = e.target;
+                
+                // Deep clone and clean
+                const cloned = el.cloneNode(true);
+                
+                // Generic skeleton classes (Tailwind-ish)
+                const walker = document.createTreeWalker(cloned, NodeFilter.SHOW_ELEMENT, null, false);
+                let node = walker.nextNode();
+                // Add the root element itself to the list to process
+                const allNodes = [cloned];
+                while (node) { allNodes.push(node); node = walker.nextNode(); }
+
+                allNodes.forEach(n => {
+                    // Strip specific styling attributes
+                    n.removeAttribute('style');
+                    n.removeAttribute('id');
+                    
+                    // Replace content with skeleton blocks
+                    if (n.children.length === 0 && n.textContent.trim().length > 0) {
+                        n.textContent = '';
+                        n.classList.add('bg-gray-200', 'rounded', 'animate-pulse');
+                        if (!n.classList.contains('h-') && !n.className.match(/h-\d/)) n.classList.add('h-4', 'w-full');
+                    }
+                    
+                    // Strip complex classes, keep structure
+                    const keepClasses = ['flex', 'grid', 'flex-col', 'items-center', 'justify-between', 'gap-', 'p-', 'm-', 'w-', 'h-', 'rounded'];
+                    if (n.className && typeof n.className === 'string') {
+                        const newClasses = n.className.split(' ').filter(c => keepClasses.some(kc => c.startsWith(kc)));
+                        n.className = newClasses.join(' ');
+                    }
+                });
+
+                const html = cloned.outerHTML;
+                const tmp = document.createElement('textarea');
+                tmp.value = html;
+                document.body.appendChild(tmp);
+                tmp.select();
+                document.execCommand('copy');
+                tmp.remove();
+
+                document.removeEventListener('click', onSelect, true);
+                document.body.style.cursor = '';
+                
+                console.log('🦴 Skeleton Ripped:\n', html);
+                alert('Skeleton boilerplate copied to clipboard!');
+            };
+            document.addEventListener('click', onSelect, true);
+            document.body.style.cursor = 'crosshair';
+            return 'Click any element to rip its skeleton.';
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleReferoLens(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__refero_lens_active) {
+                document.removeEventListener('mousemove', window.__refero_lens_fn);
+                document.getElementById('__refero_lens')?.remove();
+                window.__refero_lens_active = false;
+                return 'Refero Lens Disabled.';
+            }
+            
+            window.__refero_lens_active = true;
+            const lens = document.createElement('div');
+            lens.id = '__refero_lens';
+            lens.style = `position:fixed; pointer-events:none; z-index:2147483647; background:rgba(13,17,23,0.95); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:monospace; color:#e6edf3; font-size:11px; min-width:220px; transition:opacity 0.1s; opacity:0;`;
+            document.body.appendChild(lens);
+
+            window.__refero_lens_fn = (e) => {
+                const el = document.elementFromPoint(e.clientX, e.clientY);
+                if (!el || el === document.body || el === document.documentElement) {
+                    lens.style.opacity = '0';
+                    return;
+                }
+                lens.style.opacity = '1';
+                
+                // Offset lens so it doesn't block the cursor
+                const x = e.clientX + 15;
+                const y = e.clientY + 15;
+                lens.style.left = `${x}px`;
+                lens.style.top = `${y}px`;
+
+                const cs = window.getComputedStyle(el);
+                const tag = el.tagName.toLowerCase();
+                const cls = el.className && typeof el.className === 'string' ? `.${el.className.split(' ').join('.')}` : '';
+                
+                lens.innerHTML = `
+                    <div style="color:#7ee787; font-weight:bold; margin-bottom:6px; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+                        ${tag}${cls}
+                    </div>
+                    <div style="display:grid; grid-template-columns:80px 1fr; gap:4px;">
+                        <span style="color:#8b949e">Font:</span> <span>${cs.fontFamily.split(',')[0]}</span>
+                        <span style="color:#8b949e">Size:</span> <span>${cs.fontSize}</span>
+                        <span style="color:#8b949e">Weight:</span> <span>${cs.fontWeight}</span>
+                        <span style="color:#8b949e">Line:</span> <span>${cs.lineHeight}</span>
+                        <span style="color:#8b949e">Spacing:</span> <span>${cs.letterSpacing}</span>
+                        <span style="color:#8b949e">Color:</span> <span style="display:flex; align-items:center; gap:4px;"><div style="width:10px;height:10px;border-radius:2px;background:${cs.color}"></div> ${cs.color}</span>
+                        <span style="color:#8b949e">Margin:</span> <span>${cs.margin}</span>
+                        <span style="color:#8b949e">Padding:</span> <span>${cs.padding}</span>
+                    </div>
+                `;
+            };
+            document.addEventListener('mousemove', window.__refero_lens_fn);
+            return '🔍 Refero Lens Enabled! Hover over elements.';
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleQuantumPhysics(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__quantum_active) {
+                window.__quantum_active = false;
+                cancelAnimationFrame(window.__quantum_raf);
+                document.removeEventListener('mousemove', window.__quantum_mouse);
+                return 'Quantum Physics Disabled.';
+            }
+
+            window.__quantum_active = true;
+            const elements = Array.from(document.querySelectorAll('p, h1, h2, h3, img, button, a, .card, span'))
+                .filter(el => el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0);
+            
+            const physicsData = elements.map(el => {
+                const rect = el.getBoundingClientRect();
+                // We use transform instead of absolute positioning to avoid destroying the layout completely
+                return {
+                    el,
+                    x: 0,
+                    y: 0,
+                    vx: 0,
+                    vy: 0,
+                    origX: rect.left + rect.width / 2,
+                    origY: rect.top + rect.height / 2
+                };
+            });
+
+            let mouseX = -1000, mouseY = -1000;
+            window.__quantum_mouse = (e) => { mouseX = e.clientX; mouseY = e.clientY; };
+            document.addEventListener('mousemove', window.__quantum_mouse);
+
+            const loop = () => {
+                if (!window.__quantum_active) return;
+                
+                physicsData.forEach(p => {
+                    const elCenterX = p.origX + p.x;
+                    const elCenterY = p.origY + p.y;
+                    
+                    const dx = elCenterX - mouseX;
+                    const dy = elCenterY - mouseY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Repulsion logic
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150; // 0 to 1
+                        p.vx += (dx / dist) * force * 2;
+                        p.vy += (dy / dist) * force * 2;
+                    }
+
+                    // Return-to-origin spring logic
+                    p.vx += (0 - p.x) * 0.05;
+                    p.vy += (0 - p.y) * 0.05;
+
+                    // Friction
+                    p.vx *= 0.85;
+                    p.vy *= 0.85;
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+                });
+                
+                window.__quantum_raf = requestAnimationFrame(loop);
+            };
+            window.__quantum_raf = requestAnimationFrame(loop);
+            return '⚛️ Quantum Physics Activated! Move your mouse.';
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
     });
 }
 

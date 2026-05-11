@@ -5,49 +5,6 @@
 	<key>logFormatVersion</key>
 	<integer>12</integer>
 	<key>logs</key>
-	<dict>
-		<key>EFFAF974-6103-475E-A68B-0A6B21C4034F</key>
-		<dict>
-			<key>className</key>
-			<string>IDECommandLineBuildLog</string>
-			<key>documentTypeString</key>
-			<string>&lt;nil&gt;</string>
-			<key>domainType</key>
-			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
-			<key>fileName</key>
-			<string>EFFAF974-6103-475E-A68B-0A6B21C4034F.xcactivitylog</string>
-			<key>hasPrimaryLog</key>
-			<true/>
-			<key>primaryObservable</key>
-			<dict>
-				<key>highLevelStatus</key>
-				<string>S</string>
-				<key>totalNumberOfAnalyzerIssues</key>
-				<integer>0</integer>
-				<key>totalNumberOfErrors</key>
-				<integer>0</integer>
-				<key>totalNumberOfTestFailures</key>
-				<integer>0</integer>
-				<key>totalNumberOfWarnings</key>
-				<integer>0</integer>
-			</dict>
-			<key>schemeIdentifier-containerName</key>
-			<string>Webdev Toolbox project</string>
-			<key>schemeIdentifier-schemeName</key>
-			<string>Webdev Toolbox</string>
-			<key>schemeIdentifier-sharedScheme</key>
-			<integer>1</integer>
-			<key>signature</key>
-			<string>Building project Webdev Toolbox with scheme Webdev Toolbox and configuration Release</string>
-			<key>timeStartedRecording</key>
-			<real>800183485.25104499</real>
-			<key>timeStoppedRecording</key>
-			<real>800183730.66394806</real>
-			<key>title</key>
-			<string>Building project Webdev Toolbox with scheme Webdev Toolbox and configuration Release</string>
-			<key>uniqueIdentifier</key>
-			<string>EFFAF974-6103-475E-A68B-0A6B21C4034F</string>
-		</dict>
-	</dict>
+	<dict/>
 </dict>
 </plist>
