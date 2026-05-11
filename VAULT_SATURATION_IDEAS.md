@@ -1,13 +1,14 @@
 # 🛰️ Antigravity Dev Vault: Saturation Roadmap
-> Version: **2.3.3** | Goal: **Total Forensic Sovereignty**
+> Version: **2.4.3** | Goal: **Total Forensic Sovereignty**
 
 ## 🔴 Immediate Features (The "Refero" Era)
 - [x] **Forensic UI Profiler**: Deep style analysis, typography mapping, and token extraction (mimicking styles.refero.design).
 - [x] **Ghost DOM Mode**: X-Ray vision to see through layers.
 - [x] **DOM Heatmap**: Visualize complexity and nesting depth.
 - [x] **Live UI Autopsy**: Tear out elements into an isolated playground.
+- [x] **Shadow DOM Auto-Pierce**: Automatically visualize Shadow DOM boundaries and properties during inspection.
+- [x] **AI Style Inception (Vibe Swapper)**: Capture design tokens from one site and apply them to another instantly.
 - [ ] **Network-to-UI Anchoring**: Link captured DOM elements to the specific API/Socket requests that rendered them.
-- [ ] **Shadow DOM Auto-Pierce**: Automatically visualize Shadow DOM boundaries and properties during inspection.
 
 ## 🟠 Intelligence & AI Workflow
 - [ ] **Prompt Presets**: Context-aware prompt shortcuts (e.g., "Clean up this UI", "Extract data schema", "Stripe-ify design").

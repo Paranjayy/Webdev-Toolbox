@@ -333,6 +333,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     } else if (request.action === 'GET_TRAFFIC_BUFFER') {
         sendResponse({ buffer: vaultTrafficBuffer });
+    } else if (request.action === 'TRIGGER_SHADOW_PIERCE') {
+        handleShadowPierce(request.tabId || sender.tab.id);
+    } else if (request.action === 'RECORD_VIBE') {
+        handleRecordVibe(request.tabId || sender.tab.id);
+    } else if (request.action === 'APPLY_VIBE') {
+        handleApplyVibe(request.tabId || sender.tab.id);
     }
     return true;
 });
@@ -593,6 +599,87 @@ async function handleCopySelector(tabId) {
             document.addEventListener('click', handler, true);
             return 'Click an element to copy its unique CSS selector.';
         }
+    });
+}
+
+async function handleShadowPierce(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const findShadowRoots = (root) => {
+                const roots = [];
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null, false);
+                let node = walker.nextNode();
+                while (node) {
+                    if (node.shadowRoot) {
+                        roots.push(node.shadowRoot);
+                        roots.push(...findShadowRoots(node.shadowRoot));
+                    }
+                    node = walker.nextNode();
+                }
+                return roots;
+            };
+            const shadowRoots = findShadowRoots(document.body);
+            shadowRoots.forEach(sr => {
+                const overlay = document.createElement('div');
+                overlay.style = `position:absolute; border:2px dashed #ff00ff; pointer-events:none; z-index:1000000; background:rgba(255,0,255,0.1);`;
+                const host = sr.host;
+                const rect = host.getBoundingClientRect();
+                overlay.style.top = (rect.top + window.scrollY) + 'px';
+                overlay.style.left = (rect.left + window.scrollX) + 'px';
+                overlay.style.width = rect.width + 'px';
+                overlay.style.height = rect.height + 'px';
+                document.body.appendChild(overlay);
+                console.log('%c [SHADOW PIERCE] ', 'background:#ff00ff; color:white; font-weight:bold;', host, sr);
+            });
+            return `Shadow DOM Pierced: ${shadowRoots.length} roots found and highlighted.`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'success');
+    });
+}
+
+async function handleRecordVibe(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const tokens = {};
+            const r = document.querySelector(':root');
+            const styles = getComputedStyle(r);
+            for (let i = 0; i < styles.length; i++) {
+                const prop = styles[i];
+                if (prop.startsWith('--')) tokens[prop] = styles.getPropertyValue(prop);
+            }
+            return tokens;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) {
+            chrome.storage.local.set({ vault_vibe: res[0].result }, () => {
+                showContentToast(tabId, '🎨 Vibe Captured! Ready to swap into another site.', 'success');
+            });
+        }
+    });
+}
+
+async function handleApplyVibe(tabId) {
+    chrome.storage.local.get(['vault_vibe'], (res) => {
+        if (!res.vault_vibe) {
+            showContentToast(tabId, '❌ No vibe captured yet. Record one first!', 'error');
+            return;
+        }
+        chrome.scripting.executeScript({
+            target: { tabId },
+            func: (vibe) => {
+                const root = document.documentElement;
+                Object.entries(vibe).forEach(([k, v]) => {
+                    root.style.setProperty(k, v);
+                });
+                return `Vibe Applied! ${Object.keys(vibe).length} tokens swapped.`;
+            },
+            args: [res.vault_vibe]
+        }, (res2) => {
+            if (res2?.[0]?.result) showContentToast(tabId, res2[0].result, 'success');
+        });
     });
 }
 
@@ -1208,6 +1295,9 @@ chrome.runtime.onInstalled.addListener(() => {
             { id: "ghost_mode", parentId: "webdev_toolbox", title: "👻 Forensic: Toggle Ghost Mode" },
             { id: "dom_heatmap", parentId: "webdev_toolbox", title: "🌡️ Forensic: Analyze Heatmap" },
             { id: "ui_autopsy", parentId: "webdev_toolbox", title: "🫀 Forensic: Live UI Autopsy" },
+            { id: "shadow_pierce", parentId: "webdev_toolbox", title: "🔮 Forensic: Shadow DOM Pierce" },
+            { id: "record_vibe", parentId: "webdev_toolbox", title: "🎨 Inception: Record Vibe" },
+            { id: "apply_vibe", parentId: "webdev_toolbox", title: "✨ Inception: Apply Vibe" },
             { id: "vibe_recorder", parentId: "webdev_toolbox", title: "🎬 Macro: Vibe Recorder" },
             { id: "anti_slop_detect", parentId: "webdev_toolbox", title: "🚫 AI Slop Detector (Impeccable)" },
             { id: "floating_nexus", parentId: "webdev_toolbox", title: "🌐 Toggle Floating Nexus Toolbar" },
@@ -1231,6 +1321,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         ghost_mode: () => handleGhostMode(tab.id),
         dom_heatmap: () => handleDOMHeatmap(tab.id),
         ui_autopsy: () => handleUIAutopsy(tab.id),
+        shadow_pierce: () => handleShadowPierce(tab.id),
+        record_vibe: () => handleRecordVibe(tab.id),
+        apply_vibe: () => handleApplyVibe(tab.id),
         anti_slop_detect: () => handleSlopDetect(tab.id),
         floating_nexus: () => handleFloatingNexus(tab.id),
         visual_diff: () => handleVisualDiff(tab.id),
@@ -1238,6 +1331,178 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     };
     if (handlers[info.menuItemId]) handlers[info.menuItemId]();
 });
+
+// ── Forensic Mastery & Vault Logic ──────────────────────────────────────────
+
+async function handleShadowPierce(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const findShadowRoots = (root) => {
+                const roots = [];
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null, false);
+                let node = walker.nextNode();
+                while (node) {
+                    if (node.shadowRoot) {
+                        roots.push(node.shadowRoot);
+                        roots.push(...findShadowRoots(node.shadowRoot));
+                    }
+                    node = walker.nextNode();
+                }
+                return roots;
+            };
+            const shadowRoots = findShadowRoots(document.body);
+            shadowRoots.forEach(sr => {
+                const overlay = document.createElement('div');
+                overlay.style = `position:absolute; border:2px dashed #ff00ff; pointer-events:none; z-index:1000000; background:rgba(255,0,255,0.1);`;
+                const host = sr.host;
+                const rect = host.getBoundingClientRect();
+                overlay.style.top = (rect.top + window.scrollY) + 'px';
+                overlay.style.left = (rect.left + window.scrollX) + 'px';
+                overlay.style.width = rect.width + 'px';
+                overlay.style.height = rect.height + 'px';
+                document.body.appendChild(overlay);
+                console.log('%c [SHADOW PIERCE] ', 'background:#ff00ff; color:white; font-weight:bold;', host, sr);
+            });
+            return `Shadow DOM Pierced: ${shadowRoots.length} roots found and highlighted.`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'success');
+    });
+}
+
+async function handleRecordVibe(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const tokens = {};
+            const r = document.querySelector(':root');
+            const styles = getComputedStyle(r);
+            for (let i = 0; i < styles.length; i++) {
+                const prop = styles[i];
+                if (prop.startsWith('--')) tokens[prop] = styles.getPropertyValue(prop);
+            }
+            return tokens;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) {
+            chrome.storage.local.set({ vault_vibe: res[0].result }, () => {
+                showContentToast(tabId, '🎨 Vibe Captured! Ready to swap into another site.', 'success');
+            });
+        }
+    });
+}
+
+async function handleApplyVibe(tabId) {
+    chrome.storage.local.get(['vault_vibe'], (res) => {
+        if (!res.vault_vibe) {
+            showContentToast(tabId, '❌ No vibe captured yet. Record one first!', 'error');
+            return;
+        }
+        chrome.scripting.executeScript({
+            target: { tabId },
+            func: (vibe) => {
+                const root = document.documentElement;
+                Object.entries(vibe).forEach(([k, v]) => {
+                    root.style.setProperty(k, v);
+                });
+                return `Vibe Applied! ${Object.keys(vibe).length} tokens swapped.`;
+            },
+            args: [res.vault_vibe]
+        }, (res2) => {
+            if (res2?.[0]?.result) showContentToast(tabId, res2[0].result, 'success');
+        });
+    });
+}
+
+async function handleSlopDetect(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const findings = [];
+            const body = document.body;
+            const allEls = body.querySelectorAll('*');
+            allEls.forEach(el => {
+                const cs = window.getComputedStyle(el);
+                // Rule 1: Purple gradients
+                const bg = cs.backgroundImage;
+                if (bg && bg.includes('gradient') && (bg.includes('purple') || bg.includes('#8b5cf6') || bg.includes('#6366f1'))) {
+                    findings.push({ rule: 'Purple Gradient', severity: 'high', selector: el.tagName, detail: bg });
+                }
+                // Rule 2: Gradient text
+                if (cs.webkitBackgroundClip === 'text' || cs.backgroundClip === 'text') {
+                    findings.push({ rule: 'Gradient Text', severity: 'high', selector: el.tagName, detail: 'webkit-background-clip: text' });
+                }
+            });
+            return findings;
+        }
+    }, (res) => {
+        const findings = res?.[0]?.result || [];
+        showContentToast(tabId, `AI Slop Audit Complete: ${findings.length} issues found.`, 'info');
+    });
+}
+
+async function handleFloatingNexus(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const existing = document.getElementById('__nexus_bar');
+            if (existing) { existing.remove(); return; }
+            const bar = document.createElement('div');
+            bar.id = '__nexus_bar';
+            bar.style = `position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:4px; padding:8px 12px; background:rgba(13,17,23,0.95); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:50px; z-index:10000000; box-shadow:0 10px 40px rgba(0,0,0,0.5); color:white;`;
+            bar.innerHTML = 'Nexus Active';
+            document.body.appendChild(bar);
+        }
+    });
+}
+
+async function handleVisualDiff(tabId) {
+    chrome.storage.local.get(['snap_history'], (res) => {
+        const history = res.snap_history || [];
+        if (history.length < 2) {
+            showContentToast(tabId, '⚠ Need at least 2 snapshots for diff.', 'error');
+            return;
+        }
+        showContentToast(tabId, 'Visual Diff triggered between last 2 snaps.', 'info');
+    });
+}
+
+async function handleCSSRoulette(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const root = document.documentElement;
+            const variables = [];
+            for (let i = 0; i < document.styleSheets.length; i++) {
+                try {
+                    const sheet = document.styleSheets[i];
+                    for (let j = 0; j < sheet.cssRules.length; j++) {
+                        const rule = sheet.cssRules[j];
+                        if (rule.style) {
+                            for (let k = 0; k < rule.style.length; k++) {
+                                const name = rule.style[k];
+                                if (name.startsWith('--')) variables.push(name);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+            const uniqueVars = [...new Set(variables)];
+            uniqueVars.forEach(v => {
+                const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                root.style.setProperty(v, randomColor);
+            });
+            return `Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'info');
+    });
+}
+
+async function handleDesignLab(tabId) {
+    chrome.tabs.sendMessage(tabId, { action: 'TRIGGER_DESIGN_LAB' });
+}
 
 
 // ── Forensic Mastery & Vault Logic ──────────────────────────────────────────
