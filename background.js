@@ -293,9 +293,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         });
         return true;
-    }
-
-    if (request.action === 'PERFORM_SNAPSHOT') {
+    } else if (request.action === 'TRIGGER_FORENSIC_PROFILER') {
+        handleForensicProfiler(request.tabId || sender.tab.id);
+    } else if (request.action === 'PERFORM_SNAPSHOT') {
         handleDOMCleaner(sender.tab?.id || request.tabId, request.raw || false);
         sendResponse({ success: true });
     } else if (request.action === 'PERFORM_MACRO') {
@@ -330,6 +330,83 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true;
 });
+
+async function handleForensicProfiler(tabId) {
+    const traffic = vaultTrafficBuffer.slice(-20); // Last 20 requests for context
+    
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: (recentTraffic) => {
+            const getStyles = () => {
+                const tokens = {};
+                const r = document.querySelector(':root');
+                const styles = getComputedStyle(r);
+                for (let i = 0; i < styles.length; i++) {
+                    const prop = styles[i];
+                    if (prop.startsWith('--')) tokens[prop] = styles.getPropertyValue(prop);
+                }
+
+                const typography = [];
+                document.querySelectorAll('h1, h2, h3, p, button').forEach(el => {
+                    const s = getComputedStyle(el);
+                    typography.push({
+                        tag: el.tagName,
+                        font: s.fontFamily,
+                        size: s.fontSize,
+                        weight: s.fontWeight,
+                        color: s.color
+                    });
+                });
+
+                return { tokens, typography: typography.slice(0, 20) };
+            };
+
+            const profile = {
+                url: window.location.href,
+                title: document.title,
+                timestamp: new Date().toISOString(),
+                design: getStyles(),
+                traffic: recentTraffic,
+                screen: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    pixelRatio: window.devicePixelRatio
+                }
+            };
+
+            // Generate Refero-style Markdown
+            const md = `
+# UI FORENSIC PROFILE: ${profile.title}
+> Captured at ${new Date(profile.timestamp).toLocaleString()}
+
+## 🎨 Design Tokens (Root)
+${Object.entries(profile.design.tokens).map(([k,v]) => `- \`${k}\`: ${v}`).join('\n')}
+
+## 🔡 Typography Hierarchy
+| Tag | Font Family | Size | Weight | Color |
+|-----|-------------|------|--------|-------|
+${profile.design.typography.map(t => `| ${t.tag} | ${t.font.slice(0,30)} | ${t.size} | ${t.weight} | ${t.color} |`).join('\n')}
+
+## 📡 Network Context (Recent 20)
+| Method | Status | Type | URL |
+|--------|--------|------|-----|
+${profile.traffic.map(l => `| ${l.method} | ${l.status} | ${l.type} | ${l.url.slice(0, 50)}... |`).join('\n')}
+
+## 🖥️ Viewport
+- Dimensions: ${profile.screen.width}x${profile.screen.height}
+- Pixel Ratio: ${profile.screen.pixelRatio}
+            `;
+
+            navigator.clipboard.writeText(md);
+            return { success: true, profile };
+        },
+        args: [traffic]
+    }).then(res => {
+        if (res?.[0]?.result?.success) {
+            showContentToast(tabId, "Forensic UI Profile Copied (Refero Mode)!", 'success');
+        }
+    });
+}
 
 async function handleDOMCleaner(tabId, raw = false) {
     const traffic = [...vaultTrafficBuffer];

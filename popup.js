@@ -810,6 +810,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    safeListen('btn-forensic-profile', 'click', () => {
+        getActiveTab().then(tab => {
+            if (tab.restricted) return;
+            chrome.runtime.sendMessage({ action: 'TRIGGER_FORENSIC_PROFILER', tabId: tab.id });
+        });
+    });
+
     // Action Flow Recorder (Vibe Recorder)
     safeListen('btn-flow-recorder', 'click', () => {
         getActiveTab().then(tab => {

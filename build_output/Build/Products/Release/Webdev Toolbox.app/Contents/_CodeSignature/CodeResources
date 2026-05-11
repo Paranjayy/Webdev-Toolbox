@@ -18,15 +18,15 @@
 		</data>
 		<key>Resources/Base.lproj/Main.storyboardc/Info.plist</key>
 		<data>
-		hb10F/G1qZGIwsV2g1VftaZETxM=
+		2XHCyOnAUDE2FyeXSUDzFln/AiE=
 		</data>
 		<key>Resources/Base.lproj/Main.storyboardc/MainMenu.nib</key>
 		<data>
-		0VTef0M/VanL6XJqlnegZpIiGLQ=
+		nDeQ/ovhO/wb95uHTJqc1U6NsW8=
 		</data>
 		<key>Resources/Base.lproj/Main.storyboardc/NSWindowController-B8D-0N-5wS.nib</key>
 		<data>
-		Y3uFq694LDmGPAzwhjysq7RI79c=
+		PCcgeY2GCFwb3g6PGS/+vlXSvWw=
 		</data>
 		<key>Resources/Base.lproj/Main.storyboardc/XfG-lQ-9wD-view-m2S-Jp-Qdl.nib</key>
 		<data>
@@ -51,10 +51,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			eXXJrv795oq2IjCW8LLhIkDWQJM=
+			y9tDgrTcDMB+3MhaRVO8OpDKy0o=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"7975c9aefefde68ab6223096f0b2e12240d64093"</string>
+			<string>cdhash H"cbdb4382b4dc0cc07edcc85a4553bc3a90cacb4a"</string>
 		</dict>
 		<key>Resources/AppIcon.icns</key>
 		<dict>
@@ -81,21 +81,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			yLir/q0hpaNPTtTBEB5lp+fUZJjkbYYSxMsp35LOr1w=
+			K3uuNWmTY2ZOp41rVgspZTc2AMipspg0REFH4sM/EOw=
 			</data>
 		</dict>
 		<key>Resources/Base.lproj/Main.storyboardc/MainMenu.nib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			p+fdpcq7R9yTspQWp1xkj3j7KaXqBCQ/fxF6x20J6dY=
+			8FptqnWAQaBX7kVqw06ooyd2p2TOe/BDHqsIbkd57pM=
 			</data>
 		</dict>
 		<key>Resources/Base.lproj/Main.storyboardc/NSWindowController-B8D-0N-5wS.nib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			BBPSFxpRtGKD0qXm9PhdIjAQ2YmXG0JhTW3kMbcN6Io=
+			riyT/3b9WRw98IdWfYBZN1ApN9JT4guYsNB6RTmWzR4=
 			</data>
 		</dict>
 		<key>Resources/Base.lproj/Main.storyboardc/XfG-lQ-9wD-view-m2S-Jp-Qdl.nib</key>
