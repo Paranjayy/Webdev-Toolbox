@@ -1194,264 +1194,53 @@ async function handleDesignLab(tabId) {
 
 // ── Context Menu Setup ───────────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
-    // Parent Menu
-    chrome.contextMenus.create({
-        id: "webdev_toolbox",
-        title: "🛠 Webdev Toolbox",
-        contexts: ["all"]
-    });
-
-    chrome.contextMenus.create({
-        id: "ai_context_capture",
-        parentId: "webdev_toolbox",
-        title: "🧹 AI: Context Capture",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "design_lab",
-        parentId: "webdev_toolbox",
-        title: "✨ AI: Design Superpowers (Lab)",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "visual_edit",
-        parentId: "webdev_toolbox",
-        title: "🎨 Design: Toggle Edit Mode",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "inspect_style",
-        parentId: "webdev_toolbox",
-        title: "🔍 Design: Inspect Style",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "copy_selector",
-        parentId: "webdev_toolbox",
-        title: "📋 Dev: Copy Selector",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "nuke_element",
-        parentId: "webdev_toolbox",
-        title: "💀 Dev: Nuke Element",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "css_roulette",
-        parentId: "webdev_toolbox",
-        title: "🎲 Chaos: CSS Roulette",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "forensic_profiler",
-        parentId: "webdev_toolbox",
-        title: "🧬 Forensic: UI Profiler (Refero)",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "ghost_mode",
-        parentId: "webdev_toolbox",
-        title: "👻 Forensic: Toggle Ghost Mode",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "dom_heatmap",
-        parentId: "webdev_toolbox",
-        title: "🌡️ Forensic: Analyze Heatmap",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "ui_autopsy",
-        parentId: "webdev_toolbox",
-        title: "🫀 Forensic: Live UI Autopsy",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "vibe_recorder",
-        parentId: "webdev_toolbox",
-        title: "🎬 Macro: Vibe Recorder",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "anti_slop_detect",
-        parentId: "webdev_toolbox",
-        title: "🚫 AI Slop Detector (Impeccable)",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "floating_nexus",
-        parentId: "webdev_toolbox",
-        title: "🌐 Toggle Floating Nexus Toolbar",
-        contexts: ["all"]
-    });
-    chrome.contextMenus.create({
-        id: "visual_diff",
-        parentId: "webdev_toolbox",
-        title: "🔬 Visual DOM Diff (Last 2 Snaps)",
-        contexts: ["all"]
+    chrome.contextMenus.removeAll(() => {
+        const menus = [
+            { id: "webdev_toolbox", title: "🛠 Webdev Toolbox" },
+            { id: "ai_context_capture", parentId: "webdev_toolbox", title: "🧹 AI: Context Capture" },
+            { id: "design_lab", parentId: "webdev_toolbox", title: "✨ AI: Design Superpowers (Lab)" },
+            { id: "visual_edit", parentId: "webdev_toolbox", title: "🎨 Design: Toggle Edit Mode" },
+            { id: "inspect_style", parentId: "webdev_toolbox", title: "🔍 Design: Inspect Style" },
+            { id: "copy_selector", parentId: "webdev_toolbox", title: "📋 Dev: Copy Selector" },
+            { id: "nuke_element", parentId: "webdev_toolbox", title: "💀 Dev: Nuke Element" },
+            { id: "css_roulette", parentId: "webdev_toolbox", title: "🎲 Chaos: CSS Roulette" },
+            { id: "forensic_profiler", parentId: "webdev_toolbox", title: "🧬 Forensic: UI Profiler (Refero)" },
+            { id: "ghost_mode", parentId: "webdev_toolbox", title: "👻 Forensic: Toggle Ghost Mode" },
+            { id: "dom_heatmap", parentId: "webdev_toolbox", title: "🌡️ Forensic: Analyze Heatmap" },
+            { id: "ui_autopsy", parentId: "webdev_toolbox", title: "🫀 Forensic: Live UI Autopsy" },
+            { id: "vibe_recorder", parentId: "webdev_toolbox", title: "🎬 Macro: Vibe Recorder" },
+            { id: "anti_slop_detect", parentId: "webdev_toolbox", title: "🚫 AI Slop Detector (Impeccable)" },
+            { id: "floating_nexus", parentId: "webdev_toolbox", title: "🌐 Toggle Floating Nexus Toolbar" },
+            { id: "visual_diff", parentId: "webdev_toolbox", title: "🔬 Visual DOM Diff (Last 2 Snaps)" }
+        ];
+        menus.forEach(m => chrome.contextMenus.create({ ...m, contexts: ["all"] }));
     });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "ai_context_capture") {
-        handleDOMCleaner(tab.id, false);
-    } else if (info.menuItemId === "vibe_recorder") {
-        handleVibeRecorder(tab.id);
-    } else if (info.menuItemId === "visual_edit") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                document.designMode = document.designMode === 'on' ? 'off' : 'on';
-                return `✍ LIVE EDIT: ${document.designMode === 'on' ? 'ENABLED (Type anywhere!)' : 'DISABLED'}`;
-            }
-        }, (res) => {
-            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
-        });
-    } else if (info.menuItemId === "inspect_style") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                // We use a small hack to get the element under context menu click
-                // since 'all' context doesn't pass the element directly in MV3 background script
-                // we'll use the last right-clicked element if we tracked it, 
-                // or just ask the user to click again for simplicity in this lab tool.
-                const handler = (e) => {
-                    e.preventDefault();
-                    const style = window.getComputedStyle(e.target);
-                    console.log(`%c [VAULT INSPECT] ${e.target.tagName} `, 'background: #6366f1; color: white; font-weight: bold;');
-                    console.log('Font:', style.fontFamily, style.fontSize, style.fontWeight);
-                    console.log('Colors:', { color: style.color, background: style.backgroundColor });
-                    console.log('Spacing:', { margin: style.margin, padding: style.padding });
-                    console.log('Element:', e.target);
-                    document.removeEventListener('click', handler, true);
-                };
-                document.addEventListener('click', handler, true);
-                return 'Click an element to see its core styles in the console.';
-            }
-        });
-    } else if (info.menuItemId === "copy_selector") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                const handler = (e) => {
-                    e.preventDefault();
-                    const getSelector = (el) => {
-                        if (el.id) return `#${el.id}`;
-                        let path = [];
-                        while (el && el.nodeType === Node.ELEMENT_NODE) {
-                            let selector = el.nodeName.toLowerCase();
-                            if (el.id) {
-                                selector += '#' + el.id;
-                                path.unshift(selector);
-                                break;
-                            } else {
-                                let sibling = el, nth = 1;
-                                while (sibling = sibling.previousElementSibling) if (sibling.nodeName === el.nodeName) nth++;
-                                if (nth !== 1) selector += `:nth-of-type(${nth})`;
-                            }
-                            path.unshift(selector);
-                            el = el.parentNode;
-                        }
-                        return path.join(' > ');
-                    };
-                    const selector = getSelector(e.target);
-                    const tmp = document.createElement('textarea');
-                    tmp.value = selector;
-                    document.body.appendChild(tmp);
-                    tmp.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(tmp);
-                    console.log('Copied Selector:', selector);
-                    document.removeEventListener('click', handler, true);
-                };
-                document.addEventListener('click', handler, true);
-                return 'Click an element to copy its unique CSS selector.';
-            }
-        });
-    } else if (info.menuItemId === "nuke_element") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                const handler = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.target.remove();
-                    document.removeEventListener('click', handler, true);
-                };
-                document.addEventListener('click', handler, true);
-                return 'Click any element to delete it from the DOM.';
-            }
-        });
-    } else if (info.menuItemId === "css_roulette") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                const root = document.documentElement;
-                const variables = [];
-                for (let i = 0; i < document.styleSheets.length; i++) {
-                    try {
-                        const sheet = document.styleSheets[i];
-                        for (let j = 0; j < sheet.cssRules.length; j++) {
-                            const rule = sheet.cssRules[j];
-                            if (rule.style) {
-                                for (let k = 0; k < rule.style.length; k++) {
-                                    const name = rule.style[k];
-                                    if (name.startsWith('--')) variables.push(name);
-                                }
-                            }
-                        }
-                    } catch (e) {}
-                }
-                const uniqueVars = [...new Set(variables)];
-                uniqueVars.forEach(v => {
-                    const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
-                    root.style.setProperty(v, randomColor);
-                });
-                return `Chaos Unleashed! Shuffled ${uniqueVars.length} CSS Variables.`;
-            }
-        }, (res) => {
-            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
-        });
-    } else if (info.menuItemId === "color_tweak") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                const handler = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const colors = ['#6366f1', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                    const current = e.target.style.color;
-                    const next = colors[(colors.indexOf(current) + 1) % colors.length];
-                    e.target.style.color = next;
-                    e.target.style.borderColor = next;
-                    const bg = window.getComputedStyle(e.target).backgroundColor;
-                    if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-                        e.target.style.backgroundColor = `${next}22`;
-                    }
-                    console.log('Tweaked Color to:', next);
-                };
-                document.addEventListener('click', handler, { once: true, capture: true });
-                return 'Click an element to tweak its color.';
-            }
-        }, (res) => {
-            if (res?.[0]?.result) showContentToast(tab.id, res[0].result, 'info');
-        });
-    } else if (info.menuItemId === "design_lab") {
-        handleDesignLab(tab.id);
-    } else if (info.menuItemId === "anti_slop_detect") {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                // Impeccable's 25-Rule AI Slop Detector
-                const findings = [];
-                const body = document.body;
-                const styles = [...document.styleSheets];
+    console.log(`[VAULT LOG] Action: ${info.menuItemId} on tab ${tab.id}`);
+    const handlers = {
+        ai_context_capture: () => handleDOMCleaner(tab.id, false),
+        design_lab: () => handleDesignLab(tab.id),
+        visual_edit: () => handleVisualEdit(tab.id),
+        inspect_style: () => handleInspectStyle(tab.id),
+        copy_selector: () => handleCopySelector(tab.id),
+        nuke_element: () => handleNukeElement(tab.id),
+        css_roulette: () => handleCSSRoulette(tab.id),
+        forensic_profiler: () => handleForensicProfiler(tab.id),
+        ghost_mode: () => handleGhostMode(tab.id),
+        dom_heatmap: () => handleDOMHeatmap(tab.id),
+        ui_autopsy: () => handleUIAutopsy(tab.id),
+        anti_slop_detect: () => handleSlopDetect(tab.id),
+        floating_nexus: () => handleFloatingNexus(tab.id),
+        visual_diff: () => handleVisualDiff(tab.id),
+        vibe_recorder: () => handleVibeRecorder(tab.id)
+    };
+    if (handlers[info.menuItemId]) handlers[info.menuItemId]();
+});
 
-                // Rule 1: Purple gradients (most common AI slop)
-                const allEls = body.querySelectorAll('*');
-                allEls.forEach(el => {
-                    const cs = window.getComputedStyle(el);
+
+// ── Forensic Mastery & Vault Logic ──────────────────────────────────────────
                     const bg = cs.backgroundImage;
                     if (bg && bg.includes('gradient') && (bg.includes('purple') || bg.includes('#8b5cf6') || bg.includes('#6366f1') || bg.includes('#a855f7') || bg.includes('violet'))) {
                         findings.push({ rule: 'Purple Gradient', severity: 'high', selector: el.tagName + (el.id ? '#' + el.id : ''), detail: bg.slice(0, 80) });
