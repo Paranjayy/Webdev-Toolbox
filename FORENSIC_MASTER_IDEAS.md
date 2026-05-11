@@ -13,7 +13,7 @@
 - [x] **Component Skeleton Riper**: Convert any selected element + its children into a clean Tailwind/Vanilla CSS component boilerplate.
 
 ## 🟡 Tier 3: Chaos & Hardening
-- [ ] **Hydration Forensic**: Detect React/Next.js hydration mismatches and highlight the problematic nodes.
+- [x] **Hydration Forensic**: Detect React/Next.js hydration mismatches and highlight the problematic nodes.
 - [x] **Performance Thermal Map**: Highlight elements that trigger heavy layout shifts (CLS) or long paints.
 - [x] **Quantum Physics Mode**: Elements don't just fall; they repel each other or attract based on their "semantic weight".
 

@@ -1307,7 +1307,9 @@ chrome.runtime.onInstalled.addListener(() => {
         { id: "refero_lens", parentId: "webdev_toolbox", title: "🔍 Lab: The Refero Lens" },
         { id: "quantum_physics", parentId: "webdev_toolbox", title: "⚛️ Chaos: Quantum Physics" },
         { id: "thermal_map", parentId: "webdev_toolbox", title: "🌡️ Forensic: Performance Thermal Map" },
-        { id: "vibe_slider", parentId: "webdev_toolbox", title: "🎛️ Lab: CSS Variable Time-Slider" }
+        { id: "vibe_slider", parentId: "webdev_toolbox", title: "🎛️ Lab: CSS Variable Time-Slider" },
+        { id: "hydration_forensic", parentId: "webdev_toolbox", title: "🧪 Forensic: Hydration Mismatch" },
+        { id: "slop_fixer", parentId: "webdev_toolbox", title: "🩹 Lab: AI Slop Auto-Fixer" }
     ];
     menus.forEach(m => {
         chrome.contextMenus.create({ ...m, contexts: ["all"] }, () => {
@@ -1342,7 +1344,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         refero_lens: () => handleReferoLens(tab.id),
         quantum_physics: () => handleQuantumPhysics(tab.id),
         thermal_map: () => handleThermalMap(tab.id),
-        vibe_slider: () => handleVibeSlider(tab.id)
+        vibe_slider: () => handleVibeSlider(tab.id),
+        hydration_forensic: () => handleHydrationForensic(tab.id),
+        slop_fixer: () => handleSlopFixer(tab.id)
     };
     if (handlers[info.menuItemId]) handlers[info.menuItemId]();
 });
@@ -1767,6 +1771,80 @@ async function handleSlopDetect(tabId) {
     }, (res) => {
         const findings = res?.[0]?.result || [];
         showContentToast(tabId, `AI Slop Audit Complete: ${findings.length} issues found.`, 'info');
+    });
+}
+
+async function handleHydrationForensic(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            if (window.__hydration_active) {
+                window.__hydration_active = false;
+                document.getElementById('__hydration_overlay')?.remove();
+                return 'Hydration Forensic Disabled.';
+            }
+            window.__hydration_active = true;
+            const errors = (window.__VAULT_CONSOLE_LOGS || []).filter(l => 
+                l.type === 'ERROR' && (l.msg.toLowerCase().includes('hydration') || l.msg.toLowerCase().includes('matching'))
+            );
+
+            if (errors.length === 0) {
+                return 'No Hydration errors detected in console logs.';
+            }
+
+            const overlay = document.createElement('div');
+            overlay.id = '__hydration_overlay';
+            overlay.style = `position:fixed; top:20px; left:20px; background:rgba(239,68,68,0.95); color:white; padding:15px; border-radius:12px; z-index:2147483647; font-family:monospace; font-size:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5); max-width:400px;`;
+            overlay.innerHTML = `
+                <div style="font-weight:bold; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:8px; margin-bottom:8px;">🚨 HYDRATION MISMATCH DETECTED</div>
+                <div style="max-height:200px; overflow-y:auto; font-size:11px;">
+                    ${errors.map(e => `<div style="margin-bottom:8px; color:#ffb3b3;">> ${e.msg}</div>`).join('')}
+                </div>
+                <div style="margin-top:10px; font-size:10px; color:rgba(255,255,255,0.7);">[TIP] Check server vs client render for these nodes.</div>
+            `;
+            document.body.appendChild(overlay);
+            return \`Hydration Forensic Active: \${errors.length} mismatches caught.\`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'error');
+    });
+}
+
+async function handleSlopFixer(tabId) {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const body = document.body;
+            const allEls = body.querySelectorAll('*');
+            let fixCount = 0;
+            allEls.forEach(el => {
+                const cs = window.getComputedStyle(el);
+                const bg = cs.backgroundImage;
+                // Fix 1: Kill purple gradients
+                if (bg && bg.includes('gradient') && (bg.includes('purple') || bg.includes('#8b5cf6'))) {
+                    el.style.backgroundImage = 'none';
+                    el.style.backgroundColor = '#0d1117';
+                    el.style.border = '1px solid #30363d';
+                    fixCount++;
+                }
+                // Fix 2: Remove gradient text
+                if (cs.webkitBackgroundClip === 'text') {
+                    el.style.webkitBackgroundClip = 'initial';
+                    el.style.backgroundClip = 'initial';
+                    el.style.color = '#58a6ff';
+                    el.style.backgroundImage = 'none';
+                    fixCount++;
+                }
+                // Fix 3: Sanitize excessive border-radius
+                if (parseInt(cs.borderRadius) > 24) {
+                    el.style.borderRadius = '12px';
+                    fixCount++;
+                }
+            });
+            return \`Slop Fixer applied! \${fixCount} design hotpatches injected.\`;
+        }
+    }, (res) => {
+        if (res?.[0]?.result) showContentToast(tabId, res[0].result, 'success');
     });
 }
 
