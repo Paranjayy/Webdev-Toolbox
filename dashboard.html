@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webdev Toolbox — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/variables.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--color-parchment);
+            color: var(--color-ink);
+            font-family: var(--font-cursorgothic);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background: var(--color-bone);
+            border-right: var(--border-hairline);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .brand {
+            padding: 24px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--color-ink);
+            border-bottom: var(--border-hairline);
+        }
+        .brand span { color: var(--color-ember); }
+
+        nav { padding: 16px 8px; flex: 1; }
+        .nav-item {
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            margin-bottom: 2px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s ease;
+            color: var(--color-ink);
+        }
+        .nav-item:hover {
+            background: var(--color-linen);
+        }
+        .nav-item.active {
+            background: var(--color-linen);
+            color: var(--color-ink);
+            border-left: 3px solid var(--color-ember);
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: var(--color-parchment);
+        }
+
+        header {
+            height: 64px;
+            border-bottom: var(--border-hairline);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--color-bone);
+        }
+
+        .view-title { font-size: 1.1rem; font-weight: 600; color: var(--color-ink); }
+
+        .search-bar {
+            background: var(--color-parchment);
+            border: var(--border-hairline);
+            border-radius: var(--radius-md);
+            padding: 6px 12px;
+            width: 320px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            color: var(--color-ink);
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .content-area {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Dashboard Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--color-bone);
+            border: var(--border-hairline);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s;
+        }
+        .card:hover {
+            border-color: var(--color-stone);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .ext-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            background: var(--color-linen);
+        }
+        .status-pill {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pill.on { background: rgba(52, 120, 92, 0.12); color: var(--color-forest); border: 1px solid var(--color-forest); }
+        .status-pill.off { background: rgba(207, 45, 86, 0.08); color: var(--color-crimson); border: 1px solid var(--color-crimson); }
+
+        .card-title { font-size: 0.95rem; font-weight: 600; color: var(--color-ink); }
+        .card-id { font-family: var(--font-berkeleymono); font-size: 0.65rem; color: var(--color-ash); }
+        .card-desc { font-size: 0.8rem; color: var(--color-driftwood); line-height: 1.4; margin: 12px 0; flex: 1; }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .btn {
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: var(--border-hairline);
+            background: var(--color-linen);
+            color: var(--color-ink);
+            transition: all 0.1s;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-parchment); }
+        .btn-primary:hover { background: var(--color-ash); border-color: var(--color-ash); }
+        .btn:hover { background: var(--color-stone); border-color: var(--color-ash); }
+
+        /* Shortcuts Table */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; color: var(--color-ash); font-size: 0.7rem; text-transform: uppercase; border-bottom: var(--border-hairline); }
+        td { padding: 12px; border-bottom: var(--border-hairline); font-size: 0.85rem; color: var(--color-ink); }
+        .key-badge {
+            background: var(--color-linen);
+            padding: 2px 6px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-berkeleymono);
+            font-size: 0.75rem;
+            border: var(--border-hairline);
+            color: var(--color-ink);
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--color-parchment); }
+        ::-webkit-scrollbar-thumb { background: var(--color-linen); border: 2px solid var(--color-parchment); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-stone); }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="brand">🛠 Webdev <span>Toolbox</span></div>
+        <nav>
+            <div class="nav-item active" data-view="extensions">🧩 Extensions</div>
+            <div class="nav-item" data-view="shortcuts">⌨️ Shortcuts</div>
+            <div class="nav-item" data-view="reverse">🧪 Reverse Ops</div>
+            <div class="nav-item" data-view="privacy">🛡️ Privacy Shield</div>
+            <div class="nav-item" data-view="settings">⚙️ Settings</div>
+        </nav>
+        <div style="padding: 24px; font-size: 0.7rem; color: var(--color-ash); border-top: 1px solid var(--color-stone);">
+            v3.1.0 Sovereign Build<br>
+            Authorized Access Only
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="view-title" id="active-view-title">Extensions</div>
+            <div class="search-bar">
+                <span>🔍</span>
+                <input type="text" id="global-search" placeholder="Search across the vault...">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn" style="width:auto;" id="btn-refresh">↻ Refresh All</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div class="view active" id="view-extensions">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn ext-filter active" data-filter="all">All</button>
+                        <button class="btn ext-filter" data-filter="development">Development</button>
+                        <button class="btn ext-filter" data-filter="store">Store</button>
+                    </div>
+                    <select id="ext-sort" style="background:var(--color-linen); border:1px solid var(--color-stone); color:var(--color-ink); padding:6px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer; outline:none;">
+                        <option value="name">Sort by Name</option>
+                        <option value="status">Sort by Status</option>
+                        <option value="type">Sort by Type</option>
+                    </select>
+                </div>
+                <div class="grid" id="extensions-grid">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- Shortcuts View -->
+            <div class="view" id="view-shortcuts">
+                <div class="card">
+                    <h3 style="margin-bottom:20px;">Global Command Registry</h3>
+                    <p style="color:var(--color-ash); margin-bottom:30px; font-size:0.9rem;">
+                        This list tracks all keyboard shortcuts registered by your extensions. 
+                        Shortcuts for consolidated extensions are parsed directly from their manifests.
+                    </p>
+                    <table id="shortcuts-table">
+                        <thead>
+                            <tr>
+                                <th>Extension</th>
+                                <th>Command</th>
+                                <th>Shortcut</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shortcuts-body">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reverse Ops View -->
+            <div class="view" id="view-reverse">
+                <div class="grid" id="reverse-grid">
+                    <!-- Cards for reverse engineering targets -->
+                </div>
+            </div>
+
+            <div class="view" id="view-settings">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h2 style="margin-bottom:10px;">Vault Configuration</h2>
+                    <p style="color:var(--color-ash); margin-bottom:40px;">Manage your orchestration environment and design preferences.</p>
+                    
+                    <div class="card" style="margin-bottom:24px;">
+                        <h4 style="margin-bottom:20px;">System Preferences</h4>
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">Auto-Refresh Extensions</div>
+                                    <div style="font-size:0.8rem; color:var(--color-ash);">Automatically reload dashboard on extension state change.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ON</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">High-Performance Mode</div>
+                                    <div style="font-size:0.8rem; color:var(--color-ash);">Optimizes animations for lower CPU usage.</div>
+                                </div>
+                                <button class="btn" style="width:100px;">OFF</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600;">AI Context Sync</div>
+                                    <div style="font-size:0.8rem; color:var(--color-ash);">Allow extensions to share state for bundled AI snapshots.</div>
+                                </div>
+                                <button class="btn btn-primary" style="width:100px;">ACTIVE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="margin-bottom:20px; color:var(--color-crimson);">Danger Zone</h4>
+                        <p style="font-size:0.85rem; color:var(--color-ash); margin-bottom:20px;">Wipe all stored redactions and vault metadata.</p>
+                        <button class="btn" style="background:rgba(239, 68, 68, 0.1); color:var(--color-crimson); border-color:var(--color-crimson); width:auto; padding: 10px 24px;">Reset Vault Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

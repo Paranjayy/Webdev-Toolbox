@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webdev Toolbox — Offline DOM Cleaner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/variables.css">
+    <style></style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--color-parchment);
+            color: var(--color-ink);
+            font-family: var(--font-cursorgothic);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        header {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: var(--border-hairline);
+        }
+
+        .title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--color-ink);
+        }
+        .title span {
+            color: var(--color-ember);
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--color-driftwood);
+            margin-top: 4px;
+        }
+
+        main {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--color-bone);
+            border: 1px solid var(--color-stone);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-ink);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .rule-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .rule-label input {
+            accent-color: var(--color-ember);
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .editor-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .pane {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+        }
+
+        .pane-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-ash);
+            text-transform: uppercase;
+        }
+
+        textarea {
+            width: 100%;
+            height: 380px;
+            background: var(--color-bone);
+            border: 1px solid var(--color-stone);
+            border-radius: 6px;
+            color: var(--color-ink);
+            font-family: var(--font-berkeleymono);
+            font-size: 0.7rem;
+            padding: 12px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            border-color: var(--color-ember);
+        }
+        textarea[readonly] {
+            background: var(--color-linen);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--color-ash);
+            padding: 4px 8px;
+            background: var(--color-linen);
+            border-radius: 6px;
+            border: 1px solid var(--color-stone);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--color-stone);
+            background: var(--color-linen);
+            color: var(--color-ink);
+            transition: all 0.2s ease;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-primary {
+            background: var(--color-ember);
+            border-color: var(--color-ember);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--color-ash);
+        }
+        .btn-amber {
+            background: var(--color-amber);
+            border-color: var(--color-amber);
+            color: white;
+        }
+        .btn-amber:hover {
+            background: var(--color-amber);
+        }
+        .btn-emerald {
+            background: var(--color-forest);
+            border-color: var(--color-forest);
+            color: white;
+        }
+        .btn-emerald:hover {
+            background: var(--color-verdant);
+        }
+        .btn:hover {
+            background: var(--color-stone);
+        }
+
+        /* Logs Console */
+        .logs-console {
+            background: var(--color-bone);
+            border: 1px solid var(--color-stone);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: var(--font-berkeleymono);
+            font-size: 0.65rem;
+            height: 120px;
+            overflow-y: auto;
+            color: var(--color-ink);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--color-linen);
+            border: 1px solid var(--color-stone);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-xl);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast.success { border-left: 3px solid var(--color-forest); }
+        .toast.error { border-left: 3px solid var(--color-crimson); }
+        .toast.info { border-left: 3px solid var(--color-ember); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1 class="title">🛠 Webdev <span>Toolbox</span> — Offline DOM Cleaner</h1>
+            <div class="subtitle">A secure sandboxed cleaner that runs fully offline inside your browser.</div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--color-ash); text-align: right;">
+            v1.3 Offline Sandbox<br>
+            No data leaves your device.
+        </div>
+    </header>
+
+    <main>
+        <section class="sidebar">
+            <div class="card">
+                <div class="card-title">Clean Operations</div>
+                <button class="btn btn-amber" id="btn-clean" style="margin-bottom: 8px;">🧹 Clean HTML Input</button>
+                <button class="btn btn-emerald" id="btn-copy">📋 Copy Cleaned Output</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Sanitization Rules</div>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-strip-scripts" checked> Strip scripts, styles & iframes
+                </label>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-strip-attrs" checked> Strip visual attributes (class/id/style)
+                </label>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-strip-data"> Strip data-* & aria-*
+                </label>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-strip-comments" checked> Strip HTML comments
+                </label>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-keep-semantic"> Keep only semantic structural tags
+                </label>
+                <label class="rule-label">
+                    <input type="checkbox" id="chk-prettify" checked> Prettify and indent output
+                </label>
+            </div>
+
+            <button class="btn" id="btn-clear">Reset Sandbox</button>
+        </section>
+
+        <section class="editor-container">
+            <div class="editor-split">
+                <div class="pane">
+                    <div class="pane-title">Raw Input HTML</div>
+                    <textarea id="txt-raw" placeholder="Paste your raw HTML/DOM output here..."></textarea>
+                </div>
+                <div class="pane">
+                    <div class="pane-title">Cleaned Output HTML</div>
+                    <textarea id="txt-clean" readonly placeholder="Optimized clean DOM output will appear here..."></textarea>
+                </div>
+            </div>
+
+            <div class="stats-bar" id="stats-container">
+                <span>Original Size: 0 KB</span>
+                <span>Cleaned Size: 0 KB (0% reduction)</span>
+            </div>
+
+            <div class="pane" style="height: 150px;">
+                <div class="pane-title">Execution Logs</div>
+                <div class="logs-console" id="logs-container">
+                    <div style="color: var(--color-ash);">Ready to clean. Execution logs will print here...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const txtRaw = document.getElementById('txt-raw');
+        const txtClean = document.getElementById('txt-clean');
+        const logsContainer = document.getElementById('logs-container');
+        const statsContainer = document.getElementById('stats-container');
+        const toast = document.getElementById('toast');
+
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function logToConsole(message, type = 'info') {
+            const placeholder = logsContainer.querySelector('div');
+            if (placeholder && placeholder.textContent.includes('Ready to clean.')) {
+                placeholder.remove();
+            }
+
+            const div = document.createElement('div');
+            let color = 'var(--color-ink)';
+            if (type === 'error') color = 'var(--color-crimson)';
+            if (type === 'success') color = 'var(--color-forest)';
+            if (type === 'warning') color = 'var(--color-amber)';
+            
+            div.style.color = color;
+            div.style.marginBottom = '2px';
+            div.textContent = `[${new Date().toLocaleTimeString()}] [${type.toUpperCase()}] ${message}`;
+            logsContainer.appendChild(div);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        function updateStats(originalText, cleanedText) {
+            const origSize = (new Blob([originalText]).size / 1024).toFixed(1);
+            const cleanSize = (new Blob([cleanedText]).size / 1024).toFixed(1);
+            const pct = originalText ? Math.round((1 - cleanSize / origSize) * 100) : 0;
+            statsContainer.innerHTML = `
+                <span>Original Size: ${origSize} KB</span>
+                <span>Cleaned Size: ${cleanSize} KB (${pct}% reduction)</span>
+            `;
+        }
+
+        function cleanHTML(rawHtml) {
+            if (!rawHtml) {
+                logToConsole("No input HTML specified. Skipping.", 'warning');
+                return '';
+            }
+
+            logToConsole("Initiating offline DOM sanitization...", 'info');
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawHtml, 'text/html');
+            logToConsole("Parsed input HTML into structural tree.", 'success');
+
+            // Strip scripts, styles, etc.
+            if (document.getElementById('chk-strip-scripts').checked) {
+                try {
+                    const toRemove = doc.querySelectorAll('script, style, iframe, link, noscript, embed, object');
+                    const count = toRemove.length;
+                    toRemove.forEach(el => el.remove());
+                    logToConsole(`Removed ${count} scripts, styles, iframes, and link elements.`, 'success');
+                } catch (e) {
+                    logToConsole(`Error removing scripts/styles: ${e.message}`, 'error');
+                }
+            }
+
+            // Strip HTML Comments
+            if (document.getElementById('chk-strip-comments').checked) {
+                try {
+                    const iterator = doc.createNodeIterator(doc.body || doc.documentElement, NodeFilter.SHOW_COMMENT);
+                    let commentNode;
+                    const comments = [];
+                    while (commentNode = iterator.nextNode()) {
+                        comments.push(commentNode);
+                    }
+                    comments.forEach(node => {
+                        if (node.parentNode) node.parentNode.removeChild(node);
+                    });
+                    logToConsole(`Removed ${comments.length} comments.`, 'success');
+                } catch (e) {
+                    logToConsole(`Error removing comments: ${e.message}`, 'error');
+                }
+            }
+
+            // Keep semantic tags
+            if (document.getElementById('chk-keep-semantic').checked) {
+                try {
+                    const allowedTags = new Set(['DIV', 'P', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'UL', 'OL', 'LI', 'A', 'IMG', 'BUTTON', 'FORM', 'INPUT', 'TEXTAREA', 'LABEL', 'SELECT', 'OPTION', 'BODY', 'HTML']);
+                    const allElements = Array.from(doc.querySelectorAll('*'));
+                    let removedTagsCount = 0;
+                    let unwrappedCount = 0;
+                    
+                    for (let i = allElements.length - 1; i >= 0; i--) {
+                        const el = allElements[i];
+                        if (el.tagName && !allowedTags.has(el.tagName.toUpperCase())) {
+                            if (el.parentNode) {
+                                while (el.firstChild) {
+                                    el.parentNode.insertBefore(el.firstChild, el);
+                                    unwrappedCount++;
+                                }
+                                el.remove();
+                                removedTagsCount++;
+                            }
+                        }
+                    }
+                    logToConsole(`Kept semantic tags only. Removed ${removedTagsCount} tags, unwrapped ${unwrappedCount} children.`, 'success');
+                } catch (e) {
+                    logToConsole(`Error applying semantic filter: ${e.message}`, 'error');
+                }
+            }
+
+            // Strip attributes
+            const stripAttrs = document.getElementById('chk-strip-attrs').checked;
+            const stripData = document.getElementById('chk-strip-data').checked;
+
+            try {
+                const allElements = doc.querySelectorAll('*');
+                let attrsRemoved = 0;
+                let emptyAttrsRemoved = 0;
+
+                allElements.forEach(el => {
+                    const attrs = Array.from(el.attributes);
+                    attrs.forEach(attr => {
+                        const name = attr.name.toLowerCase();
+                        
+                        // Always clean up empty attributes (e.g. width="", height="") to prevent SVG validation errors
+                        if (attr.value === '') {
+                            el.removeAttribute(attr.name);
+                            emptyAttrsRemoved++;
+                            return;
+                        }
+
+                        if (stripAttrs && (name === 'class' || name === 'id' || name === 'style')) {
+                            el.removeAttribute(attr.name);
+                            attrsRemoved++;
+                        }
+                        if (stripData && (name.startsWith('data-') || name.startsWith('aria-') || name === 'role')) {
+                            el.removeAttribute(attr.name);
+                            attrsRemoved++;
+                        }
+                    });
+                });
+                if (attrsRemoved > 0 || emptyAttrsRemoved > 0) {
+                    logToConsole(`Stripped ${attrsRemoved} attributes and cleaned ${emptyAttrsRemoved} empty/unspecified attributes.`, 'success');
+                }
+            } catch (e) {
+                logToConsole(`Error cleaning attributes: ${e.message}`, 'error');
+            }
+
+            let resultHtml = doc.body ? doc.body.innerHTML : doc.documentElement.innerHTML;
+
+            if (document.getElementById('chk-prettify').checked) {
+                try {
+                    resultHtml = prettifyHTML(resultHtml);
+                    logToConsole("Indent and prettify complete.", 'success');
+                } catch (e) {
+                    logToConsole(`Prettify Warning: ${e.message}. Using minified string.`, 'warning');
+                }
+            }
+
+            logToConsole("Cleaning operation finished.", 'success');
+            return resultHtml.trim();
+        }
+
+        function prettifyHTML(html) {
+            if (!html) return '';
+            let formatted = '';
+            let indent = '';
+            const tab = '  ';
+            const lines = html.split(/>\s*</);
+            
+            lines.forEach(function(element) {
+                if (element.match( /^\/\w/ )) {
+                    indent = indent.substring(tab.length);
+                }
+                formatted += indent + '<' + element + '>\n';
+                if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input") && !element.startsWith("img") && !element.startsWith("br") && !element.startsWith("hr")) {
+                    indent += tab;
+                }
+            });
+            
+            if (formatted.length > 4) {
+                return formatted.substring(1, formatted.length - 3);
+            }
+            return formatted;
+        }
+
+        document.getElementById('btn-clean').addEventListener('click', () => {
+            const raw = txtRaw.value;
+            if (!raw) return showToast("Please paste HTML first.", 'error');
+            const cleaned = cleanHTML(raw);
+            txtClean.value = cleaned;
+            updateStats(raw, cleaned);
+            showToast("DOM cleaned successfully!", 'success');
+        });
+
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const cleaned = txtClean.value;
+            if (!cleaned) return showToast("No cleaned HTML output to copy.", 'error');
+            navigator.clipboard.writeText(cleaned)
+                .then(() => showToast("Copy successful!", 'success'))
+                .catch(() => showToast("Failed to copy.", 'error'));
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            txtRaw.value = '';
+            txtClean.value = '';
+            updateStats('', '');
+            logsContainer.innerHTML = '<div style="color: var(--color-ash);">Ready to clean. Execution logs will print here...</div>';
+            showToast("Sandbox cleared.", 'info');
+        });
+    </script>
+</body>
+</html>
